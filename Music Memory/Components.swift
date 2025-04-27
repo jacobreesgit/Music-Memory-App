@@ -193,15 +193,24 @@ struct ArtistRow: View {
     
     var body: some View {
         HStack(spacing: AppStyles.smallPadding) {
-            // Artist icon (consistent with other rows)
-            ZStack {
-                Circle()
-                    .fill(AppStyles.secondaryColor)
+            // Artwork or placeholder
+            if let artwork = artist.artwork {
+                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "music.mic")!)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
                     .frame(width: 50, height: 50)
-                
-                Image(systemName: "music.mic")
-                    .font(.system(size: 24))
-                    .foregroundColor(.primary)
+                    .cornerRadius(AppStyles.cornerRadius)
+            } else {
+                // Fallback to icon if no artwork is available
+                ZStack {
+                    Circle()
+                        .fill(AppStyles.secondaryColor)
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "music.mic")
+                        .font(.system(size: 24))
+                        .foregroundColor(.primary)
+                }
             }
             
             // Artist name and song count

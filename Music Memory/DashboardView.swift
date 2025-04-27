@@ -52,7 +52,7 @@ struct DashboardView: View {
                         TopItemsView(
                             title: "Top Artists",
                             items: Array(musicLibrary.artists.prefix(5)),
-                            artwork: { _ in nil },
+                            artwork: { $0.artwork }, // Use the artist artwork
                             itemTitle: { $0.name },
                             itemSubtitle: { "\($0.songs.count) songs" },
                             itemPlays: { $0.totalPlayCount },

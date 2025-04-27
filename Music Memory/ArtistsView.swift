@@ -40,7 +40,7 @@ struct ArtistDetailView: View {
                 subtitle: "",
                 plays: artist.totalPlayCount,
                 songCount: artist.songs.count,
-                artwork: nil,
+                artwork: artist.artwork, // Use the artist artwork instead of nil
                 isAlbum: false
             )) {
                 ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in

@@ -23,4 +23,10 @@ struct ArtistData: Identifiable {
     let name: String
     var songs: [MPMediaItem]
     var totalPlayCount: Int
+    
+    // Get artwork from the most-played song with artwork
+    var artwork: MPMediaItemArtwork? {
+        return songs.sorted(by: { ($0.playCount ?? 0) > ($1.playCount ?? 0) })
+                    .first(where: { $0.artwork != nil })?.artwork
+    }
 }
