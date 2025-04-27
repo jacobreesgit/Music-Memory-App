@@ -21,11 +21,34 @@ struct SongsView: View {
             } else {
                 List {
                     ForEach(musicLibrary.songs, id: \.persistentID) { song in
-                        SongRow(song: song)
+                        NavigationLink(destination: SongDetailView(song: song)) {
+                            SongRow(song: song)
+                        }
                     }
                 }
                 .navigationTitle("Songs by Plays")
             }
         }
+    }
+}
+
+struct SongDetailView: View {
+    let song: MPMediaItem
+    
+    var body: some View {
+        List {
+            Section(header: DetailHeaderView(
+                title: song.title ?? "Unknown",
+                subtitle: song.artist ?? "Unknown",
+                plays: song.playCount ?? 0,
+                songCount: 1,
+                artwork: song.artwork,
+                isAlbum: false
+            )) {
+                // No related songs list as requested
+            }
+        }
+        .navigationTitle(song.title ?? "Unknown")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
