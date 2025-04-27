@@ -33,9 +33,15 @@ struct TopItem {
     let artwork: MPMediaItemArtwork?
 }
 
-struct TopItemsView: View {
+struct TopItemsView<T, DestinationView: View>: View {
     let title: String
-    let items: [TopItem]
+    let items: [T]
+    let artwork: (T) -> MPMediaItemArtwork?
+    let itemTitle: (T) -> String
+    let itemSubtitle: (T) -> String
+    let itemPlays: (T) -> Int
+    let iconName: (T) -> String
+    let destination: (T) -> DestinationView
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -45,43 +51,45 @@ struct TopItemsView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
-                    ForEach(items.indices, id: \.self) { index in
-                        let item = items[index]
-                        VStack {
-                            // Artwork or placeholder
-                            if let artwork = item.artwork {
-                                Image(uiImage: artwork.image(at: CGSize(width: 100, height: 100)) ?? UIImage(systemName: "music.note")!)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 100, height: 100)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                            } else {
-                                Image(systemName: "music.mic")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 80, height: 80)
-                                    .padding(10)
-                                    .background(AppStyles.secondaryColor)
-                                    .cornerRadius(AppStyles.cornerRadius)
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                        NavigationLink(destination: destination(item)) {
+                            VStack {
+                                // Artwork or placeholder
+                                if let artwork = artwork(item) {
+                                    Image(uiImage: artwork.image(at: CGSize(width: 100, height: 100)) ?? UIImage(systemName: "music.note")!)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 100, height: 100)
+                                        .cornerRadius(AppStyles.cornerRadius)
+                                } else {
+                                    Image(systemName: iconName(item))
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 80, height: 80)
+                                        .padding(10)
+                                        .background(AppStyles.secondaryColor)
+                                        .cornerRadius(AppStyles.cornerRadius)
+                                }
+                                
+                                // Title
+                                Text(itemTitle(item))
+                                    .font(AppStyles.bodyStyle)
+                                    .lineLimit(1)
+                                    .foregroundColor(.primary)
+                                
+                                // Subtitle
+                                Text(itemSubtitle(item))
+                                    .font(AppStyles.captionStyle)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                
+                                // Play count
+                                Text("\(itemPlays(item)) plays")
+                                    .font(AppStyles.captionStyle)
+                                    .foregroundColor(AppStyles.accentColor)
                             }
-                            
-                            // Title
-                            Text(item.title)
-                                .font(AppStyles.bodyStyle)
-                                .lineLimit(1)
-                            
-                            // Subtitle
-                            Text(item.subtitle)
-                                .font(AppStyles.captionStyle)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                            
-                            // Play count
-                            Text("\(item.plays) plays")
-                                .font(AppStyles.captionStyle)
-                                .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 100)
                         }
-                        .frame(width: 100)
                     }
                 }
                 .padding(.horizontal)

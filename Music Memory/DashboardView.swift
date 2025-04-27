@@ -5,7 +5,6 @@
 //  Created by Jacob Rees on 27/04/2025.
 //
 
-
 import SwiftUI
 import MediaPlayer
 
@@ -25,20 +24,41 @@ struct DashboardView: View {
                             .font(AppStyles.titleStyle)
                             .padding(.horizontal)
                         
-                        TopItemsView(title: "Top Songs", items: musicLibrary.songs.prefix(5).map {
-                            TopItem(title: $0.title ?? "Unknown", subtitle: $0.artist ?? "Unknown",
-                                    plays: $0.playCount ?? 0, artwork: $0.artwork)
-                        })
+                        // Top Songs
+                        TopItemsView(
+                            title: "Top Songs",
+                            items: Array(musicLibrary.songs.prefix(5)),
+                            artwork: { $0.artwork },
+                            itemTitle: { $0.title ?? "Unknown" },
+                            itemSubtitle: { $0.artist ?? "Unknown" },
+                            itemPlays: { $0.playCount ?? 0 },
+                            iconName: { _ in "music.note" },
+                            destination: { SongDetailView(song: $0) }
+                        )
                         
-                        TopItemsView(title: "Top Albums", items: musicLibrary.albums.prefix(5).map {
-                            TopItem(title: $0.title, subtitle: $0.artist,
-                                    plays: $0.totalPlayCount, artwork: $0.artwork)
-                        })
+                        // Top Albums
+                        TopItemsView(
+                            title: "Top Albums",
+                            items: Array(musicLibrary.albums.prefix(5)),
+                            artwork: { $0.artwork },
+                            itemTitle: { $0.title },
+                            itemSubtitle: { $0.artist },
+                            itemPlays: { $0.totalPlayCount },
+                            iconName: { _ in "square.stack" },
+                            destination: { AlbumDetailView(album: $0) }
+                        )
                         
-                        TopItemsView(title: "Top Artists", items: musicLibrary.artists.prefix(5).map {
-                            TopItem(title: $0.name, subtitle: "\($0.songs.count) songs",
-                                    plays: $0.totalPlayCount, artwork: nil)
-                        })
+                        // Top Artists
+                        TopItemsView(
+                            title: "Top Artists",
+                            items: Array(musicLibrary.artists.prefix(5)),
+                            artwork: { _ in nil },
+                            itemTitle: { $0.name },
+                            itemSubtitle: { "\($0.songs.count) songs" },
+                            itemPlays: { $0.totalPlayCount },
+                            iconName: { _ in "music.mic" },
+                            destination: { ArtistDetailView(artist: $0) }
+                        )
                     }
                     .padding(.vertical)
                 }
