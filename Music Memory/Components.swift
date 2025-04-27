@@ -131,8 +131,8 @@ struct SongRow: View {
             
             Spacer()
             
-            // Play count
-            Text("\(song.playCount ?? 0)")
+            // Play count with "plays" text
+            Text("\(song.playCount ?? 0) plays")
                 .font(AppStyles.playCountStyle)
                 .foregroundColor(AppStyles.accentColor)
         }
@@ -173,16 +173,10 @@ struct AlbumRow: View {
             
             Spacer()
             
-            // Play count and song count
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("\(album.totalPlayCount)")
-                    .font(AppStyles.playCountStyle)
-                    .foregroundColor(AppStyles.accentColor)
-                
-                Text("\(album.songs.count) songs")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-            }
+            // Play count with "plays" text
+            Text("\(album.totalPlayCount) plays")
+                .font(AppStyles.playCountStyle)
+                .foregroundColor(AppStyles.accentColor)
         }
         .padding(.vertical, 4)
     }
@@ -213,21 +207,14 @@ struct ArtistRow: View {
                 }
             }
             
-            // Artist name and song count
-            VStack(alignment: .leading, spacing: 2) {
-                Text(artist.name)
-                    .font(AppStyles.bodyStyle)
-                    .lineLimit(1)
-                
-                Text("\(artist.songs.count) songs")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
+            // Artist name (vertically centered)
+            Text(artist.name)
+                .font(AppStyles.bodyStyle)
+                .lineLimit(1)
             
             Spacer()
             
-            // Play count
+            // Play count with "plays" text
             Text("\(artist.totalPlayCount) plays")
                 .font(AppStyles.playCountStyle)
                 .foregroundColor(AppStyles.accentColor)
