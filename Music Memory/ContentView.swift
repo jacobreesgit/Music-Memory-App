@@ -10,6 +10,16 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     
+    init() {
+        // Force consistent tab bar appearance
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        UITabBar.appearance().standardAppearance = appearance
+        if #available(iOS 15.0, *) {
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
+    }
+    
     var body: some View {
         TabView {
             DashboardView()
