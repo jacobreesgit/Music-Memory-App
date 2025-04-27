@@ -230,6 +230,25 @@ struct DetailHeaderView: View {
     let songCount: Int
     let artwork: MPMediaItemArtwork?
     let isAlbum: Bool
+    let metadata: [MetadataItem]
+    
+    init(
+        title: String,
+        subtitle: String,
+        plays: Int,
+        songCount: Int,
+        artwork: MPMediaItemArtwork?,
+        isAlbum: Bool,
+        metadata: [MetadataItem] = []
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.plays = plays
+        self.songCount = songCount
+        self.artwork = artwork
+        self.isAlbum = isAlbum
+        self.metadata = metadata
+    }
     
     var body: some View {
         VStack(spacing: AppStyles.smallPadding) {
@@ -275,12 +294,48 @@ struct DetailHeaderView: View {
             Text("\(songCount) songs")
                 .font(AppStyles.captionStyle)
                 .foregroundColor(.secondary)
+            
+            // Metadata section
+            if !metadata.isEmpty {
+                HStack(alignment: .center) {
+                    Spacer()
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(metadata) { item in
+                            HStack(spacing: 6) {
+                                // Icon
+                                Image(systemName: item.iconName)
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                
+                                // Label
+                                Text(item.label)
+                                    .font(.footnote.bold())
+                                    .foregroundColor(.secondary)
+                                
+                                // Value
+                                Text(item.value)
+                                    .font(.footnote)
+                            }
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.top, 10)
+                .padding(.horizontal)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding()
     }
 }
 
+// Metadata item struct
+struct MetadataItem: Identifiable {
+    let id = UUID()
+    let iconName: String
+    let label: String
+    let value: String
+}
 struct LibraryAccessView: View {
     var body: some View {
         VStack(spacing: AppStyles.standardPadding) {
