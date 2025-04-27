@@ -104,28 +104,7 @@ struct ArtistDetailView: View {
                 songCount: artist.songs.count,
                 artwork: artist.artwork,
                 isAlbum: false,
-                metadata: [
-                    MetadataItem(
-                        iconName: "square.stack",
-                        label: "Albums:",
-                        value: "\(albumCount())"
-                    ),
-                    MetadataItem(
-                        iconName: "music.note.list",
-                        label: "Genres:",
-                        value: topGenres().joined(separator: ", ")
-                    ),
-                    MetadataItem(
-                        iconName: "clock",
-                        label: "Total Time:",
-                        value: totalDuration()
-                    ),
-                    MetadataItem(
-                        iconName: "plus.circle",
-                        label: "First Added:",
-                        value: formatDate(dateRange().first)
-                    )
-                ]
+                metadata: []
             )) {
                 // Songs list sorted by play count
                 ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
@@ -135,6 +114,11 @@ struct ArtistDetailView: View {
             
             // Additional artist statistics section
             Section(header: Text("Artist Statistics")) {
+                metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
+                metadataRow(icon: "music.note.list", title: "Genres", value: topGenres().joined(separator: ", "))
+                metadataRow(icon: "clock", title: "Total Time", value: totalDuration())
+                metadataRow(icon: "plus.circle", title: "First Added", value: formatDate(dateRange().first))
+                
                 let topAlbum = mostPlayedAlbum()
                 metadataRow(icon: "star", title: "Top Album", value: topAlbum.title)
                 metadataRow(icon: "music.note.tv", title: "Album Plays", value: "\(topAlbum.playCount)")

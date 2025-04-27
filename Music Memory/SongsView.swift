@@ -60,58 +60,36 @@ struct SongDetailView: View {
                 songCount: 1,
                 artwork: song.artwork,
                 isAlbum: false,
-                metadata: [
-                    MetadataItem(
-                        iconName: "square.stack",
-                        label: "Album:",
-                        value: song.albumTitle ?? "Unknown"
-                    ),
-                    MetadataItem(
-                        iconName: "music.note.list",
-                        label: "Genre:",
-                        value: song.genre ?? "Unknown"
-                    ),
-                    MetadataItem(
-                        iconName: "clock",
-                        label: "Duration:",
-                        value: formatDuration(song.playbackDuration)
-                    ),
-                    MetadataItem(
-                        iconName: "calendar",
-                        label: "Release Date:",
-                        value: formatDate(song.releaseDate)
-                    ),
-                    MetadataItem(
-                        iconName: "play.circle",
-                        label: "Last Played:",
-                        value: formatDate(song.lastPlayedDate)
-                    ),
-                    MetadataItem(
-                        iconName: "plus.circle",
-                        label: "Date Added:",
-                        value: formatDate(song.dateAdded)
-                    )
-                ]
+                metadata: []
             )) {
-                // Song details section
-                VStack(alignment: .leading, spacing: 12) {
+                // Song Statistics section
+                Section(header: Text("Song Statistics")) {
+                    metadataRow(icon: "square.stack", title: "Album", value: song.albumTitle ?? "Unknown")
+                    metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
+                    metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
+                    metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
+                    metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
+                    metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
+                    
                     if let composer = song.composer, !composer.isEmpty {
                         metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
                     }
                     
-                    if let trackNumber = song.albumTrackNumber, trackNumber > 0 {
+                    let trackNumber = song.albumTrackNumber
+                    if trackNumber > 0 {
                         metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
                     }
                     
-                    if let discNumber = song.discNumber, discNumber > 0 {
+                    let discNumber = song.discNumber
+                    if discNumber > 0 {
                         metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
                     }
                     
-                    if let bpm = song.beatsPerMinute, bpm > 0 {
+                    let bpm = song.beatsPerMinute
+                    if bpm > 0 {
                         metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
                     }
                 }
-                .padding(.vertical, 8)
             }
         }
         .navigationTitle(song.title ?? "Unknown")

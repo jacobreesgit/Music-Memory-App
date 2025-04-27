@@ -96,36 +96,20 @@ struct AlbumDetailView: View {
                 songCount: album.songs.count,
                 artwork: album.artwork,
                 isAlbum: true,
-                metadata: [
-                    MetadataItem(
-                        iconName: "calendar",
-                        label: "Released:",
-                        value: releaseYear()
-                    ),
-                    MetadataItem(
-                        iconName: "music.note.list",
-                        label: "Genre:",
-                        value: mostCommonGenre()
-                    ),
-                    MetadataItem(
-                        iconName: "clock",
-                        label: "Duration:",
-                        value: formatTotalDuration()
-                    ),
-                    MetadataItem(
-                        iconName: "plus.circle",
-                        label: "Added:",
-                        value: formatDate(dateAdded())
-                    )
-                ]
+                metadata: []
             )) {
                 ForEach(album.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
                     SongRow(song: song)
                 }
             }
             
-            // Additional album info section
-            Section(header: Text("Album Information")) {
+            // Additional album statistics section
+            Section(header: Text("Album Statistics")) {
+                metadataRow(icon: "calendar", title: "Released", value: releaseYear())
+                metadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
+                metadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
+                metadataRow(icon: "plus.circle", title: "Added", value: formatDate(dateAdded()))
+                
                 if let song = album.songs.first, let albumArtist = song.albumArtist {
                     metadataRow(icon: "person", title: "Album Artist", value: albumArtist)
                 }
