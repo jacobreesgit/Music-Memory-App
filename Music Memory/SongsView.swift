@@ -33,6 +33,7 @@ struct SongsView: View {
 }
 
 struct SongDetailView: View {
+    @EnvironmentObject var musicLibrary: MusicLibraryModel
     let song: MPMediaItem
     
     // Helper function to format date
@@ -53,6 +54,7 @@ struct SongDetailView: View {
     
     var body: some View {
         List {
+            // Song header section
             Section(header: DetailHeaderView(
                 title: song.title ?? "Unknown",
                 subtitle: song.artist ?? "Unknown",
@@ -62,13 +64,85 @@ struct SongDetailView: View {
                 isAlbum: false,
                 metadata: []
             )) {
-                // Empty section content to match album/artist view structure
+                // Empty section content
             }
             
-            // Song Statistics section as a separate top-level section
+            // Album section
+            if let albumTitle = song.albumTitle {
+                Section(header: Text("Album").padding(.leading, -15)) {
+                    // Find the album in the music library
+                    if let album = musicLibrary.albums.first(where: {
+                        $0.title == albumTitle &&
+                        ($0.artist == song.artist || $0.artist == song.albumArtist)
+                    }) {
+                        NavigationLink(destination: AlbumDetailView(album: album)) {
+                            AlbumRow(album: album)
+                        }
+                    } else {
+                        // Fallback if album is not found
+                        HStack(spacing: AppStyles.smallPadding) {
+                            if let artwork = song.artwork {
+                                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "square.stack")!)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 50, height: 50)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                            } else {
+                                Image(systemName: "square.stack")
+                                    .frame(width: 50, height: 50)
+                                    .background(AppStyles.secondaryColor)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(albumTitle)
+                                    .font(AppStyles.bodyStyle)
+                                    .lineLimit(1)
+                                
+                                if let artist = song.artist {
+                                    Text(artist)
+                                        .font(AppStyles.captionStyle)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Artist section
+            if let artistName = song.artist {
+                Section(header: Text("Artist").padding(.leading, -15)) {
+                    // Find the artist in the music library
+                    if let artist = musicLibrary.artists.first(where: { $0.name == artistName }) {
+                        NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                            ArtistRow(artist: artist)
+                        }
+                    } else {
+                        // Fallback if artist is not found
+                        HStack(spacing: AppStyles.smallPadding) {
+                            ZStack {
+                                Circle()
+                                    .fill(AppStyles.secondaryColor)
+                                    .frame(width: 50, height: 50)
+                                
+                                Image(systemName: "music.mic")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Text(artistName)
+                                .font(AppStyles.bodyStyle)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+            
+            // Song Statistics section
             Section(header: Text("Song Statistics")
                 .padding(.leading, -15)) {
-                metadataRow(icon: "square.stack", title: "Album", value: song.albumTitle ?? "Unknown")
                 metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
                 metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
                 metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))

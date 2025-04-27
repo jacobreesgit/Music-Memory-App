@@ -31,6 +31,7 @@ struct AlbumsView: View {
 }
 
 struct AlbumDetailView: View {
+    @EnvironmentObject var musicLibrary: MusicLibraryModel
     let album: AlbumData
     
     // Helper function to format date
@@ -89,6 +90,7 @@ struct AlbumDetailView: View {
     
     var body: some View {
         List {
+            // Album header section
             Section(header: DetailHeaderView(
                 title: album.title,
                 subtitle: album.artist,
@@ -98,22 +100,52 @@ struct AlbumDetailView: View {
                 isAlbum: true,
                 metadata: []
             )) {
-                ForEach(album.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
-                    SongRow(song: song)
+                // Empty section content for spacing
+            }
+            
+            // Artist section
+            Section(header: Text("Artist").padding(.leading, -15)) {
+                // Find the artist in the music library
+                if let artist = musicLibrary.artists.first(where: { $0.name == album.artist }) {
+                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                        ArtistRow(artist: artist)
+                    }
+                } else {
+                    // Fallback if artist is not found
+                    HStack(spacing: AppStyles.smallPadding) {
+                        ZStack {
+                            Circle()
+                                .fill(AppStyles.secondaryColor)
+                                .frame(width: 50, height: 50)
+                            
+                            Image(systemName: "music.mic")
+                                .font(.system(size: 24))
+                                .foregroundColor(.primary)
+                        }
+                        
+                        Text(album.artist)
+                            .font(AppStyles.bodyStyle)
+                            .lineLimit(1)
+                    }
                 }
             }
             
-            // Additional album statistics section
+            // Songs section
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                ForEach(album.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        SongRow(song: song)
+                    }
+                }
+            }
+            
+            // Album Statistics section at the bottom
             Section(header: Text("Album Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "calendar", title: "Released", value: releaseYear())
                 metadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
                 metadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
                 metadataRow(icon: "plus.circle", title: "Added", value: formatDate(dateAdded()))
-                
-                if let song = album.songs.first, let albumArtist = song.albumArtist {
-                    metadataRow(icon: "person", title: "Album Artist", value: albumArtist)
-                }
                 
                 if let song = album.songs.first, let composer = song.composer, !composer.isEmpty {
                     metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)

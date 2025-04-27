@@ -31,6 +31,7 @@ struct ArtistsView: View {
 }
 
 struct ArtistDetailView: View {
+    @EnvironmentObject var musicLibrary: MusicLibraryModel
     let artist: ArtistData
     
     // Helper function to format date
@@ -94,9 +95,45 @@ struct ArtistDetailView: View {
         return (dates.min(), dates.max())
     }
     
+    // Helper to calculate days between dates
+    private func datesBetween(_ startDate: Date?, _ endDate: Date?) -> Int {
+        guard let start = startDate, let end = endDate else { return 0 }
+        return Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
+    }
+    
+    // Get album data for display
+    private func albumData() -> [AlbumInfo] {
+        // Group songs by album
+        let songsByAlbum = Dictionary(grouping: artist.songs) { song in
+            song.albumTitle ?? "Unknown"
+        }
+        
+        // Convert to array of AlbumInfo
+        return songsByAlbum.map { albumTitle, songs in
+            let artwork = songs.first?.artwork
+            let playCount = songs.reduce(0) { $0 + (($1.playCount ?? 0)) }
+            
+            return AlbumInfo(
+                title: albumTitle,
+                artwork: artwork,
+                songCount: songs.count,
+                playCount: playCount
+            )
+        }.sorted { $0.playCount > $1.playCount }
+    }
+    
+    // Simple struct to hold album info for display
+    private struct AlbumInfo: Identifiable {
+        var id: String { title }
+        let title: String
+        let artwork: MPMediaItemArtwork?
+        let songCount: Int
+        let playCount: Int
+    }
+    
     var body: some View {
         List {
-            // Artist header with metadata
+            // Artist header section
             Section(header: DetailHeaderView(
                 title: artist.name,
                 subtitle: "",
@@ -106,13 +143,33 @@ struct ArtistDetailView: View {
                 isAlbum: false,
                 metadata: []
             )) {
-                // Songs list sorted by play count
+                // Empty section content for spacing
+            }
+            
+            // Songs section
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                // Songs list sorted by play count with navigation
                 ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
-                    SongRow(song: song)
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        SongRow(song: song)
+                    }
                 }
             }
             
-            // Additional artist statistics section
+            // Albums section
+            Section(header: Text("Albums").padding(.leading, -15)) {
+                ForEach(albumData()) { album in
+                    if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
+                        NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
+                            albumRow(album: album)
+                        }
+                    } else {
+                        albumRow(album: album)
+                    }
+                }
+            }
+            
+            // Artist Statistics section at the bottom
             Section(header: Text("Artist Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
@@ -137,77 +194,42 @@ struct ArtistDetailView: View {
                 metadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
                            value: "\(datesBetween(dateRange().first, dateRange().last)) days")
             }
-            
-            // Albums by this artist
-            Section(header: Text("Albums")
-                .padding(.leading, -15)) {
-                // Group songs by album and show album rows
-                ForEach(albumsByPlayCount(), id: \.title) { album in
-                    HStack {
-                        if let artwork = album.artwork {
-                            Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "square.stack")!)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 50, height: 50)
-                                .cornerRadius(AppStyles.cornerRadius)
-                        } else {
-                            Image(systemName: "square.stack")
-                                .frame(width: 50, height: 50)
-                                .background(AppStyles.secondaryColor)
-                                .cornerRadius(AppStyles.cornerRadius)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text(album.title)
-                                .font(AppStyles.bodyStyle)
-                            
-                            Text("\(album.songCount) songs")
-                                .font(AppStyles.captionStyle)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Text("\(album.playCount) plays")
-                            .font(AppStyles.playCountStyle)
-                            .foregroundColor(AppStyles.accentColor)
-                    }
-                }
-            }
         }
         .navigationTitle(artist.name)
         .navigationBarTitleDisplayMode(.inline)
     }
     
-    // Helper to calculate days between dates
-    private func datesBetween(_ startDate: Date?, _ endDate: Date?) -> Int {
-        guard let start = startDate, let end = endDate else { return 0 }
-        return Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
-    }
-    
-    // Helper to get albums by play count
-    private func albumsByPlayCount() -> [(title: String, artwork: MPMediaItemArtwork?, songCount: Int, playCount: Int)] {
-        var albumsData: [String: (artwork: MPMediaItemArtwork?, songs: [MPMediaItem], playCount: Int)] = [:]
-        
-        // Group songs by album
-        for song in artist.songs {
-            if let albumTitle = song.albumTitle {
-                if var album = albumsData[albumTitle] {
-                    album.songs.append(song)
-                    album.playCount += (song.playCount ?? 0)
-                    albumsData[albumTitle] = album
-                } else {
-                    albumsData[albumTitle] = (song.artwork, [song], song.playCount ?? 0)
-                }
+    // Row for an album in the albums list
+    private func albumRow(album: AlbumInfo) -> some View {
+        HStack {
+            if let artwork = album.artwork {
+                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "square.stack")!)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 50, height: 50)
+                    .cornerRadius(AppStyles.cornerRadius)
+            } else {
+                Image(systemName: "square.stack")
+                    .frame(width: 50, height: 50)
+                    .background(AppStyles.secondaryColor)
+                    .cornerRadius(AppStyles.cornerRadius)
             }
+            
+            VStack(alignment: .leading) {
+                Text(album.title)
+                    .font(AppStyles.bodyStyle)
+                
+                Text("\(album.songCount) songs")
+                    .font(AppStyles.captionStyle)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Text("\(album.playCount) plays")
+                .font(AppStyles.playCountStyle)
+                .foregroundColor(AppStyles.accentColor)
         }
-        
-        // Convert to sorted array
-        return albumsData.map { (title: $0.key,
-                                 artwork: $0.value.artwork,
-                                 songCount: $0.value.songs.count,
-                                 playCount: $0.value.playCount) }
-            .sorted { $0.playCount > $1.playCount }
     }
     
     private func metadataRow(icon: String, title: String, value: String) -> some View {
