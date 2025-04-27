@@ -24,10 +24,3 @@ struct ArtistData: Identifiable {
     var songs: [MPMediaItem]
     var totalPlayCount: Int
 }
-
-struct TopItem {
-    let title: String
-    let subtitle: String
-    let plays: Int
-    let artwork: MPMediaItemArtwork?
-}

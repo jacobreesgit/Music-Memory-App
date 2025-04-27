@@ -15,9 +15,9 @@ struct ArtistsView: View {
     var body: some View {
         NavigationView {
             if musicLibrary.isLoading {
-                ProgressView("Loading artists...")
+                LoadingView(message: "Loading artists...")
             } else if !musicLibrary.hasAccess {
-                Text("Please grant music library access")
+                LibraryAccessView()
             } else {
                 List(musicLibrary.artists) { artist in
                     NavigationLink(destination: ArtistDetailView(artist: artist)) {
@@ -35,12 +35,20 @@ struct ArtistDetailView: View {
     
     var body: some View {
         List {
-            Section(header: Text("Total Plays: \(artist.totalPlayCount)").font(.headline)) {
+            Section(header: DetailHeaderView(
+                title: artist.name,
+                subtitle: "",
+                plays: artist.totalPlayCount,
+                songCount: artist.songs.count,
+                artwork: nil,
+                isAlbum: false
+            )) {
                 ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
                     SongRow(song: song)
                 }
             }
         }
         .navigationTitle(artist.name)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

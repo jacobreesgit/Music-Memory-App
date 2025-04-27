@@ -32,6 +32,6 @@ struct ContentView: View {
                     Label("Artists", systemImage: "music.mic")
                 }
         }
-        .accentColor(.purple)
+        .accentColor(AppStyles.accentColor)
     }
 }

@@ -15,9 +15,9 @@ struct SongsView: View {
     var body: some View {
         NavigationView {
             if musicLibrary.isLoading {
-                ProgressView("Loading songs...")
+                LoadingView(message: "Loading songs...")
             } else if !musicLibrary.hasAccess {
-                Text("Please grant music library access")
+                LibraryAccessView()
             } else {
                 List {
                     ForEach(musicLibrary.songs, id: \.persistentID) { song in
