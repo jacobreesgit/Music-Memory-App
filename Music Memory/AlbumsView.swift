@@ -104,7 +104,8 @@ struct AlbumDetailView: View {
             }
             
             // Additional album statistics section
-            Section(header: Text("Album Statistics")) {
+            Section(header: Text("Album Statistics")
+                .padding(.leading, -15)) {
                 metadataRow(icon: "calendar", title: "Released", value: releaseYear())
                 metadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
                 metadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
@@ -146,6 +147,7 @@ struct AlbumDetailView: View {
             
             Text(value)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }

@@ -62,33 +62,36 @@ struct SongDetailView: View {
                 isAlbum: false,
                 metadata: []
             )) {
-                // Song Statistics section
-                Section(header: Text("Song Statistics")) {
-                    metadataRow(icon: "square.stack", title: "Album", value: song.albumTitle ?? "Unknown")
-                    metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
-                    metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
-                    metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
-                    metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
-                    metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
-                    
-                    if let composer = song.composer, !composer.isEmpty {
-                        metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
-                    }
-                    
-                    let trackNumber = song.albumTrackNumber
-                    if trackNumber > 0 {
-                        metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
-                    }
-                    
-                    let discNumber = song.discNumber
-                    if discNumber > 0 {
-                        metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
-                    }
-                    
-                    let bpm = song.beatsPerMinute
-                    if bpm > 0 {
-                        metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
-                    }
+                // Empty section content to match album/artist view structure
+            }
+            
+            // Song Statistics section as a separate top-level section
+            Section(header: Text("Song Statistics")
+                .padding(.leading, -15)) {
+                metadataRow(icon: "square.stack", title: "Album", value: song.albumTitle ?? "Unknown")
+                metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
+                metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
+                metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
+                metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
+                metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
+                
+                if let composer = song.composer, !composer.isEmpty {
+                    metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
+                }
+                
+                let trackNumber = song.albumTrackNumber
+                if trackNumber > 0 {
+                    metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
+                }
+                
+                let discNumber = song.discNumber
+                if discNumber > 0 {
+                    metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
+                }
+                
+                let bpm = song.beatsPerMinute
+                if bpm > 0 {
+                    metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
                 }
             }
         }
@@ -109,6 +112,7 @@ struct SongDetailView: View {
             
             Text(value)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }

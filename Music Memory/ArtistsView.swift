@@ -113,7 +113,8 @@ struct ArtistDetailView: View {
             }
             
             // Additional artist statistics section
-            Section(header: Text("Artist Statistics")) {
+            Section(header: Text("Artist Statistics")
+                .padding(.leading, -15)) {
                 metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
                 metadataRow(icon: "music.note.list", title: "Genres", value: topGenres().joined(separator: ", "))
                 metadataRow(icon: "clock", title: "Total Time", value: totalDuration())
@@ -138,7 +139,8 @@ struct ArtistDetailView: View {
             }
             
             // Albums by this artist
-            Section(header: Text("Albums")) {
+            Section(header: Text("Albums")
+                .padding(.leading, -15)) {
                 // Group songs by album and show album rows
                 ForEach(albumsByPlayCount(), id: \.title) { album in
                     HStack {
@@ -221,6 +223,7 @@ struct ArtistDetailView: View {
             
             Text(value)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }
