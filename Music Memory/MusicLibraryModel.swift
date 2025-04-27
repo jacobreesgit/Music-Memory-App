@@ -1,3 +1,11 @@
+//
+//  MusicLibraryModel.swift
+//  Music Memory
+//
+//  Created by Jacob Rees on 27/04/2025.
+//
+
+
 import SwiftUI
 import MediaPlayer
 

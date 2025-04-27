@@ -1,5 +1,5 @@
 //
-//  AlbumData.swift
+//  Structures.swift
 //  Music Memory
 //
 //  Created by Jacob Rees on 27/04/2025.
