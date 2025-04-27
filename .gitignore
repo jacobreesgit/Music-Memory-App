@@ -1,0 +1,33 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+## User settings
+xcuserdata/
+
+## App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Obj-C/Swift specific
+*.hmap
+
+## App builds
+build/
+DerivedData/
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+
+# CocoaPods
+Pods/
+
+# Assets you want to ignore
+Music Memory/Assets.xcassets/
+# Or specific assets:
+# Music Memory/Assets.xcassets/specific-asset.imageset/
