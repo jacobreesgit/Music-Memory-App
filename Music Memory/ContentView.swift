@@ -7,12 +7,14 @@
 
 import SwiftUI
 import UIKit
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var selectedTab = 0
     @State private var navigationState = [0: false, 1: false, 2: false, 3: false]
     @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID()]
+    @State private var isKeyboardVisible = false
     
     // Optional badge counts for tabs
     let badgeCounts: [Int: Int] = [:] // e.g. [2: 3] would show a badge with "3" on the Albums tab
@@ -73,68 +75,78 @@ struct ContentView: View {
                 .tag(3)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .padding(.bottom, 56)
+            .padding(.bottom, isKeyboardVisible ? 0 : 56)
             
-            // Custom footer
-            VStack(spacing: 0) {
-                Divider()
-                
-                HStack(spacing: 0) {
-                    ForEach(0..<4) { index in
-                        Button(action: {
-                            // Haptic feedback
-                            feedbackGenerator.impactOccurred()
-                            
-                            if selectedTab == index {
-                                if navigationState[index] == true {
-                                    // In detail view - do nothing, let NavigationViewWithState handle it
-                                } else {
-                                    // In root view - scroll to top
-                                    scrollIDs[index] = UUID()
-                                }
-                            }
-                            selectedTab = index
-                        }) {
-                            Spacer()
-                            VStack(spacing: 6) {
-                                ZStack(alignment: .topTrailing) {
-                                    Image(systemName: iconForIndex(index))
-                                        .font(.system(size: 21))
-                                        .padding(.top, 8)
-                                    
-                                    // Badge (if any)
-                                    if let count = badgeCounts[index], count > 0 {
-                                        Text("\(count)")
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .frame(minWidth: 16, minHeight: 16)
-                                            .background(Color.red)
-                                            .clipShape(Circle())
-                                            .offset(x: 10, y: -5)
+            // Custom footer - only show when keyboard is not visible
+            if !isKeyboardVisible {
+                VStack(spacing: 0) {
+                    Divider()
+                    
+                    HStack(spacing: 0) {
+                        ForEach(0..<4) { index in
+                            Button(action: {
+                                // Haptic feedback
+                                feedbackGenerator.impactOccurred()
+                                
+                                if selectedTab == index {
+                                    if navigationState[index] == true {
+                                        // In detail view - do nothing, let NavigationViewWithState handle it
+                                    } else {
+                                        // In root view - scroll to top
+                                        scrollIDs[index] = UUID()
                                     }
                                 }
-                                
-                                Text(labelForIndex(index))
-                                    .font(.caption)
-                                    .dynamicTypeSize(.small ... .large) // Dynamic text support
+                                selectedTab = index
+                            }) {
+                                Spacer()
+                                VStack(spacing: 6) {
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(systemName: iconForIndex(index))
+                                            .font(.system(size: 21))
+                                            .padding(.top, 8)
+                                        
+                                        // Badge (if any)
+                                        if let count = badgeCounts[index], count > 0 {
+                                            Text("\(count)")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .frame(minWidth: 16, minHeight: 16)
+                                                .background(Color.red)
+                                                .clipShape(Circle())
+                                                .offset(x: 10, y: -5)
+                                        }
+                                    }
+                                    
+                                    Text(labelForIndex(index))
+                                        .font(.caption)
+                                        .dynamicTypeSize(.small ... .large) // Dynamic text support
+                                }
+                                .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
+                                .frame(height: 56)
+                                .contentShape(Rectangle()) // Improve tap area
+                                // Visual feedback on press
+                                .scaleEffect(selectedTab == index ? 1.0 : 0.97)
+                                .animation(.easeInOut(duration: 0.1), value: selectedTab)
+                                Spacer()
                             }
-                            .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
-                            .frame(height: 56)
-                            .contentShape(Rectangle()) // Improve tap area
-                            // Visual feedback on press
-                            .scaleEffect(selectedTab == index ? 1.0 : 0.97)
-                            .animation(.easeInOut(duration: 0.1), value: selectedTab)
-                            Spacer()
+                            .frame(maxWidth: .infinity)
+                            .accessibilityLabel("\(labelForIndex(index)) Tab")
+                            .accessibilityHint(selectedTab == index ? "Selected" : "")
+                            .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
                         }
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("\(labelForIndex(index)) Tab")
-                        .accessibilityHint(selectedTab == index ? "Selected" : "")
-                        .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
                     }
+                    .background(Color(UIColor.systemBackground))
                 }
-                .background(Color(UIColor.systemBackground))
+                .edgesIgnoringSafeArea(.bottom)
+                .transition(.move(edge: .bottom))
+                .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
             }
-            .edgesIgnoringSafeArea(.bottom)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
     }
     
