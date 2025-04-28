@@ -19,22 +19,15 @@ struct DashboardView: View {
             LibraryAccessView()
         } else {
             ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Invisible anchor for scrolling to top with zero height
-                        Text("")
-                            .id("top")
-                            .frame(height: 0)
-                            .padding(0)
-                            .opacity(0)
-                        
-                        // Main title header
-                        Text("Your Music Overview")
-                            .font(AppStyles.titleStyle)
-                            .padding(.horizontal)
-                            .padding(.top, 20)
-                            .padding(.bottom, 15)
-                        
+                VStack(alignment: .leading, spacing: 0) {
+                    // Invisible anchor for scrolling to top with zero height
+                    Text("")
+                        .id("top")
+                        .frame(height: 0)
+                        .padding(0)
+                        .opacity(0)
+                    
+                    ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
                             // Top Songs
                             Text("Top Songs")
@@ -89,11 +82,12 @@ struct DashboardView: View {
                         }
                         .padding(.bottom, 20)
                     }
+                    .id(refreshID)
                 }
-                .id(refreshID)
                 .onAppear {
                     proxy.scrollTo("top", anchor: .top)
                 }
+                .navigationTitle("Dashboard")
             }
         }
     }
