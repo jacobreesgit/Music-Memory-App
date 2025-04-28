@@ -21,16 +21,6 @@ struct ArtistsView: View {
         } else {
             ScrollViewReader { proxy in
                 VStack(alignment: .leading, spacing: 0) {
-                    // Main title header - matches dashboard styling
-                    Text("Artists by Plays")
-                        .font(AppStyles.titleStyle)
-                        .padding(.horizontal)
-                        .padding(.top, 20)
-                        .padding(.bottom, 15)
-                    
-                    // Divider to match the screenshot
-                    Divider()
-                    
                     List {
                         // Invisible anchor for scrolling to top with zero height
                         Text("")
