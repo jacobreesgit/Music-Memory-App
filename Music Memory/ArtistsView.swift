@@ -45,6 +45,7 @@ struct ArtistsView: View {
                             NavigationLink(destination: ArtistDetailView(artist: artist)) {
                                 ArtistRow(artist: artist)
                             }
+                            .listRowSeparator(.hidden)
                         }
                     }
                     .id(refreshID)

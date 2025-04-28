@@ -45,6 +45,7 @@ struct AlbumsView: View {
                             NavigationLink(destination: AlbumDetailView(album: album)) {
                                 AlbumRow(album: album)
                             }
+                            .listRowSeparator(.hidden)
                         }
                     }
                     .id(refreshID)

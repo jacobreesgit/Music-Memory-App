@@ -45,6 +45,7 @@ struct SongsView: View {
                             NavigationLink(destination: SongDetailView(song: song)) {
                                 SongRow(song: song)
                             }
+                            .listRowSeparator(.hidden)
                         }
                     }
                     .id(refreshID)
