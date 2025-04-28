@@ -139,6 +139,7 @@ struct AlbumDetailView: View {
                     NavigationLink(destination: ArtistDetailView(artist: artist)) {
                         ArtistRow(artist: artist)
                     }
+                    .listRowSeparator(.hidden)
                 } else {
                     // Fallback if artist is not found
                     HStack(spacing: AppStyles.smallPadding) {
@@ -156,6 +157,7 @@ struct AlbumDetailView: View {
                             .font(AppStyles.bodyStyle)
                             .lineLimit(1)
                     }
+                    .listRowSeparator(.hidden)
                 }
             }
             
@@ -165,6 +167,7 @@ struct AlbumDetailView: View {
                     NavigationLink(destination: SongDetailView(song: song)) {
                         SongRow(song: song)
                     }
+                    .listRowSeparator(.hidden)
                 }
             }
             
@@ -172,23 +175,30 @@ struct AlbumDetailView: View {
             Section(header: Text("Album Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "calendar", title: "Released", value: releaseYear())
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "plus.circle", title: "Added", value: formatDate(dateAdded()))
+                    .listRowSeparator(.hidden)
                 
                 if let song = album.songs.first, let composer = song.composer, !composer.isEmpty {
                     metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
+                        .listRowSeparator(.hidden)
                 }
                 
                 // Get number of discs in album
                 let discs = Set(album.songs.compactMap { $0.discNumber }).count
                 if discs > 1 {
                     metadataRow(icon: "opticaldisc", title: "Discs", value: "\(discs)")
+                        .listRowSeparator(.hidden)
                 }
                 
                 // Average play count per song
                 let avgPlays = album.totalPlayCount / max(1, album.songs.count)
                 metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
+                    .listRowSeparator(.hidden)
             }
         }
         .navigationTitle(album.title)

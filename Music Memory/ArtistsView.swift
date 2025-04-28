@@ -182,6 +182,7 @@ struct ArtistDetailView: View {
                     NavigationLink(destination: SongDetailView(song: song)) {
                         SongRow(song: song)
                     }
+                    .listRowSeparator(.hidden)
                 }
             }
             
@@ -192,8 +193,10 @@ struct ArtistDetailView: View {
                         NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
                             albumRow(album: album)
                         }
+                        .listRowSeparator(.hidden)
                     } else {
                         albumRow(album: album)
+                            .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -202,26 +205,35 @@ struct ArtistDetailView: View {
             Section(header: Text("Artist Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "music.note.list", title: "Genres", value: topGenres().joined(separator: ", "))
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "clock", title: "Total Time", value: totalDuration())
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "plus.circle", title: "First Added", value: formatDate(dateRange().first))
+                    .listRowSeparator(.hidden)
                 
                 let topAlbum = mostPlayedAlbum()
                 metadataRow(icon: "star", title: "Top Album", value: topAlbum.title)
+                    .listRowSeparator(.hidden)
                 metadataRow(icon: "music.note.tv", title: "Album Plays", value: "\(topAlbum.playCount)")
+                    .listRowSeparator(.hidden)
                 
                 // Average plays per song
                 let avgPlays = artist.totalPlayCount / max(1, artist.songs.count)
                 metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
+                    .listRowSeparator(.hidden)
                 
                 // Most recent addition
                 if let lastAdded = dateRange().last {
                     metadataRow(icon: "calendar", title: "Last Added", value: formatDate(lastAdded))
+                        .listRowSeparator(.hidden)
                 }
                 
                 // Listening streak (if we had the data)
                 metadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
                            value: "\(datesBetween(dateRange().first, dateRange().last)) days")
+                    .listRowSeparator(.hidden)
             }
         }
         .navigationTitle(artist.name)
