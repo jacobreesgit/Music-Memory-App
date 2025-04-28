@@ -45,9 +45,11 @@ struct TopItemsView<T, DestinationView: View>: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text(title)
-                .font(AppStyles.headlineStyle)
-                .padding(.horizontal)
+            if !title.isEmpty {
+                Text(title)
+                    .font(AppStyles.headlineStyle)
+                    .padding(.horizontal)
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {

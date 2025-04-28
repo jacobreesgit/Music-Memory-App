@@ -11,20 +11,48 @@ import MediaPlayer
 
 struct AlbumsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @State private var refreshID = UUID()
     
     var body: some View {
-        NavigationView {
-            if musicLibrary.isLoading {
-                LoadingView(message: "Loading albums...")
-            } else if !musicLibrary.hasAccess {
-                LibraryAccessView()
-            } else {
-                List(musicLibrary.albums) { album in
-                    NavigationLink(destination: AlbumDetailView(album: album)) {
-                        AlbumRow(album: album)
+        if musicLibrary.isLoading {
+            LoadingView(message: "Loading albums...")
+        } else if !musicLibrary.hasAccess {
+            LibraryAccessView()
+        } else {
+            ScrollViewReader { proxy in
+                VStack(alignment: .leading, spacing: 0) {
+                    // Main title header - matches dashboard styling
+                    Text("Albums by Plays")
+                        .font(AppStyles.titleStyle)
+                        .padding(.horizontal)
+                        .padding(.top, 20)
+                        .padding(.bottom, 15)
+                    
+                    // Divider to match the screenshot
+                    Divider()
+                    
+                    List {
+                        // Invisible anchor for scrolling to top with zero height
+                        Text("")
+                            .id("top")
+                            .frame(height: 0)
+                            .padding(0)
+                            .opacity(0)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                        
+                        ForEach(musicLibrary.albums) { album in
+                            NavigationLink(destination: AlbumDetailView(album: album)) {
+                                AlbumRow(album: album)
+                            }
+                        }
                     }
+                    .id(refreshID)
+                    .listStyle(PlainListStyle())
                 }
-                .navigationTitle("Albums by Plays")
+                .onAppear {
+                    proxy.scrollTo("top", anchor: .top)
+                }
             }
         }
     }

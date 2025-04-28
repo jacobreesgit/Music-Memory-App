@@ -9,16 +9,21 @@
 import SwiftUI
 import MediaPlayer
 
-struct AlbumData: Identifiable {
+struct AlbumData: Identifiable, Equatable {
     let id: String
     let title: String
     let artist: String
     let artwork: MPMediaItemArtwork?
     var songs: [MPMediaItem]
     var totalPlayCount: Int
+    
+    // Implement Equatable
+    static func == (lhs: AlbumData, rhs: AlbumData) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
-struct ArtistData: Identifiable {
+struct ArtistData: Identifiable, Equatable {
     var id: String { name }
     let name: String
     var songs: [MPMediaItem]
@@ -28,5 +33,10 @@ struct ArtistData: Identifiable {
     var artwork: MPMediaItemArtwork? {
         return songs.sorted(by: { ($0.playCount ?? 0) > ($1.playCount ?? 0) })
                     .first(where: { $0.artwork != nil })?.artwork
+    }
+    
+    // Implement Equatable
+    static func == (lhs: ArtistData, rhs: ArtistData) -> Bool {
+        return lhs.name == rhs.name
     }
 }

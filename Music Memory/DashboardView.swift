@@ -10,59 +10,90 @@ import MediaPlayer
 
 struct DashboardView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @State private var refreshID = UUID()
     
     var body: some View {
-        NavigationView {
-            if musicLibrary.isLoading {
-                LoadingView(message: "Loading your music...")
-            } else if !musicLibrary.hasAccess {
-                LibraryAccessView()
-            } else {
+        if musicLibrary.isLoading {
+            LoadingView(message: "Loading your music...")
+        } else if !musicLibrary.hasAccess {
+            LibraryAccessView()
+        } else {
+            ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Invisible anchor for scrolling to top with zero height
+                        Text("")
+                            .id("top")
+                            .frame(height: 0)
+                            .padding(0)
+                            .opacity(0)
+                        
+                        // Main title header
                         Text("Your Music Overview")
                             .font(AppStyles.titleStyle)
                             .padding(.horizontal)
+                            .padding(.top, 20)
+                            .padding(.bottom, 15)
                         
-                        // Top Songs
-                        TopItemsView(
-                            title: "Top Songs",
-                            items: Array(musicLibrary.songs.prefix(5)),
-                            artwork: { $0.artwork },
-                            itemTitle: { $0.title ?? "Unknown" },
-                            itemSubtitle: { $0.artist ?? "Unknown" },
-                            itemPlays: { $0.playCount ?? 0 },
-                            iconName: { _ in "music.note" },
-                            destination: { SongDetailView(song: $0) }
-                        )
-                        
-                        // Top Albums
-                        TopItemsView(
-                            title: "Top Albums",
-                            items: Array(musicLibrary.albums.prefix(5)),
-                            artwork: { $0.artwork },
-                            itemTitle: { $0.title },
-                            itemSubtitle: { $0.artist },
-                            itemPlays: { $0.totalPlayCount },
-                            iconName: { _ in "square.stack" },
-                            destination: { AlbumDetailView(album: $0) }
-                        )
-                        
-                        // Top Artists
-                        TopItemsView(
-                            title: "Top Artists",
-                            items: Array(musicLibrary.artists.prefix(5)),
-                            artwork: { $0.artwork }, // Use the artist artwork
-                            itemTitle: { $0.name },
-                            itemSubtitle: { "\($0.songs.count) songs" },
-                            itemPlays: { $0.totalPlayCount },
-                            iconName: { _ in "music.mic" },
-                            destination: { ArtistDetailView(artist: $0) }
-                        )
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Top Songs
+                            Text("Top Songs")
+                                .font(AppStyles.headlineStyle)
+                                .padding(.horizontal)
+                                .padding(.top, 5)
+                            
+                            TopItemsView(
+                                title: "",
+                                items: Array(musicLibrary.songs.prefix(5)),
+                                artwork: { $0.artwork },
+                                itemTitle: { $0.title ?? "Unknown" },
+                                itemSubtitle: { $0.artist ?? "Unknown" },
+                                itemPlays: { $0.playCount ?? 0 },
+                                iconName: { _ in "music.note" },
+                                destination: { SongDetailView(song: $0) }
+                            )
+                            
+                            // Top Albums
+                            Text("Top Albums")
+                                .font(AppStyles.headlineStyle)
+                                .padding(.horizontal)
+                                .padding(.top, 5)
+                            
+                            TopItemsView(
+                                title: "",
+                                items: Array(musicLibrary.albums.prefix(5)),
+                                artwork: { $0.artwork },
+                                itemTitle: { $0.title },
+                                itemSubtitle: { $0.artist },
+                                itemPlays: { $0.totalPlayCount },
+                                iconName: { _ in "square.stack" },
+                                destination: { AlbumDetailView(album: $0) }
+                            )
+                            
+                            // Top Artists
+                            Text("Top Artists")
+                                .font(AppStyles.headlineStyle)
+                                .padding(.horizontal)
+                                .padding(.top, 5)
+                            
+                            TopItemsView(
+                                title: "",
+                                items: Array(musicLibrary.artists.prefix(5)),
+                                artwork: { $0.artwork },
+                                itemTitle: { $0.name },
+                                itemSubtitle: { "\($0.songs.count) songs" },
+                                itemPlays: { $0.totalPlayCount },
+                                iconName: { _ in "music.mic" },
+                                destination: { ArtistDetailView(artist: $0) }
+                            )
+                        }
+                        .padding(.bottom, 20)
                     }
-                    .padding(.vertical)
                 }
-                .navigationTitle("Dashboard")
+                .id(refreshID)
+                .onAppear {
+                    proxy.scrollTo("top", anchor: .top)
+                }
             }
         }
     }
