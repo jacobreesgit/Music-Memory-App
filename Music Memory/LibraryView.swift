@@ -10,7 +10,12 @@ import MediaPlayer
 
 struct LibraryView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
-    @State private var selectedTab = 0
+    @Binding var selectedTab: Int
+    
+    // Initialize with a default value for previews and a binding for real usage
+    init(selectedTab: Binding<Int>? = nil) {
+        self._selectedTab = selectedTab ?? .constant(0)
+    }
     
     var body: some View {
         if musicLibrary.isLoading {

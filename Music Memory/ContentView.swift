@@ -16,6 +16,9 @@ struct ContentView: View {
     @State private var scrollIDs = [0: UUID(), 1: UUID()]
     @State private var isKeyboardVisible = false
     
+    // Added to track the currently selected library tab
+    @State private var currentLibraryTab = 0
+    
     // Optional badge counts for tabs
     let badgeCounts: [Int: Int] = [:] // e.g. [1: 3] would show a badge with "3" on the Library tab
     
@@ -26,6 +29,14 @@ struct ContentView: View {
         return Binding(
             get: { self.navigationState[key] ?? false },
             set: { self.navigationState[key] = $0 }
+        )
+    }
+    
+    // Binding for the current library tab
+    private var libraryTabBinding: Binding<Int> {
+        Binding(
+            get: { self.currentLibraryTab },
+            set: { self.currentLibraryTab = $0 }
         )
     }
     
@@ -54,7 +65,7 @@ struct ContentView: View {
                 .tag(0)
                 
                 NavigationViewWithState(
-                    rootView: LibraryView().id(scrollIDs[1]),
+                    rootView: LibraryView(selectedTab: libraryTabBinding).id(scrollIDs[1]),
                     inDetailView: bindingFor(key: 1),
                     scrollToTopAction: { scrollIDs[1] = UUID() }
                 )

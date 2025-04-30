@@ -29,9 +29,11 @@ struct DashboardView: View {
                     
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
-                            // Top Songs
+                            // Top Songs - Updated heading style to match Library tabs
                             Text("Top Songs")
-                                .font(AppStyles.headlineStyle)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppStyles.accentColor)
                                 .padding(.horizontal)
                                 .padding(.top, 5)
                             
@@ -46,9 +48,11 @@ struct DashboardView: View {
                                 destination: { SongDetailView(song: $0) }
                             )
                             
-                            // Top Albums
+                            // Top Albums - Updated heading style to match Library tabs
                             Text("Top Albums")
-                                .font(AppStyles.headlineStyle)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppStyles.accentColor)
                                 .padding(.horizontal)
                                 .padding(.top, 5)
                             
@@ -63,9 +67,11 @@ struct DashboardView: View {
                                 destination: { AlbumDetailView(album: $0) }
                             )
                             
-                            // Top Artists
+                            // Top Artists - Updated heading style to match Library tabs
                             Text("Top Artists")
-                                .font(AppStyles.headlineStyle)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppStyles.accentColor)
                                 .padding(.horizontal)
                                 .padding(.top, 5)
                             
@@ -80,10 +86,12 @@ struct DashboardView: View {
                                 destination: { ArtistDetailView(artist: $0) }
                             )
                             
-                            // Top Playlist
+                            // Top Playlist - Updated heading style to match Library tabs
                             if !musicLibrary.playlists.isEmpty {
                                 Text("Top Playlists")
-                                    .font(AppStyles.headlineStyle)
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(AppStyles.accentColor)
                                     .padding(.horizontal)
                                     .padding(.top, 5)
                                 
