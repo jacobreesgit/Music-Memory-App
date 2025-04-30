@@ -5,14 +5,6 @@
 //  Created by Jacob Rees on 30/04/2025.
 //
 
-
-//
-//  GenreDetailView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 30/04/2025.
-//
-
 import SwiftUI
 import MediaPlayer
 
@@ -54,17 +46,7 @@ struct GenreDetailView: View {
                 // Empty section content for spacing
             }
             
-            // Songs section
-            Section(header: Text("Songs").padding(.leading, -15)) {
-                ForEach(genre.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
-                    NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
-                    }
-                    .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Genre Statistics section
+            // Genre Statistics section - moved above the songs section
             Section(header: Text("Genre Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "music.mic", title: "Artists", value: "\(artistCount())")
@@ -78,6 +60,16 @@ struct GenreDetailView: View {
                 let avgPlays = genre.totalPlayCount / max(1, genre.songs.count)
                 metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
                     .listRowSeparator(.hidden)
+            }
+            
+            // Songs section
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                ForEach(genre.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        SongRow(song: song)
+                    }
+                    .listRowSeparator(.hidden)
+                }
             }
         }
         .navigationTitle(genre.name)

@@ -5,14 +5,6 @@
 //  Created by Jacob Rees on 30/04/2025.
 //
 
-
-//
-//  PlaylistDetailView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 30/04/2025.
-//
-
 import SwiftUI
 import MediaPlayer
 
@@ -58,19 +50,22 @@ struct PlaylistDetailView: View {
             .map { $0.key }
     }
     
-    // Helper function to get most represented artists
-    private func topArtists(limit: Int = 3) -> [(name: String, count: Int)] {
-        var artistCounts: [String: Int] = [:]
+    // Helper function to get top artists sorted by PLAY COUNT (not song count)
+    private func topArtists(limit: Int = 3) -> [(name: String, songCount: Int, playCount: Int)] {
+        var artistSongCounts: [String: Int] = [:]
+        var artistPlayCounts: [String: Int] = [:]
         
         for song in playlist.songs {
             if let artist = song.artist, !artist.isEmpty {
-                artistCounts[artist, default: 0] += 1
+                artistSongCounts[artist, default: 0] += 1
+                artistPlayCounts[artist, default: 0] += (song.playCount ?? 0)
             }
         }
         
-        return artistCounts.sorted { $0.value > $1.value }
+        // Return top artists sorted by play count
+        return artistPlayCounts.sorted { $0.value > $1.value }
             .prefix(limit)
-            .map { ($0.key, $0.value) }
+            .map { ($0.key, artistSongCounts[$0.key, default: 0], $0.value) }
     }
     
     // Helper function to get unique albums count
@@ -99,57 +94,7 @@ struct PlaylistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // Artists section - top 3 artists in the playlist
-            Section(header: Text("Top Artists").padding(.leading, -15)) {
-                ForEach(topArtists(), id: \.name) { artist, count in
-                    if let artistData = musicLibrary.artists.first(where: { $0.name == artist }) {
-                        NavigationLink(destination: ArtistDetailView(artist: artistData)) {
-                            HStack {
-                                ArtistRow(artist: artistData)
-                                
-                                Text("\(count) songs")
-                                    .font(AppStyles.captionStyle)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    } else {
-                        HStack {
-                            ZStack {
-                                Circle()
-                                    .fill(AppStyles.secondaryColor)
-                                    .frame(width: 50, height: 50)
-                                
-                                Image(systemName: "music.mic")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                            }
-                            
-                            VStack(alignment: .leading) {
-                                Text(artist)
-                                    .font(AppStyles.bodyStyle)
-                                
-                                Text("\(count) songs in playlist")
-                                    .font(AppStyles.captionStyle)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                }
-            }
-            
-            // Songs section
-            Section(header: Text("Songs").padding(.leading, -15)) {
-                ForEach(playlist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
-                    NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
-                    }
-                    .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Playlist Statistics section
+            // Playlist Statistics section - moved above the content sections
             Section(header: Text("Playlist Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "square.stack", title: "Albums", value: "\(uniqueAlbums())")
@@ -171,6 +116,70 @@ struct PlaylistDetailView: View {
                 let avgPlays = playlist.totalPlayCount / max(1, playlist.songs.count)
                 metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
                     .listRowSeparator(.hidden)
+            }
+            
+            // Artists section - top 3 artists in the playlist, sorted by PLAY COUNT
+            Section(header: Text("Top Artists").padding(.leading, -15)) {
+                ForEach(topArtists(), id: \.name) { artist, songCount, playCount in
+                    if let artistData = musicLibrary.artists.first(where: { $0.name == artist }) {
+                        NavigationLink(destination: ArtistDetailView(artist: artistData)) {
+                            HStack {
+                                ArtistRow(artist: artistData)
+                                
+                                Spacer()
+                                
+                                VStack(alignment: .trailing) {
+                                    Text("\(playCount) plays")
+                                        .font(AppStyles.playCountStyle)
+                                        .foregroundColor(AppStyles.accentColor)
+                                    
+                                    Text("\(songCount) songs")
+                                        .font(AppStyles.captionStyle)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .listRowSeparator(.hidden)
+                    } else {
+                        HStack {
+                            ZStack {
+                                Circle()
+                                    .fill(AppStyles.secondaryColor)
+                                    .frame(width: 50, height: 50)
+                                
+                                Image(systemName: "music.mic")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            VStack(alignment: .leading) {
+                                Text(artist)
+                                    .font(AppStyles.bodyStyle)
+                                
+                                Text("\(songCount) songs in playlist")
+                                    .font(AppStyles.captionStyle)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("\(playCount) plays")
+                                .font(AppStyles.playCountStyle)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                }
+            }
+            
+            // Songs section
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                ForEach(playlist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        SongRow(song: song)
+                    }
+                    .listRowSeparator(.hidden)
+                }
             }
         }
         .navigationTitle(playlist.name)

@@ -5,14 +5,6 @@
 //  Created by Jacob Rees on 28/04/2025.
 //
 
-
-//
-//  ArtistDetailView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 28/04/2025.
-//
-
 import SwiftUI
 import MediaPlayer
 
@@ -132,33 +124,7 @@ struct ArtistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // Songs section
-            Section(header: Text("Songs").padding(.leading, -15)) {
-                // Songs list sorted by play count with navigation
-                ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
-                    NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
-                    }
-                    .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Albums section
-            Section(header: Text("Albums").padding(.leading, -15)) {
-                ForEach(albumData()) { album in
-                    if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
-                        NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
-                            albumRow(album: album)
-                        }
-                        .listRowSeparator(.hidden)
-                    } else {
-                        albumRow(album: album)
-                            .listRowSeparator(.hidden)
-                    }
-                }
-            }
-            
-            // Artist Statistics section at the bottom
+            // Artist Statistics section - moved above the content sections
             Section(header: Text("Artist Statistics")
                 .padding(.leading, -15)) {
                 metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
@@ -191,6 +157,32 @@ struct ArtistDetailView: View {
                 metadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
                            value: "\(datesBetween(dateRange().first, dateRange().last)) days")
                     .listRowSeparator(.hidden)
+            }
+            
+            // Songs section
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                // Songs list sorted by play count with navigation
+                ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        SongRow(song: song)
+                    }
+                    .listRowSeparator(.hidden)
+                }
+            }
+            
+            // Albums section
+            Section(header: Text("Albums").padding(.leading, -15)) {
+                ForEach(albumData()) { album in
+                    if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
+                        NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
+                            albumRow(album: album)
+                        }
+                        .listRowSeparator(.hidden)
+                    } else {
+                        albumRow(album: album)
+                            .listRowSeparator(.hidden)
+                    }
+                }
             }
         }
         .navigationTitle(artist.name)

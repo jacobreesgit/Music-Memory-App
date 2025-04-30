@@ -50,6 +50,44 @@ struct SongDetailView: View {
                 // Empty section content
             }
             
+            // Song Statistics section - moved above other content
+            Section(header: Text("Song Statistics")
+                .padding(.leading, -15)) {
+                metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
+                    .listRowSeparator(.hidden)
+                metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
+                    .listRowSeparator(.hidden)
+                metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
+                    .listRowSeparator(.hidden)
+                metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
+                    .listRowSeparator(.hidden)
+                metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
+                    .listRowSeparator(.hidden)
+                
+                if let composer = song.composer, !composer.isEmpty {
+                    metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
+                        .listRowSeparator(.hidden)
+                }
+                
+                let trackNumber = song.albumTrackNumber
+                if trackNumber > 0 {
+                    metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
+                        .listRowSeparator(.hidden)
+                }
+                
+                let discNumber = song.discNumber
+                if discNumber > 0 {
+                    metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
+                        .listRowSeparator(.hidden)
+                }
+                
+                let bpm = song.beatsPerMinute
+                if bpm > 0 {
+                    metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
+                        .listRowSeparator(.hidden)
+                }
+            }
+            
             // Album section
             if let albumTitle = song.albumTitle {
                 Section(header: Text("Album").padding(.leading, -15)) {
@@ -137,44 +175,6 @@ struct SongDetailView: View {
                         }
                         .listRowSeparator(.hidden)
                     }
-                }
-            }
-            
-            // Song Statistics section
-            Section(header: Text("Song Statistics")
-                .padding(.leading, -15)) {
-                metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
-                    .listRowSeparator(.hidden)
-                metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
-                    .listRowSeparator(.hidden)
-                metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
-                    .listRowSeparator(.hidden)
-                metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
-                    .listRowSeparator(.hidden)
-                metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
-                    .listRowSeparator(.hidden)
-                
-                if let composer = song.composer, !composer.isEmpty {
-                    metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
-                        .listRowSeparator(.hidden)
-                }
-                
-                let trackNumber = song.albumTrackNumber
-                if trackNumber > 0 {
-                    metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
-                        .listRowSeparator(.hidden)
-                }
-                
-                let discNumber = song.discNumber
-                if discNumber > 0 {
-                    metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
-                        .listRowSeparator(.hidden)
-                }
-                
-                let bpm = song.beatsPerMinute
-                if bpm > 0 {
-                    metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
-                        .listRowSeparator(.hidden)
                 }
             }
         }
