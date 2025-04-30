@@ -14,6 +14,7 @@ class MusicLibraryModel: ObservableObject {
     @Published var albums: [AlbumData] = []
     @Published var artists: [ArtistData] = []
     @Published var genres: [GenreData] = []
+    @Published var playlists: [PlaylistData] = []
     @Published var isLoading: Bool = false
     @Published var hasAccess: Bool = false
     
@@ -119,5 +120,27 @@ class MusicLibraryModel: ObservableObject {
         }
         
         self.genres = Array(genresDict.values).sorted { $0.totalPlayCount > $1.totalPlayCount }
+        
+        // Process Playlists
+        let playlistsQuery = MPMediaQuery.playlists()
+        var playlistsArray: [PlaylistData] = []
+        
+        if let allPlaylists = playlistsQuery.collections as? [MPMediaPlaylist] {
+            for playlist in allPlaylists {
+                let playlistSongs = playlist.items
+                let totalPlayCount = playlistSongs.reduce(0) { $0 + ($1.playCount ?? 0) }
+                
+                let playlistData = PlaylistData(
+                    name: playlist.name ?? "Unknown Playlist",
+                    songs: playlistSongs,
+                    totalPlayCount: totalPlayCount,
+                    playlistID: playlist.persistentID
+                )
+                
+                playlistsArray.append(playlistData)
+            }
+        }
+        
+        self.playlists = playlistsArray.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
 }

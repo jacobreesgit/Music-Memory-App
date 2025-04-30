@@ -58,3 +58,21 @@ struct GenreData: Identifiable, Equatable {
         return lhs.name == rhs.name
     }
 }
+
+struct PlaylistData: Identifiable, Equatable {
+    var id: String { name }
+    let name: String
+    var songs: [MPMediaItem]
+    var totalPlayCount: Int
+    let playlistID: MPMediaEntityPersistentID
+    
+    // Get artwork from the first song with artwork
+    var artwork: MPMediaItemArtwork? {
+        return songs.first(where: { $0.artwork != nil })?.artwork
+    }
+    
+    // Implement Equatable
+    static func == (lhs: PlaylistData, rhs: PlaylistData) -> Bool {
+        return lhs.playlistID == rhs.playlistID
+    }
+}

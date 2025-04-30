@@ -79,6 +79,25 @@ struct DashboardView: View {
                                 iconName: { _ in "music.mic" },
                                 destination: { ArtistDetailView(artist: $0) }
                             )
+                            
+                            // Top Playlist
+                            if !musicLibrary.playlists.isEmpty {
+                                Text("Top Playlists")
+                                    .font(AppStyles.headlineStyle)
+                                    .padding(.horizontal)
+                                    .padding(.top, 5)
+                                
+                                TopItemsView(
+                                    title: "",
+                                    items: Array(musicLibrary.playlists.prefix(5)),
+                                    artwork: { $0.artwork },
+                                    itemTitle: { $0.name },
+                                    itemSubtitle: { "\($0.songs.count) songs" },
+                                    itemPlays: { $0.totalPlayCount },
+                                    iconName: { _ in "music.note.list" },
+                                    destination: { PlaylistDetailView(playlist: $0) }
+                                )
+                            }
                         }
                         .padding(.bottom, 20)
                     }

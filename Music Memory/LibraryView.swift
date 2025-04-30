@@ -21,7 +21,7 @@ struct LibraryView: View {
             VStack(spacing: 0) {
                 // Custom tab bar at the top with smooth animation similar to screenshot
                 HStack(spacing: 0) {
-                    ForEach(0..<4) { index in
+                    ForEach(0..<5) { index in
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedTab = index
@@ -41,7 +41,7 @@ struct LibraryView: View {
                 .overlay(
                     // Moving underline indicator
                     GeometryReader { geo in
-                        let tabWidth = geo.size.width / 4
+                        let tabWidth = geo.size.width / 5
                         Rectangle()
                             .fill(Color.red)
                             .frame(width: tabWidth - 20, height: 2)
@@ -70,6 +70,10 @@ struct LibraryView: View {
                     // Genres tab
                     GenresView()
                         .tag(3)
+                        
+                    // Playlists tab
+                    PlaylistsView()
+                        .tag(4)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 // Removed the animation modifier that was causing the different behavior
@@ -83,6 +87,7 @@ struct LibraryView: View {
         case 1: return "Artists"
         case 2: return "Albums"
         case 3: return "Genres"
+        case 4: return "Playlists"
         default: return ""
         }
     }

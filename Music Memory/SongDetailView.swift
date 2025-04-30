@@ -5,14 +5,6 @@
 //  Created by Jacob Rees on 28/04/2025.
 //
 
-
-//
-//  SongDetailView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 28/04/2025.
-//
-
 import SwiftUI
 import MediaPlayer
 
@@ -34,6 +26,13 @@ struct SongDetailView: View {
         let minutes = Int(timeInSeconds / 60)
         let seconds = Int(timeInSeconds.truncatingRemainder(dividingBy: 60))
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    // Helper function to find playlists containing this song
+    private func findPlaylists() -> [PlaylistData] {
+        return musicLibrary.playlists.filter { playlist in
+            playlist.songs.contains { $0.persistentID == song.persistentID }
+        }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
     var body: some View {
@@ -122,6 +121,19 @@ struct SongDetailView: View {
                             Text(artistName)
                                 .font(AppStyles.bodyStyle)
                                 .lineLimit(1)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                }
+            }
+            
+            // Playlists section if the song is in any playlists
+            let containingPlaylists = findPlaylists()
+            if !containingPlaylists.isEmpty {
+                Section(header: Text("In Playlists").padding(.leading, -15)) {
+                    ForEach(containingPlaylists) { playlist in
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                            PlaylistRow(playlist: playlist)
                         }
                         .listRowSeparator(.hidden)
                     }

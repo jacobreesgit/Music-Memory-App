@@ -5,6 +5,14 @@
 //  Created by Jacob Rees on 30/04/2025.
 //
 
+
+//
+//  PlaylistDetailView.swift
+//  Music Memory
+//
+//  Created by Jacob Rees on 30/04/2025.
+//
+
 import SwiftUI
 import MediaPlayer
 
