@@ -30,7 +30,7 @@ struct LibraryView: View {
                             VStack(spacing: 4) {
                                 Text(tabTitle(for: index))
                                     .font(.headline)
-                                    .foregroundColor(selectedTab == index ? .red : .secondary)
+                                    .foregroundColor(selectedTab == index ? AppStyles.accentColor : .secondary)
                                     .fontWeight(selectedTab == index ? .bold : .regular)
                             }
                             .frame(maxWidth: .infinity)
@@ -43,7 +43,7 @@ struct LibraryView: View {
                     GeometryReader { geo in
                         let tabWidth = geo.size.width / 5
                         Rectangle()
-                            .fill(Color.red)
+                            .fill(AppStyles.accentColor)
                             .frame(width: tabWidth - 20, height: 2)
                             .offset(x: CGFloat(selectedTab) * tabWidth + 10)
                             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
