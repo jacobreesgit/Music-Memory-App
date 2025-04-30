@@ -93,6 +93,7 @@ struct DashboardView: View {
                         }
                         .padding(.bottom, 20)
                     }
+                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                     .id(refreshID)
                 }
                 .onAppear {

@@ -94,6 +94,7 @@ struct PlaylistsView: View {
                     }
                     .id(refreshID)
                     .listStyle(PlainListStyle())
+                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
                 .onAppear {
                     proxy.scrollTo("top", anchor: .top)
