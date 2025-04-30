@@ -102,7 +102,6 @@ struct AlbumsView: View {
                 .onAppear {
                     proxy.scrollTo("top", anchor: .top)
                 }
-                .navigationTitle("Albums")
             }
         }
     }

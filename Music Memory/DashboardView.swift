@@ -87,7 +87,6 @@ struct DashboardView: View {
                 .onAppear {
                     proxy.scrollTo("top", anchor: .top)
                 }
-                .navigationTitle("Dashboard")
             }
         }
     }

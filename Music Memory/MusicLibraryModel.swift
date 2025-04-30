@@ -13,6 +13,7 @@ class MusicLibraryModel: ObservableObject {
     @Published var songs: [MPMediaItem] = []
     @Published var albums: [AlbumData] = []
     @Published var artists: [ArtistData] = []
+    @Published var genres: [GenreData] = []
     @Published var isLoading: Bool = false
     @Published var hasAccess: Bool = false
     
@@ -36,7 +37,7 @@ class MusicLibraryModel: ObservableObject {
         // Get all songs
         let songsQuery = MPMediaQuery.songs()
         if let allSongs = songsQuery.items {
-            self.songs = allSongs.sorted { 
+            self.songs = allSongs.sorted {
                 ($0.playCount ?? 0) > ($1.playCount ?? 0)
             }
         }
@@ -94,5 +95,29 @@ class MusicLibraryModel: ObservableObject {
         }
         
         self.artists = Array(artistsDict.values).sorted { $0.totalPlayCount > $1.totalPlayCount }
+        
+        // Process Genres
+        var genresDict: [String: GenreData] = [:]
+        
+        if let allSongs = songsQuery.items {
+            for song in allSongs {
+                if let genre = song.genre, !genre.isEmpty {
+                    if var genreData = genresDict[genre] {
+                        genreData.songs.append(song)
+                        genreData.totalPlayCount += (song.playCount ?? 0)
+                        genresDict[genre] = genreData
+                    } else {
+                        var genreData = GenreData(
+                            name: genre,
+                            songs: [song],
+                            totalPlayCount: song.playCount ?? 0
+                        )
+                        genresDict[genre] = genreData
+                    }
+                }
+            }
+        }
+        
+        self.genres = Array(genresDict.values).sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
 }

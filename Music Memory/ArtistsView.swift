@@ -98,7 +98,6 @@ struct ArtistsView: View {
                 .onAppear {
                     proxy.scrollTo("top", anchor: .top)
                 }
-                .navigationTitle("Artists")
             }
         }
     }
