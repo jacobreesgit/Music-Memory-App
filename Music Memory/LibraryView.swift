@@ -53,7 +53,7 @@ struct LibraryView: View {
                 )
                 .padding(.top, 8)
                 
-                // Tab content - removed the animation modifier to match the main tab behavior
+                // Tab content - added animation modifier to match main navigation
                 TabView(selection: $selectedTab) {
                     // Tracks tab
                     SongsView()
@@ -76,7 +76,7 @@ struct LibraryView: View {
                         .tag(4)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                // Removed the animation modifier that was causing the different behavior
+                .animation(.spring(response: 0.35, dampingFraction: 0.86, blendDuration: 0), value: selectedTab)
             }
         }
     }
