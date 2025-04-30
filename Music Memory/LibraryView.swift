@@ -19,32 +19,41 @@ struct LibraryView: View {
             LibraryAccessView()
         } else {
             VStack(spacing: 0) {
-                // Custom tab bar at the top
+                // Custom tab bar at the top with smooth animation similar to screenshot
                 HStack(spacing: 0) {
                     ForEach(0..<4) { index in
                         Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedTab = index
                             }
                         }) {
-                            VStack(spacing: 8) {
+                            VStack(spacing: 4) {
                                 Text(tabTitle(for: index))
                                     .font(.headline)
-                                    .foregroundColor(selectedTab == index ? .red : .primary)
-                                
-                                // Indicator line
-                                Rectangle()
-                                    .fill(selectedTab == index ? Color.red : Color.clear)
-                                    .frame(height: 2)
+                                    .foregroundColor(selectedTab == index ? .red : .secondary)
+                                    .fontWeight(selectedTab == index ? .bold : .regular)
                             }
-                            .padding(.horizontal)
+                            .frame(maxWidth: .infinity)
+                            .padding(.bottom, 8)
                         }
-                        .frame(maxWidth: .infinity)
                     }
                 }
+                .overlay(
+                    // Moving underline indicator
+                    GeometryReader { geo in
+                        let tabWidth = geo.size.width / 4
+                        Rectangle()
+                            .fill(Color.red)
+                            .frame(width: tabWidth - 20, height: 2)
+                            .offset(x: CGFloat(selectedTab) * tabWidth + 10)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+                    }
+                    .frame(height: 2)
+                    , alignment: .bottom
+                )
                 .padding(.top, 8)
                 
-                // Tab content
+                // Tab content - removed the animation modifier to match the main tab behavior
                 TabView(selection: $selectedTab) {
                     // Tracks tab
                     SongsView()
@@ -63,14 +72,14 @@ struct LibraryView: View {
                         .tag(3)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .animation(.easeInOut, value: selectedTab)
+                // Removed the animation modifier that was causing the different behavior
             }
         }
     }
     
     private func tabTitle(for index: Int) -> String {
         switch index {
-        case 0: return "Tracks"
+        case 0: return "Songs"
         case 1: return "Artists"
         case 2: return "Albums"
         case 3: return "Genres"
