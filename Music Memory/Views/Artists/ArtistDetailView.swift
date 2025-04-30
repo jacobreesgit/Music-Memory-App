@@ -21,43 +21,6 @@ struct ArtistDetailView: View {
         return formatter.string(from: date)
     }
     
-    // Helper function to get unique album count
-    private func albumCount() -> Int {
-        return Set(artist.songs.compactMap { $0.albumTitle }).count
-    }
-    
-    // Helper function to get most common genres
-    private func topGenres(limit: Int = 3) -> [String] {
-        var genreCounts: [String: Int] = [:]
-        
-        for song in artist.songs {
-            if let genre = song.genre, !genre.isEmpty {
-                genreCounts[genre, default: 0] += 1
-            }
-        }
-        
-        return genreCounts.sorted { $0.value > $1.value }
-            .prefix(limit)
-            .map { $0.key }
-    }
-    
-    // Helper function to get most played album
-    private func mostPlayedAlbum() -> (title: String, playCount: Int) {
-        var albumPlays: [String: Int] = [:]
-        
-        for song in artist.songs {
-            if let album = song.albumTitle {
-                albumPlays[album, default: 0] += (song.playCount ?? 0)
-            }
-        }
-        
-        if let topAlbum = albumPlays.max(by: { $0.value < $1.value }) {
-            return (topAlbum.key, topAlbum.value)
-        }
-        
-        return ("Unknown", 0)
-    }
-    
     // Helper function to get total duration of all songs
     private func totalDuration() -> String {
         let totalSeconds = artist.songs.reduce(0) { $0 + $1.playbackDuration }
@@ -124,37 +87,38 @@ struct ArtistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // Artist Statistics section - moved above the content sections
+            // Artist Statistics section
             Section(header: Text("Artist Statistics")
                 .padding(.leading, -15)) {
-                metadataRow(icon: "square.stack", title: "Albums", value: "\(albumCount())")
+                MetadataRow(icon: "square.stack", title: "Albums", value: "\(artist.albumCount)")
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "music.note.list", title: "Genres", value: topGenres().joined(separator: ", "))
+                MetadataRow(icon: "music.note.list", title: "Genres", value: artist.topGenres().joined(separator: ", "))
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "clock", title: "Total Time", value: totalDuration())
+                MetadataRow(icon: "clock", title: "Total Time", value: totalDuration())
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "plus.circle", title: "First Added", value: formatDate(dateRange().first))
+                MetadataRow(icon: "plus.circle", title: "First Added", value: formatDate(dateRange().first))
                     .listRowSeparator(.hidden)
                 
-                let topAlbum = mostPlayedAlbum()
-                metadataRow(icon: "star", title: "Top Album", value: topAlbum.title)
-                    .listRowSeparator(.hidden)
-                metadataRow(icon: "music.note.tv", title: "Album Plays", value: "\(topAlbum.playCount)")
-                    .listRowSeparator(.hidden)
+                let topAlbums = albumData().prefix(1)
+                if let topAlbum = topAlbums.first {
+                    MetadataRow(icon: "star", title: "Top Album", value: topAlbum.title)
+                        .listRowSeparator(.hidden)
+                    MetadataRow(icon: "music.note.tv", title: "Album Plays", value: "\(topAlbum.playCount)")
+                        .listRowSeparator(.hidden)
+                }
                 
                 // Average plays per song
-                let avgPlays = artist.totalPlayCount / max(1, artist.songs.count)
-                metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
+                MetadataRow(icon: "repeat", title: "Avg. Plays", value: "\(artist.averagePlayCount) per song")
                     .listRowSeparator(.hidden)
                 
                 // Most recent addition
                 if let lastAdded = dateRange().last {
-                    metadataRow(icon: "calendar", title: "Last Added", value: formatDate(lastAdded))
+                    MetadataRow(icon: "calendar", title: "Last Added", value: formatDate(lastAdded))
                         .listRowSeparator(.hidden)
                 }
                 
                 // Listening streak (if we had the data)
-                metadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
+                MetadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
                            value: "\(datesBetween(dateRange().first, dateRange().last)) days")
                     .listRowSeparator(.hidden)
             }
@@ -219,23 +183,6 @@ struct ArtistDetailView: View {
             Text("\(album.playCount) plays")
                 .font(AppStyles.playCountStyle)
                 .foregroundColor(AppStyles.accentColor)
-        }
-    }
-    
-    private func metadataRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .foregroundColor(.secondary)
-            
-            Text(title)
-                .fontWeight(.medium)
-            
-            Spacer()
-            
-            Text(value)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.trailing)
         }
     }
 }

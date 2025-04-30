@@ -9,9 +9,14 @@ Music Memory analyzes your music listening habits by displaying your library sor
 ## Features
 
 - **Dashboard View**: Quick overview of your top songs, albums, and artists
-- **Songs Tab**: Complete list of all songs sorted by play count
-- **Albums Tab**: Albums sorted by total play count with detailed views
-- **Artists Tab**: Artists sorted by total play count with detailed views
+- **Library View**: Tabbed interface to browse your music collection
+  - **Songs Tab**: Complete list of all songs sorted by play count
+  - **Artists Tab**: Artists sorted by total play count with detailed views
+  - **Albums Tab**: Albums sorted by total play count with detailed views
+  - **Genres Tab**: Genres sorted by song count with detailed views
+  - **Playlists Tab**: Playlists sorted by total play count with detailed views
+- **Detailed Statistics**: In-depth play count and metadata statistics for each item
+- **Search & Sort**: Search through your library and sort by different criteria
 - **Auto-refresh**: Library refreshes each time the app is opened
 - **Privacy-focused**: Only accesses your music library with explicit permission
 - **Unified Design System**: Consistent UI experience across all screens
@@ -26,43 +31,54 @@ Music Memory analyzes your music listening habits by displaying your library sor
 ## Installation
 
 1. Clone or download this repository
-2. Open `MusicMemory.xcodeproj` in Xcode
+2. Open `Music Memory.xcodeproj` in Xcode
 3. Select your target device/simulator
 4. Build and run (⌘+R)
 
-## Usage
-
-1. Launch the app
-2. Grant permission to access your music library when prompted
-3. Navigate through tabs to explore your music listening habits:
-   - Dashboard: Quick overview with visual stats
-   - Songs: View all songs sorted by play count
-   - Albums: View albums and their total play counts
-   - Artists: View artists and their total play counts
-
 ## Project Structure
 
+The project follows a clean, modular architecture with clear separation of concerns:
+
 ```
-MusicMemory/
-├── Music_MemoryApp.swift    # App entry point
-├── ContentView.swift        # Main tab structure
-├── MusicLibraryModel.swift  # Music library data model
-├── Structures.swift         # Core data structures
-├── Components.swift         # UI components and design system
-├── Views/
-│   ├── DashboardView.swift  # Dashboard tab
-│   ├── SongsView.swift      # Songs tab
-│   ├── AlbumsView.swift     # Albums tab with detail view
-│   └── ArtistsView.swift    # Artists tab with detail view
+Music Memory/
+├── App/                  # Core app files
+│   ├── Music_MemoryApp.swift
+│   └── ContentView.swift
+│
+├── Models/               # Data models
+│   ├── MusicLibraryModel.swift
+│   ├── AlbumData.swift
+│   ├── ArtistData.swift
+│   ├── GenreData.swift
+│   └── PlaylistData.swift
+│
+├── Views/                # Main screens organized by feature
+│   ├── Dashboard/
+│   ├── Library/
+│   ├── Songs/
+│   ├── Albums/
+│   ├── Artists/
+│   ├── Genres/
+│   └── Playlists/
+│
+├── Components/           # Reusable UI components
+│   ├── Design/           # Design system
+│   ├── Lists/            # List items, rows
+│   ├── Headers/          # Header components
+│   ├── Search/           # Search components
+│   └── Common/           # Other shared components
+│
+└── Utilities/            # Helper classes and extensions
 ```
 
 ## Design System
 
-Music Memory uses a centralized design system implemented in `Components.swift` that provides:
+Music Memory uses a centralized design system implemented in `Components/Design/AppStyles.swift` that provides:
 
 - Consistent color palette and typography
 - Standardized UI components
 - Unified layout and spacing rules
+- View modifiers for common styling patterns
 - Consistent appearance across all screens
 
 This approach ensures a cohesive user experience and simplifies future UI updates.
@@ -81,6 +97,17 @@ The app requires the `NSAppleMusicUsageDescription` permission:
 
 - Purpose: To read music metadata and play counts
 - Usage: Local processing only, no data leaves your device
+
+## Contributing
+
+Contributions are welcome! If you'd like to improve Music Memory:
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ## Troubleshooting
 

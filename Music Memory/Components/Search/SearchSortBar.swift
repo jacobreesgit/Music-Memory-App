@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// A reusable search and sort bar for collection views
 struct SearchSortBar<SortType: Identifiable & CaseIterable>: View where SortType: RawRepresentable, SortType.RawValue == String {
     @Binding var searchText: String
     @Binding var sortOption: SortType

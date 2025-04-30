@@ -81,33 +81,33 @@ struct AlbumDetailView: View {
                 // Empty section content for spacing
             }
             
-            // Album Statistics section - moved above other content
+            // Album Statistics section
             Section(header: Text("Album Statistics")
                 .padding(.leading, -15)) {
-                metadataRow(icon: "calendar", title: "Released", value: releaseYear())
+                MetadataRow(icon: "calendar", title: "Released", value: releaseYear())
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
+                MetadataRow(icon: "music.note.list", title: "Genre", value: mostCommonGenre())
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
+                MetadataRow(icon: "clock", title: "Duration", value: formatTotalDuration())
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "plus.circle", title: "Added", value: formatDate(dateAdded()))
+                MetadataRow(icon: "plus.circle", title: "Added", value: formatDate(dateAdded()))
                     .listRowSeparator(.hidden)
                 
                 if let song = album.songs.first, let composer = song.composer, !composer.isEmpty {
-                    metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
+                    MetadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
                         .listRowSeparator(.hidden)
                 }
                 
                 // Get number of discs in album
                 let discs = Set(album.songs.compactMap { $0.discNumber }).count
                 if discs > 1 {
-                    metadataRow(icon: "opticaldisc", title: "Discs", value: "\(discs)")
+                    MetadataRow(icon: "opticaldisc", title: "Discs", value: "\(discs)")
                         .listRowSeparator(.hidden)
                 }
                 
                 // Average play count per song
                 let avgPlays = album.totalPlayCount / max(1, album.songs.count)
-                metadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
+                MetadataRow(icon: "repeat", title: "Avg. Plays", value: "\(avgPlays) per song")
                     .listRowSeparator(.hidden)
             }
             
@@ -152,22 +152,5 @@ struct AlbumDetailView: View {
         }
         .navigationTitle(album.title)
         .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    private func metadataRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .foregroundColor(.secondary)
-            
-            Text(title)
-                .fontWeight(.medium)
-            
-            Spacer()
-            
-            Text(value)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
     }
 }

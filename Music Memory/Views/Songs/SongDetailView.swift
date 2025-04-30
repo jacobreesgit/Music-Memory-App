@@ -50,40 +50,40 @@ struct SongDetailView: View {
                 // Empty section content
             }
             
-            // Song Statistics section - moved above other content
+            // Song Statistics section
             Section(header: Text("Song Statistics")
                 .padding(.leading, -15)) {
-                metadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
+                MetadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
+                MetadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
+                MetadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
+                MetadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
                     .listRowSeparator(.hidden)
-                metadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
+                MetadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
                     .listRowSeparator(.hidden)
                 
                 if let composer = song.composer, !composer.isEmpty {
-                    metadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
+                    MetadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
                         .listRowSeparator(.hidden)
                 }
                 
                 let trackNumber = song.albumTrackNumber
                 if trackNumber > 0 {
-                    metadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
+                    MetadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
                         .listRowSeparator(.hidden)
                 }
                 
                 let discNumber = song.discNumber
                 if discNumber > 0 {
-                    metadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
+                    MetadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
                         .listRowSeparator(.hidden)
                 }
                 
                 let bpm = song.beatsPerMinute
                 if bpm > 0 {
-                    metadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
+                    MetadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
                         .listRowSeparator(.hidden)
                 }
             }
@@ -180,22 +180,5 @@ struct SongDetailView: View {
         }
         .navigationTitle(song.title ?? "Unknown")
         .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    private func metadataRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .foregroundColor(.secondary)
-            
-            Text(title)
-                .fontWeight(.medium)
-            
-            Spacer()
-            
-            Text(value)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
     }
 }

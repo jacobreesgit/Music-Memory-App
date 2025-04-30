@@ -5,7 +5,6 @@
 //  Created by Jacob Rees on 27/04/2025.
 //
 
-
 import SwiftUI
 
 /// A helper view that provides access to the environment without requiring @EnvironmentObject in every view
