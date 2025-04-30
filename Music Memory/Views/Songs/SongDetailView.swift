@@ -11,6 +11,13 @@ import MediaPlayer
 struct SongDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let song: MPMediaItem
+    let rank: Int?
+    
+    // Initialize with an optional rank parameter
+    init(song: MPMediaItem, rank: Int? = nil) {
+        self.song = song
+        self.rank = rank
+    }
     
     // Helper function to format date
     private func formatDate(_ date: Date?) -> String {
@@ -37,16 +44,25 @@ struct SongDetailView: View {
     
     var body: some View {
         List {
-            // Song header section
-            Section(header: DetailHeaderView(
-                title: song.title ?? "Unknown",
-                subtitle: song.artist ?? "Unknown",
-                plays: song.playCount ?? 0,
-                songCount: 1,
-                artwork: song.artwork,
-                isAlbum: false,
-                metadata: []
-            )) {
+            // Song header section with optional rank
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                if let rank = rank {
+                    Text("Rank #\(rank)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                        .padding(.bottom, 4)
+                }
+                
+                DetailHeaderView(
+                    title: song.title ?? "Unknown",
+                    subtitle: song.artist ?? "Unknown",
+                    plays: song.playCount ?? 0,
+                    songCount: 1,
+                    artwork: song.artwork,
+                    isAlbum: false,
+                    metadata: []
+                )
+            }) {
                 // Empty section content
             }
             

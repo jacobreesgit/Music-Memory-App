@@ -70,9 +70,16 @@ struct AlbumsView: View {
                 }
 
                 List {
-                    ForEach(filteredAlbums) { album in
-                        NavigationLink(destination: AlbumDetailView(album: album)) {
-                            AlbumRow(album: album)
+                    ForEach(Array(filteredAlbums.enumerated()), id: \.element.id) { index, album in
+                        NavigationLink(destination: AlbumDetailView(album: album, rank: index + 1)) {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                AlbumRow(album: album)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }

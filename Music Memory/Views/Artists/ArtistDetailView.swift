@@ -11,6 +11,13 @@ import MediaPlayer
 struct ArtistDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let artist: ArtistData
+    let rank: Int?
+    
+    // Initialize with an optional rank parameter
+    init(artist: ArtistData, rank: Int? = nil) {
+        self.artist = artist
+        self.rank = rank
+    }
     
     // Helper function to format date
     private func formatDate(_ date: Date?) -> String {
@@ -74,16 +81,25 @@ struct ArtistDetailView: View {
     
     var body: some View {
         List {
-            // Artist header section
-            Section(header: DetailHeaderView(
-                title: artist.name,
-                subtitle: "",
-                plays: artist.totalPlayCount,
-                songCount: artist.songs.count,
-                artwork: artist.artwork,
-                isAlbum: false,
-                metadata: []
-            )) {
+            // Artist header section with optional rank
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                if let rank = rank {
+                    Text("Rank #\(rank)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                        .padding(.bottom, 4)
+                }
+                
+                DetailHeaderView(
+                    title: artist.name,
+                    subtitle: "",
+                    plays: artist.totalPlayCount,
+                    songCount: artist.songs.count,
+                    artwork: artist.artwork,
+                    isAlbum: false,
+                    metadata: []
+                )
+            }) {
                 // Empty section content for spacing
             }
             
@@ -123,28 +139,49 @@ struct ArtistDetailView: View {
                     .listRowSeparator(.hidden)
             }
             
-            // Songs section
+            // Songs section with ranking
             Section(header: Text("Songs").padding(.leading, -15)) {
                 // Songs list sorted by play count with navigation
-                ForEach(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                ForEach(Array(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            SongRow(song: song)
+                        }
                     }
                     .listRowSeparator(.hidden)
                 }
             }
             
-            // Albums section
+            // Albums section with ranking
             Section(header: Text("Albums").padding(.leading, -15)) {
-                ForEach(albumData()) { album in
+                ForEach(Array(albumData().enumerated()), id: \.element.id) { index, album in
                     if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
                         NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
-                            albumRow(album: album)
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                albumRow(album: album)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     } else {
-                        albumRow(album: album)
-                            .listRowSeparator(.hidden)
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            albumRow(album: album)
+                        }
+                        .listRowSeparator(.hidden)
                     }
                 }
             }

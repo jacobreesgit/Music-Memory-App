@@ -36,24 +36,37 @@ struct TopItemsView<T, DestinationView: View>: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
-                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                         NavigationLink(destination: destination(item)) {
                             VStack {
-                                // Artwork or placeholder
-                                if let artwork = artwork(item) {
-                                    Image(uiImage: artwork.image(at: CGSize(width: 100, height: 100)) ?? UIImage(systemName: "music.note")!)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 100, height: 100)
-                                        .cornerRadius(AppStyles.cornerRadius)
-                                } else {
-                                    Image(systemName: iconName(item))
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 80, height: 80)
-                                        .padding(10)
-                                        .background(AppStyles.secondaryColor)
-                                        .cornerRadius(AppStyles.cornerRadius)
+                                // Rank badge
+                                ZStack(alignment: .topLeading) {
+                                    // Artwork or placeholder
+                                    if let artwork = artwork(item) {
+                                        Image(uiImage: artwork.image(at: CGSize(width: 100, height: 100)) ?? UIImage(systemName: "music.note")!)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 100, height: 100)
+                                            .cornerRadius(AppStyles.cornerRadius)
+                                    } else {
+                                        Image(systemName: iconName(item))
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 80, height: 80)
+                                            .padding(10)
+                                            .background(AppStyles.secondaryColor)
+                                            .cornerRadius(AppStyles.cornerRadius)
+                                    }
+                                    
+                                    // Rank badge
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(AppStyles.accentColor)
+                                        .cornerRadius(8)
+                                        .offset(x: -5, y: -5)
                                 }
                                 
                                 // Title

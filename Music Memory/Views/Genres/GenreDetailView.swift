@@ -11,6 +11,13 @@ import MediaPlayer
 struct GenreDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let genre: GenreData
+    let rank: Int?
+    
+    // Initialize with an optional rank parameter
+    init(genre: GenreData, rank: Int? = nil) {
+        self.genre = genre
+        self.rank = rank
+    }
     
     // Helper function to format total duration
     private func totalDuration() -> String {
@@ -23,16 +30,25 @@ struct GenreDetailView: View {
     
     var body: some View {
         List {
-            // Genre header section
-            Section(header: DetailHeaderView(
-                title: genre.name,
-                subtitle: "",
-                plays: genre.totalPlayCount,
-                songCount: genre.songs.count,
-                artwork: genre.artwork,
-                isAlbum: false,
-                metadata: []
-            )) {
+            // Genre header section with optional rank
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                if let rank = rank {
+                    Text("Rank #\(rank)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                        .padding(.bottom, 4)
+                }
+                
+                DetailHeaderView(
+                    title: genre.name,
+                    subtitle: "",
+                    plays: genre.totalPlayCount,
+                    songCount: genre.songs.count,
+                    artwork: genre.artwork,
+                    isAlbum: false,
+                    metadata: []
+                )
+            }) {
                 // Empty section content for spacing
             }
             
@@ -51,11 +67,18 @@ struct GenreDetailView: View {
                     .listRowSeparator(.hidden)
             }
             
-            // Songs section
+            // Songs section with ranking
             Section(header: Text("Songs").padding(.leading, -15)) {
-                ForEach(genre.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                ForEach(Array(genre.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            SongRow(song: song)
+                        }
                     }
                     .listRowSeparator(.hidden)
                 }

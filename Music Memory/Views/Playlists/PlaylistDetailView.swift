@@ -11,6 +11,13 @@ import MediaPlayer
 struct PlaylistDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let playlist: PlaylistData
+    let rank: Int?
+    
+    // Initialize with an optional rank parameter
+    init(playlist: PlaylistData, rank: Int? = nil) {
+        self.playlist = playlist
+        self.rank = rank
+    }
     
     // Helper function to format date
     private func formatDate(_ date: Date?) -> String {
@@ -43,16 +50,25 @@ struct PlaylistDetailView: View {
     
     var body: some View {
         List {
-            // Playlist header section
-            Section(header: DetailHeaderView(
-                title: playlist.name,
-                subtitle: "",
-                plays: playlist.totalPlayCount,
-                songCount: playlist.songs.count,
-                artwork: playlist.artwork,
-                isAlbum: false,
-                metadata: []
-            )) {
+            // Playlist header section with optional rank
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                if let rank = rank {
+                    Text("Rank #\(rank)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                        .padding(.bottom, 4)
+                }
+                
+                DetailHeaderView(
+                    title: playlist.name,
+                    subtitle: "",
+                    plays: playlist.totalPlayCount,
+                    songCount: playlist.songs.count,
+                    artwork: playlist.artwork,
+                    isAlbum: false,
+                    metadata: []
+                )
+            }) {
                 // Empty section content for spacing
             }
             
@@ -79,12 +95,19 @@ struct PlaylistDetailView: View {
                     .listRowSeparator(.hidden)
             }
             
-            // Artists section - top 3 artists in the playlist, sorted by PLAY COUNT
+            // Artists section - top 3 artists in the playlist, sorted by PLAY COUNT with ranking
             Section(header: Text("Top Artists").padding(.leading, -15)) {
-                ForEach(playlist.topArtists(), id: \.name) { artist, songCount, playCount in
+                ForEach(Array(playlist.topArtists().enumerated()), id: \.element.name) { index, artistInfo in
+                    let (artist, songCount, playCount) = artistInfo
+                    
                     if let artistData = musicLibrary.artists.first(where: { $0.name == artist }) {
                         NavigationLink(destination: ArtistDetailView(artist: artistData)) {
-                            HStack {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
                                 ArtistRow(artist: artistData)
                                 
                                 Spacer()
@@ -102,7 +125,12 @@ struct PlaylistDetailView: View {
                         }
                         .listRowSeparator(.hidden)
                     } else {
-                        HStack {
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
                             ZStack {
                                 Circle()
                                     .fill(AppStyles.secondaryColor)
@@ -133,11 +161,18 @@ struct PlaylistDetailView: View {
                 }
             }
             
-            // Songs section
+            // Songs section with ranking
             Section(header: Text("Songs").padding(.leading, -15)) {
-                ForEach(playlist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                ForEach(Array(playlist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            SongRow(song: song)
+                        }
                     }
                     .listRowSeparator(.hidden)
                 }

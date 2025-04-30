@@ -66,9 +66,16 @@ struct PlaylistsView: View {
                 }
 
                 List {
-                    ForEach(filteredPlaylists) { playlist in
-                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                            PlaylistRow(playlist: playlist)
+                    ForEach(Array(filteredPlaylists.enumerated()), id: \.element.id) { index, playlist in
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: index + 1)) {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                PlaylistRow(playlist: playlist)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }

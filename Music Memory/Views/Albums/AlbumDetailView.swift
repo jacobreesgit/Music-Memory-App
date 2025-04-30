@@ -11,6 +11,13 @@ import MediaPlayer
 struct AlbumDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let album: AlbumData
+    let rank: Int?
+    
+    // Initialize with an optional rank parameter
+    init(album: AlbumData, rank: Int? = nil) {
+        self.album = album
+        self.rank = rank
+    }
     
     // Helper function to format date
     private func formatDate(_ date: Date?) -> String {
@@ -68,16 +75,25 @@ struct AlbumDetailView: View {
     
     var body: some View {
         List {
-            // Album header section
-            Section(header: DetailHeaderView(
-                title: album.title,
-                subtitle: album.artist,
-                plays: album.totalPlayCount,
-                songCount: album.songs.count,
-                artwork: album.artwork,
-                isAlbum: true,
-                metadata: []
-            )) {
+            // Album header section with optional rank
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                if let rank = rank {
+                    Text("Rank #\(rank)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                        .padding(.bottom, 4)
+                }
+                
+                DetailHeaderView(
+                    title: album.title,
+                    subtitle: album.artist,
+                    plays: album.totalPlayCount,
+                    songCount: album.songs.count,
+                    artwork: album.artwork,
+                    isAlbum: true,
+                    metadata: []
+                )
+            }) {
                 // Empty section content for spacing
             }
             
@@ -140,11 +156,18 @@ struct AlbumDetailView: View {
                 }
             }
             
-            // Songs section
+            // Songs section with ranking
             Section(header: Text("Songs").padding(.leading, -15)) {
-                ForEach(album.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }, id: \.persistentID) { song in
+                ForEach(Array(album.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
-                        SongRow(song: song)
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            SongRow(song: song)
+                        }
                     }
                     .listRowSeparator(.hidden)
                 }

@@ -61,9 +61,16 @@ struct GenresView: View {
             }
 
             List {
-                ForEach(filteredGenres) { genre in
-                    NavigationLink(destination: GenreDetailView(genre: genre)) {
-                        GenreRow(genre: genre)
+                ForEach(Array(filteredGenres.enumerated()), id: \.element.id) { index, genre in
+                    NavigationLink(destination: GenreDetailView(genre: genre, rank: index + 1)) {
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            GenreRow(genre: genre)
+                        }
                     }
                     .listRowSeparator(.hidden)
                 }

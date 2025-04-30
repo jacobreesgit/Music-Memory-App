@@ -66,9 +66,16 @@ struct ArtistsView: View {
                 }
 
                 List {
-                    ForEach(filteredArtists) { artist in
-                        NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                            ArtistRow(artist: artist)
+                    ForEach(Array(filteredArtists.enumerated()), id: \.element.id) { index, artist in
+                        NavigationLink(destination: ArtistDetailView(artist: artist, rank: index + 1)) {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                ArtistRow(artist: artist)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }

@@ -75,9 +75,16 @@ struct SongsView: View {
 
                 // List with content
                 List {
-                    ForEach(filteredSongs, id: \.persistentID) { song in
-                        NavigationLink(destination: SongDetailView(song: song)) {
-                            SongRow(song: song)
+                    ForEach(Array(filteredSongs.enumerated()), id: \.element.persistentID) { index, song in
+                        NavigationLink(destination: SongDetailView(song: song, rank: index + 1)) {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                SongRow(song: song)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }
