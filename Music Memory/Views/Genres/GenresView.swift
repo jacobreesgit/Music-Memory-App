@@ -10,7 +10,6 @@ import MediaPlayer
 
 struct GenresView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
-    @State private var refreshID = UUID()
     @State private var searchText = ""
     @State private var sortOption = SortOption.songCount
     
@@ -44,56 +43,41 @@ struct GenresView: View {
     }
     
     var body: some View {
-        ScrollViewReader { proxy in
-            VStack(alignment: .leading, spacing: 0) {
-                // Search and Sort Bar
-                SearchSortBar(
-                    searchText: $searchText,
-                    sortOption: $sortOption,
-                    placeholder: "Search genres"
-                )
-                
-                // Results count
-                if !searchText.isEmpty {
-                    Text("Found \(filteredGenres.count) results")
-                        .font(AppStyles.captionStyle)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            // Search and Sort Bar
+            SearchSortBar(
+                searchText: $searchText,
+                sortOption: $sortOption,
+                placeholder: "Search genres"
+            )
+            
+            // Results count
+            if !searchText.isEmpty {
+                Text("Found \(filteredGenres.count) results")
+                    .font(AppStyles.captionStyle)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                    .padding(.bottom, 4)
+            }
 
-                List {
-                    // Invisible anchor for scrolling to top
-                    Text("")
-                        .id("top")
-                        .frame(height: 0)
-                        .padding(0)
-                        .opacity(0)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                    
-                    ForEach(filteredGenres) { genre in
-                        NavigationLink(destination: GenreDetailView(genre: genre)) {
-                            GenreRow(genre: genre)
-                        }
-                        .listRowSeparator(.hidden)
+            List {
+                ForEach(filteredGenres) { genre in
+                    NavigationLink(destination: GenreDetailView(genre: genre)) {
+                        GenreRow(genre: genre)
                     }
-                    
-                    if filteredGenres.isEmpty && !searchText.isEmpty {
-                        Text("No genres found matching '\(searchText)'")
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .listRowSeparator(.hidden)
-                    }
+                    .listRowSeparator(.hidden)
                 }
-                .id(refreshID)
-                .listStyle(PlainListStyle())
-                .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
+                
+                if filteredGenres.isEmpty && !searchText.isEmpty {
+                    Text("No genres found matching '\(searchText)'")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                        .listRowSeparator(.hidden)
+                }
             }
-            .onAppear {
-                proxy.scrollTo("top", anchor: .top)
-            }
+            .listStyle(PlainListStyle())
+            .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
         }
     }
 }
