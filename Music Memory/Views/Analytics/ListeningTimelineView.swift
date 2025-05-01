@@ -11,87 +11,254 @@ import Charts
 
 struct ListeningTimelineView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
-    @State private var timelineMode: TimelineMode = .year
+    @State private var selectedTab = 2 // Default to "Year" view
     @State private var selectedDate: Date?
+    @State private var cachedData: [Int: TimelineTabData] = [:]
     
     enum TimelineMode: String, CaseIterable, Identifiable {
         case week = "Week"
         case month = "Month"
         case year = "Year"
-        case allTime = "All Time"
         
         var id: String { self.rawValue }
     }
     
+    var timelineMode: TimelineMode {
+        TimelineMode.allCases[selectedTab]
+    }
+    
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Timeline mode selector with more visual appeal
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Listening Timeline")
-                        .font(AppStyles.headlineStyle)
-                        .foregroundColor(AppStyles.accentColor)
-                        .padding(.horizontal)
-                    
-                    // Segment picker styled like the LibraryView tabs
-                    HStack(spacing: 0) {
-                        ForEach(TimelineMode.allCases) { mode in
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    timelineMode = mode
-                                }
-                            }) {
-                                VStack(spacing: 4) {
-                                    Text(mode.rawValue)
-                                        .font(.headline)
-                                        .foregroundColor(timelineMode == mode ? AppStyles.accentColor : .secondary)
-                                        .fontWeight(timelineMode == mode ? .bold : .regular)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.8)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.bottom, 8)
+        VStack(spacing: 0) {
+            // Timeline mode selector with swipeable tabs
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Listening Timeline")
+                    .font(AppStyles.headlineStyle)
+                    .foregroundColor(AppStyles.accentColor)
+                    .padding(.horizontal)
+                
+                // Tab bar with underline indicator
+                HStack(spacing: 0) {
+                    ForEach(Array(TimelineMode.allCases.enumerated()), id: \.element.id) { index, mode in
+                        Button(action: {
+                            selectedTab = index
+                        }) {
+                            VStack(spacing: 4) {
+                                Text(mode.rawValue)
+                                    .font(.headline)
+                                    .foregroundColor(selectedTab == index ? AppStyles.accentColor : .secondary)
+                                    .fontWeight(selectedTab == index ? .bold : .regular)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding(.bottom, 8)
                         }
                     }
-                    .overlay(
-                        // Moving underline indicator
-                        GeometryReader { geo in
-                            let tabWidth = geo.size.width / CGFloat(TimelineMode.allCases.count)
-                            let modeIndex = CGFloat(TimelineMode.allCases.firstIndex(of: timelineMode) ?? 0)
-                            Rectangle()
-                                .fill(AppStyles.accentColor)
-                                .frame(width: tabWidth - 20, height: 2)
-                                .offset(x: modeIndex * tabWidth + 10)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: timelineMode)
-                        }
-                        .frame(height: 2)
-                        , alignment: .bottom
-                    )
-                    .padding(.top, 8)
                 }
+                .overlay(
+                    // Moving underline indicator
+                    GeometryReader { geo in
+                        let tabWidth = geo.size.width / CGFloat(TimelineMode.allCases.count)
+                        Rectangle()
+                            .fill(AppStyles.accentColor)
+                            .frame(width: tabWidth - 20, height: 2)
+                            .offset(x: CGFloat(selectedTab) * tabWidth + 10)
+                    }
+                    .frame(height: 2)
+                    , alignment: .bottom
+                )
+                .animation(.spring(response: 0.2, dampingFraction: 0.7), value: selectedTab)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
+            }
+            .padding(.horizontal)
+            
+            // TabView for swipeable content
+            TabView(selection: $selectedTab) {
+                ForEach(Array(TimelineMode.allCases.enumerated()), id: \.element.id) { index, mode in
+                    timelineContentView(for: mode, tabIndex: index)
+                        .tag(index)
+                }
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .animation(nil, value: selectedTab)
+            .onChange(of: selectedTab) { _ in
+                // Clear date selection when changing tabs
+                selectedDate = nil
+            }
+        }
+        .navigationTitle("Listening Timeline")
+        .onAppear {
+            // Pre-compute data for the current tab to avoid delay
+            if cachedData[selectedTab] == nil {
+                cachedData[selectedTab] = generateTimelineData(for: timelineMode)
+            }
+        }
+    }
+    
+    // Extract each tab's content to a separate function for clarity and performance
+    @ViewBuilder
+    private func timelineContentView(for mode: TimelineMode, tabIndex: Int) -> some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Get or compute cached data for this tab
+                let tabData = cachedData[tabIndex] ?? generateTimelineData(for: mode)
                 
-                // Timeline chart based on selected mode
-                TimelineChartView(timelineMode: timelineMode, selectedDate: $selectedDate)
-                    .padding(.horizontal)
+                // Timeline chart for the specific mode
+                TimelineChartView(
+                    timelineMode: mode,
+                    selectedDate: $selectedDate,
+                    timelineData: tabData.timelineData
+                )
+                .padding(.horizontal)
+                .onAppear {
+                    // Cache data if not already cached
+                    if cachedData[tabIndex] == nil {
+                        cachedData[tabIndex] = tabData
+                    }
+                }
                 
                 // Selected date details (if any)
                 if let selectedDate = selectedDate {
-                    SelectedDateView(date: selectedDate)
-                        .padding(.horizontal)
+                    SelectedDateView(
+                        date: selectedDate,
+                        timelineMode: mode,
+                        selectedPeriodSongs: tabData.songsForDate(selectedDate)
+                    )
+                    .padding(.horizontal)
                 }
                 
-                // Top discoveries for the selected period
-                TopDiscoveriesView(timelineMode: timelineMode)
-                    .padding(.horizontal)
+                // Top discoveries - filtered by the selected date if any
+                TopDiscoveriesView(
+                    timelineMode: mode,
+                    selectedDate: selectedDate
+                )
+                .padding(.horizontal)
                 
-                // Listening streak information
                 ListeningStreakView()
                     .padding(.horizontal)
+                    .padding(.bottom)
             }
-            .padding(.vertical)
         }
-        .navigationTitle("Listening Timeline")
+    }
+    
+    // Generate timeline data for a specific mode (for caching)
+    private func generateTimelineData(for mode: TimelineMode) -> TimelineTabData {
+        // Process song data for the specified time mode
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Filter songs with last played date
+        let playedSongs = musicLibrary.songs.filter { song in
+            return song.lastPlayedDate != nil && song.playCount > 0
+        }
+        
+        // Group by time period based on selected mode
+        var datePlays: [Date: Int] = [:]
+        var songsByDate: [Date: [MPMediaItem]] = [:]
+        
+        for song in playedSongs {
+            guard let lastPlayed = song.lastPlayedDate else { continue }
+            
+            let normalizedDate: Date
+            var shouldInclude = false
+            
+            switch mode {
+            case .week:
+                // Group by day of week (last 7 days)
+                let dayComponent = calendar.dateComponents([.day], from: lastPlayed, to: now)
+                if let day = dayComponent.day, day <= 7 {
+                    normalizedDate = calendar.startOfDay(for: lastPlayed)
+                    shouldInclude = true
+                } else {
+                    normalizedDate = Date() // Placeholder
+                }
+                
+            case .month:
+                // Group by day of month (last 30 days)
+                let dayComponent = calendar.dateComponents([.day], from: lastPlayed, to: now)
+                if let day = dayComponent.day, day <= 30 {
+                    normalizedDate = calendar.startOfDay(for: lastPlayed)
+                    shouldInclude = true
+                } else {
+                    normalizedDate = Date() // Placeholder
+                }
+                
+            case .year:
+                // Group by month of year (last 12 months)
+                if let month = calendar.dateComponents([.month], from: lastPlayed, to: now).month, month <= 12 {
+                    var components = calendar.dateComponents([.year, .month], from: lastPlayed)
+                    components.day = 1
+                    if let monthStart = calendar.date(from: components) {
+                        normalizedDate = monthStart
+                        shouldInclude = true
+                    } else {
+                        normalizedDate = Date() // Placeholder
+                    }
+                } else {
+                    normalizedDate = Date() // Placeholder
+                }
+            }
+            
+            if shouldInclude {
+                datePlays[normalizedDate, default: 0] += song.playCount
+                
+                // Group songs by date for quick access later
+                if songsByDate[normalizedDate] == nil {
+                    songsByDate[normalizedDate] = []
+                }
+                songsByDate[normalizedDate]?.append(song)
+            }
+        }
+        
+        // Convert to chart data points and sort by date
+        let timelinePoints = datePlays.map { date, plays in
+            TimelineDataPoint(date: date, plays: plays)
+        }.sorted { $0.date < $1.date }
+        
+        return TimelineTabData(timelineData: timelinePoints, songsByDate: songsByDate)
+    }
+    
+    // Data container for a timeline tab
+    struct TimelineTabData {
+        let timelineData: [TimelineDataPoint]
+        let songsByDate: [Date: [MPMediaItem]]
+        
+        // Helper function to get songs for a specific date
+        func songsForDate(_ date: Date) -> [MPMediaItem] {
+            // Find the best matching date in our data
+            let calendar = Calendar.current
+            
+            // Look for exact match first
+            for (dataDate, songs) in songsByDate {
+                if calendar.isDate(dataDate, inSameDayAs: date) {
+                    return songs
+                }
+            }
+            
+            // Try matching by month if no exact day match
+            for (dataDate, songs) in songsByDate {
+                if calendar.isDate(dataDate, equalTo: date, toGranularity: .month) {
+                    return songs
+                }
+            }
+            
+            // Try matching by year if no month match
+            for (dataDate, songs) in songsByDate {
+                if calendar.isDate(dataDate, equalTo: date, toGranularity: .year) {
+                    return songs
+                }
+            }
+            
+            return []
+        }
+    }
+    
+    // Data point for timeline chart
+    struct TimelineDataPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let plays: Int
     }
 }
 
@@ -101,6 +268,7 @@ struct TimelineChartView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let timelineMode: ListeningTimelineView.TimelineMode
     @Binding var selectedDate: Date?
+    let timelineData: [ListeningTimelineView.TimelineDataPoint]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -184,70 +352,6 @@ struct TimelineChartView: View {
         .cornerRadius(AppStyles.cornerRadius)
     }
     
-    // Data for the timeline chart
-    private var timelineData: [TimelineDataPoint] {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        // Filter songs with last played date
-        let playedSongs = musicLibrary.songs.filter { song in
-            return song.lastPlayedDate != nil && song.playCount > 0
-        }
-        
-        // Group by time period based on selected mode
-        var datePlays: [Date: Int] = [:]
-        
-        for song in playedSongs {
-            guard let lastPlayed = song.lastPlayedDate else { continue }
-            
-            let normalizedDate: Date
-            
-            switch timelineMode {
-            case .week:
-                // Group by day of week (last 7 days)
-                let dayComponent = calendar.dateComponents([.day], from: lastPlayed, to: now)
-                if let day = dayComponent.day, day <= 7 {
-                    normalizedDate = calendar.startOfDay(for: lastPlayed)
-                    datePlays[normalizedDate, default: 0] += song.playCount
-                }
-                
-            case .month:
-                // Group by day of month (last 30 days)
-                let dayComponent = calendar.dateComponents([.day], from: lastPlayed, to: now)
-                if let day = dayComponent.day, day <= 30 {
-                    normalizedDate = calendar.startOfDay(for: lastPlayed)
-                    datePlays[normalizedDate, default: 0] += song.playCount
-                }
-                
-            case .year:
-                // Group by month of year (last 12 months)
-                if let month = calendar.dateComponents([.month], from: lastPlayed, to: now).month, month <= 12 {
-                    var components = calendar.dateComponents([.year, .month], from: lastPlayed)
-                    components.day = 1
-                    if let monthStart = calendar.date(from: components) {
-                        normalizedDate = monthStart
-                        datePlays[normalizedDate, default: 0] += song.playCount
-                    }
-                }
-                
-            case .allTime:
-                // Group by year
-                var components = calendar.dateComponents([.year], from: lastPlayed)
-                components.month = 1
-                components.day = 1
-                if let yearStart = calendar.date(from: components) {
-                    normalizedDate = yearStart
-                    datePlays[normalizedDate, default: 0] += song.playCount
-                }
-            }
-        }
-        
-        // Convert to array and sort by date
-        return datePlays.map { date, plays in
-            TimelineDataPoint(date: date, plays: plays)
-        }.sorted { $0.date < $1.date }
-    }
-    
     // Find closest date in our data points to the selected position
     private func findClosestDate(to date: Date) -> Date? {
         guard !timelineData.isEmpty else { return nil }
@@ -264,16 +368,7 @@ struct TimelineChartView: View {
             return calendar.isDate(date1, inSameDayAs: date2)
         case .year:
             return calendar.isDate(date1, equalTo: date2, toGranularity: .month)
-        case .allTime:
-            return calendar.isDate(date1, equalTo: date2, toGranularity: .year)
         }
-    }
-    
-    // Data point for timeline chart
-    struct TimelineDataPoint: Identifiable {
-        let id = UUID()
-        let date: Date
-        let plays: Int
     }
 }
 
@@ -282,6 +377,8 @@ struct TimelineChartView: View {
 struct SelectedDateView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let date: Date
+    let timelineMode: ListeningTimelineView.TimelineMode
+    let selectedPeriodSongs: [MPMediaItem]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -290,14 +387,17 @@ struct SelectedDateView: View {
                 .font(.headline)
                 .foregroundColor(AppStyles.accentColor)
             
-            // Top songs for this period
-            if let topSongs = topSongsForDate(limit: 3) {
+            // Top songs for this period - now uses pre-filtered songs
+            if !selectedPeriodSongs.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Top Songs")
                         .font(.subheadline)
                         .foregroundColor(AppStyles.accentColor)
                     
-                ForEach(Array(topSongs.enumerated()), id: \.element.persistentID) { index, song in
+                    // Sort songs by play count
+                    let topSongs = Array(selectedPeriodSongs.sorted { $0.playCount > $1.playCount }.prefix(3))
+                    
+                    ForEach(Array(topSongs.enumerated()), id: \.element.persistentID) { index, song in
                         NavigationLink(destination: SongDetailView(song: song)) {
                             HStack(spacing: 10) {
                                 Text("#\(index + 1)")
@@ -350,33 +450,6 @@ struct SelectedDateView: View {
             return formatter.string(from: date)
         }
     }
-    
-    // Get top songs for the selected date
-    private func topSongsForDate(limit: Int) -> [MPMediaItem]? {
-        let calendar = Calendar.current
-        
-        // Filter songs played on this date (based on granularity)
-        let filteredSongs = musicLibrary.songs.filter { song in
-            guard let lastPlayed = song.lastPlayedDate else { return false }
-            
-            if calendar.isDate(date, equalTo: lastPlayed, toGranularity: .day) {
-                return true
-            } else if calendar.isDate(date, equalTo: lastPlayed, toGranularity: .month) {
-                return true
-            } else if calendar.isDate(date, equalTo: lastPlayed, toGranularity: .year) {
-                return true
-            }
-            
-            return false
-        }
-        
-        if filteredSongs.isEmpty {
-            return nil
-        }
-        
-        // Sort by play count and return top ones
-        return Array(filteredSongs.sorted { $0.playCount > $1.playCount }.prefix(limit))
-    }
 }
 
 // MARK: - Top Discoveries View
@@ -384,6 +457,7 @@ struct SelectedDateView: View {
 struct TopDiscoveriesView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     let timelineMode: ListeningTimelineView.TimelineMode
+    let selectedDate: Date?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -448,14 +522,27 @@ struct TopDiscoveriesView: View {
             timeThreshold = 60 * 60 * 24 * 30 // 1 month
         case .year:
             timeThreshold = 60 * 60 * 24 * 365 // 1 year
-        case .allTime:
-            timeThreshold = 60 * 60 * 24 * 365 * 2 // 2 years
+        }
+        
+        // Start with all songs
+        var filteredSongs = musicLibrary.songs
+        
+        // Additional filtering if a specific date is selected
+        if let selectedDate = selectedDate {
+            filteredSongs = filteredSongs.filter { song in
+                guard let lastPlayed = song.lastPlayedDate else { return false }
+                
+                switch timelineMode {
+                case .week, .month:
+                    return calendar.isDate(lastPlayed, inSameDayAs: selectedDate)
+                case .year:
+                    return calendar.isDate(lastPlayed, equalTo: selectedDate, toGranularity: .month)
+                }
+            }
         }
         
         // Filter songs that are played at least 3 times
-        // In a real implementation we would check dateAdded, but we'll just use
-        // lastPlayedDate as a proxy since we don't know if dateAdded is available
-        let recentSongs = musicLibrary.songs.filter { song in
+        let recentSongs = filteredSongs.filter { song in
             guard let lastPlayed = song.lastPlayedDate else { return false }
             return lastPlayed.timeIntervalSinceNow > -timeThreshold && song.playCount >= 3
         }
