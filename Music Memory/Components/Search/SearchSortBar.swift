@@ -11,6 +11,7 @@ import SwiftUI
 struct SearchSortBar<SortType: Identifiable & CaseIterable>: View where SortType: RawRepresentable, SortType.RawValue == String {
     @Binding var searchText: String
     @Binding var sortOption: SortType
+    @Binding var sortAscending: Bool
     let placeholder: String
     
     var body: some View {
@@ -36,19 +37,33 @@ struct SearchSortBar<SortType: Identifiable & CaseIterable>: View where SortType
             Menu {
                 ForEach(Array(SortType.allCases as! [SortType])) { option in
                     Button(action: {
-                        sortOption = option
+                        // If selecting the same option, toggle direction
+                        if sortOption == option {
+                            sortAscending.toggle()
+                        } else {
+                            // New option - set to default (descending)
+                            sortOption = option
+                            sortAscending = false
+                        }
                     }) {
                         HStack {
                             Text(option.rawValue)
                             if sortOption == option {
-                                Image(systemName: "checkmark")
+                                Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
                             }
                         }
                     }
                 }
             } label: {
-                Label("Sort", systemImage: "arrow.up.arrow.down")
-                    .foregroundColor(AppStyles.accentColor)
+                HStack {
+                    Text(sortOption.rawValue)
+                        .foregroundColor(AppStyles.accentColor)
+                    
+                    // Show chevron indicating current sort direction
+                    Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(AppStyles.accentColor)
+                }
             }
         }
         .padding(10)
@@ -57,5 +72,15 @@ struct SearchSortBar<SortType: Identifiable & CaseIterable>: View where SortType
         .padding(.horizontal)
         .padding(.top, 8)
         .padding(.bottom, 4)
+    }
+}
+
+// Added initializer with default parameter for backward compatibility
+extension SearchSortBar {
+    init(searchText: Binding<String>, sortOption: Binding<SortType>, placeholder: String) {
+        self._searchText = searchText
+        self._sortOption = sortOption
+        self._sortAscending = .constant(false) // Default to descending
+        self.placeholder = placeholder
     }
 }

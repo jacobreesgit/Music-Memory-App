@@ -12,6 +12,7 @@ struct GenresView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
+    @State private var sortAscending = false // Default to descending
     
     enum SortOption: String, CaseIterable, Identifiable {
         case songCount = "Song Count"
@@ -34,11 +35,17 @@ struct GenresView: View {
     var sortedGenres: [GenreData] {
         switch sortOption {
         case .songCount:
-            return musicLibrary.genres.sorted { $0.songs.count > $1.songs.count }
+            return musicLibrary.genres.sorted {
+                sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
+            }
         case .name:
-            return musicLibrary.genres.sorted { $0.name < $1.name }
+            return musicLibrary.genres.sorted {
+                sortAscending ? $0.name < $1.name : $0.name > $1.name
+            }
         case .playCount:
-            return musicLibrary.genres.sorted { $0.totalPlayCount > $1.totalPlayCount }
+            return musicLibrary.genres.sorted {
+                sortAscending ? $0.totalPlayCount < $1.totalPlayCount : $0.totalPlayCount > $1.totalPlayCount
+            }
         }
     }
     
@@ -48,10 +55,11 @@ struct GenresView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search and Sort Bar
+            // Updated Search and Sort Bar with sort direction
             SearchSortBar(
                 searchText: $searchText,
                 sortOption: $sortOption,
+                sortAscending: $sortAscending,
                 placeholder: "Search genres"
             )
 

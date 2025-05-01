@@ -12,6 +12,7 @@ struct AlbumsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
+    @State private var sortAscending = false // Default to descending
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -36,13 +37,21 @@ struct AlbumsView: View {
     var sortedAlbums: [AlbumData] {
         switch sortOption {
         case .playCount:
-            return musicLibrary.albums.sorted { $0.totalPlayCount > $1.totalPlayCount }
+            return musicLibrary.albums.sorted {
+                sortAscending ? $0.totalPlayCount < $1.totalPlayCount : $0.totalPlayCount > $1.totalPlayCount
+            }
         case .title:
-            return musicLibrary.albums.sorted { $0.title < $1.title }
+            return musicLibrary.albums.sorted {
+                sortAscending ? $0.title < $1.title : $0.title > $1.title
+            }
         case .artist:
-            return musicLibrary.albums.sorted { $0.artist < $1.artist }
+            return musicLibrary.albums.sorted {
+                sortAscending ? $0.artist < $1.artist : $0.artist > $1.artist
+            }
         case .songCount:
-            return musicLibrary.albums.sorted { $0.songs.count > $1.songs.count }
+            return musicLibrary.albums.sorted {
+                sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
+            }
         }
     }
     
@@ -57,10 +66,11 @@ struct AlbumsView: View {
             LibraryAccessView()
         } else {
             VStack(alignment: .leading, spacing: 0) {
-                // Search and Sort Bar
+                // Updated Search and Sort Bar with sort direction
                 SearchSortBar(
                     searchText: $searchText,
                     sortOption: $sortOption,
+                    sortAscending: $sortAscending,
                     placeholder: "Search albums"
                 )
 

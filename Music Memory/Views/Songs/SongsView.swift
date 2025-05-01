@@ -12,6 +12,7 @@ struct SongsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
+    @State private var sortAscending = false // Default to descending
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -36,18 +37,34 @@ struct SongsView: View {
     }
     
     var sortedSongs: [MPMediaItem] {
+        var sorted: [MPMediaItem] = []
+        
         switch sortOption {
         case .playCount:
-            return musicLibrary.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
+            sorted = musicLibrary.songs.sorted {
+                sortAscending ? ($0.playCount ?? 0) < ($1.playCount ?? 0) : ($0.playCount ?? 0) > ($1.playCount ?? 0)
+            }
         case .title:
-            return musicLibrary.songs.sorted { ($0.title ?? "") < ($1.title ?? "") }
+            sorted = musicLibrary.songs.sorted {
+                sortAscending ? ($0.title ?? "") < ($1.title ?? "") : ($0.title ?? "") > ($1.title ?? "")
+            }
         case .artist:
-            return musicLibrary.songs.sorted { ($0.artist ?? "") < ($1.artist ?? "") }
+            sorted = musicLibrary.songs.sorted {
+                sortAscending ? ($0.artist ?? "") < ($1.artist ?? "") : ($0.artist ?? "") > ($1.artist ?? "")
+            }
         case .dateAdded:
-            return musicLibrary.songs.sorted { ($0.dateAdded ?? Date.distantPast) > ($1.dateAdded ?? Date.distantPast) }
+            sorted = musicLibrary.songs.sorted {
+                let date0 = $0.dateAdded ?? Date.distantPast
+                let date1 = $1.dateAdded ?? Date.distantPast
+                return sortAscending ? date0 < date1 : date0 > date1
+            }
         case .duration:
-            return musicLibrary.songs.sorted { $0.playbackDuration > $1.playbackDuration }
+            sorted = musicLibrary.songs.sorted {
+                sortAscending ? $0.playbackDuration < $1.playbackDuration : $0.playbackDuration > $1.playbackDuration
+            }
         }
+        
+        return sorted
     }
     
     private var originalRanks: [MPMediaEntityPersistentID: Int] {
@@ -61,10 +78,11 @@ struct SongsView: View {
             LibraryAccessView()
         } else {
             VStack(alignment: .leading, spacing: 0) {
-                // Search and Sort Bar
+                // Updated Search and Sort Bar with sort direction
                 SearchSortBar(
                     searchText: $searchText,
                     sortOption: $sortOption,
+                    sortAscending: $sortAscending,
                     placeholder: "Search songs"
                 )
 
