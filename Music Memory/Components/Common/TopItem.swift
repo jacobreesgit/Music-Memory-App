@@ -93,7 +93,6 @@ struct TopItemsView<T, DestinationView: View>: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 1)
             }
         }
     }

@@ -31,7 +31,6 @@ struct DashboardView: View {
                         VStack(alignment: .leading, spacing: 20) {
                             // Summary Section
                             DashboardSummaryView()
-                                .padding(.bottom, 10)
                             
                             // Top Songs
                             Text("Top Songs")
