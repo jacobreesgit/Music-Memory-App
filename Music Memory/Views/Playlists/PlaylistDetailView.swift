@@ -133,10 +133,13 @@ struct PlaylistDetailView: View {
                     if let artistData = musicLibrary.artists.first(where: { $0.name == artist }) {
                         NavigationLink(destination: ArtistDetailView(artist: artistData)) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
+                                // Only show rank number if there's more than one artist
+                                if artistList.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                }
                                 
                                 ArtistRow(artist: artistData)
                                 
@@ -156,10 +159,13 @@ struct PlaylistDetailView: View {
                         .listRowSeparator(.hidden)
                     } else {
                         HStack(spacing: 10) {
-                            Text("#\(index + 1)")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(AppStyles.accentColor)
-                                .frame(width: 30, alignment: .leading)
+                            // Only show rank number if there's more than one artist
+                            if artistList.count > 1 {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                            }
                             
                             ZStack {
                                 Circle()
@@ -221,10 +227,13 @@ struct PlaylistDetailView: View {
                     ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, album in
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
+                                // Only show rank number if there's more than one album
+                                if displayedAlbums.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                }
                                 
                                 AlbumRow(album: album)
                             }
@@ -264,10 +273,13 @@ struct PlaylistDetailView: View {
                     ForEach(Array(displayedGenres.enumerated()), id: \.element.id) { index, genre in
                         NavigationLink(destination: GenreDetailView(genre: genre)) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
+                                // Only show rank number if there's more than one genre
+                                if displayedGenres.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                }
                                 
                                 GenreRow(genre: genre)
                             }
@@ -306,10 +318,13 @@ struct PlaylistDetailView: View {
                 ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
                         HStack(spacing: 10) {
-                            Text("#\(index + 1)")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(AppStyles.accentColor)
-                                .frame(width: 30, alignment: .leading)
+                            // Only show rank number if there's more than one song
+                            if displayedSongs.count > 1 {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                            }
                             
                             SongRow(song: song)
                         }

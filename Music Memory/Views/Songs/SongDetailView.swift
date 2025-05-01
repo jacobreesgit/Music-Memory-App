@@ -214,7 +214,17 @@ struct SongDetailView: View {
                     
                     ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, relatedSong in
                         NavigationLink(destination: SongDetailView(song: relatedSong)) {
-                            SongRow(song: relatedSong)
+                            HStack(spacing: 10) {
+                                // Only show rank number if there's more than one related song
+                                if displayedSongs.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                }
+                                
+                                SongRow(song: relatedSong)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }

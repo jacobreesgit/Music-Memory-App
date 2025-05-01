@@ -188,10 +188,13 @@ struct AlbumDetailView: View {
                     ForEach(Array(displayedGenres.enumerated()), id: \.element.id) { index, genre in
                         NavigationLink(destination: GenreDetailView(genre: genre)) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
+                                // Only show rank number if there's more than one genre
+                                if displayedGenres.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                }
                                 
                                 GenreRow(genre: genre)
                             }
@@ -266,10 +269,13 @@ struct AlbumDetailView: View {
                 ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, song in
                     NavigationLink(destination: SongDetailView(song: song)) {
                         HStack(spacing: 10) {
-                            Text("#\(index + 1)")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(AppStyles.accentColor)
-                                .frame(width: 30, alignment: .leading)
+                            // Only show rank number if there's more than one song
+                            if displayedSongs.count > 1 {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                            }
                             
                             SongRow(song: song)
                         }
