@@ -54,11 +54,11 @@ struct DashboardSummaryView: View {
                 .padding(.horizontal)
             }
             
-            // Navigation Buttons - side by side with same design
-            HStack(spacing: 12) {
+            // Navigation Buttons with fixed width to match other elements
+            VStack(spacing: 12) {
                 // Analytics button
                 NavigationLink(destination: ListeningAnalyticsView()) {
-                    HStack {
+                    HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Analytics")
                                 .font(.headline)
@@ -83,7 +83,7 @@ struct DashboardSummaryView: View {
                 
                 // Timeline button
                 NavigationLink(destination: ListeningTimelineView()) {
-                    HStack {
+                    HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Timeline")
                                 .font(.headline)
