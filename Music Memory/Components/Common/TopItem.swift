@@ -58,7 +58,7 @@ struct TopItemsView<T, DestinationView: View>: View {
                                             .cornerRadius(AppStyles.cornerRadius)
                                     }
                                     
-                                    // Rank badge
+                                    // Rank badge - modified to ensure it's fully visible
                                     Text("#\(index + 1)")
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(.white)
@@ -68,6 +68,8 @@ struct TopItemsView<T, DestinationView: View>: View {
                                         .cornerRadius(8)
                                         .offset(x: -5, y: -5)
                                 }
+                                // Add spacing to ensure badge is fully visible
+                                .padding(.top, 5)
                                 
                                 // Title
                                 Text(itemTitle(item))
@@ -91,6 +93,7 @@ struct TopItemsView<T, DestinationView: View>: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.top, 1)
             }
         }
     }
