@@ -86,13 +86,6 @@ struct PlaylistDetailView: View {
         List {
             // Playlist header section with optional rank
             Section(header: VStack(alignment: .center, spacing: 4) {
-                if let rank = rank {
-                    Text("Rank #\(rank)")
-                        .font(.headline)
-                        .foregroundColor(AppStyles.accentColor)
-                        .padding(.bottom, 4)
-                }
-                
                 DetailHeaderView(
                     title: playlist.name,
                     subtitle: "",
@@ -100,7 +93,8 @@ struct PlaylistDetailView: View {
                     songCount: playlist.songs.count,
                     artwork: playlist.artwork,
                     isAlbum: false,
-                    metadata: []
+                    metadata: [],
+                    rank: rank
                 )
             }) {
                 // Empty section content for spacing

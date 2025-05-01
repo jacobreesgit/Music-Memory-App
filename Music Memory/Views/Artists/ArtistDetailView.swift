@@ -113,13 +113,6 @@ struct ArtistDetailView: View {
         List {
             // Artist header section with optional rank
             Section(header: VStack(alignment: .center, spacing: 4) {
-                if let rank = rank {
-                    Text("Rank #\(rank)")
-                        .font(.headline)
-                        .foregroundColor(AppStyles.accentColor)
-                        .padding(.bottom, 4)
-                }
-                
                 DetailHeaderView(
                     title: artist.name,
                     subtitle: "",
@@ -127,7 +120,8 @@ struct ArtistDetailView: View {
                     songCount: artist.songs.count,
                     artwork: artist.artwork,
                     isAlbum: false,
-                    metadata: []
+                    metadata: [],
+                    rank: rank
                 )
             }) {
                 // Empty section content for spacing

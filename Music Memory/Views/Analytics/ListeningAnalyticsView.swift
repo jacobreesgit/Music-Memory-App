@@ -529,7 +529,6 @@ struct TimeAnalyticsView: View {
     }
 }
 
-// MARK: - Listening Patterns View
 
 struct ListeningPatternsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
@@ -609,31 +608,30 @@ struct ListeningPatternsView: View {
                     }
                 }
                 
-                // Artist top 5 vs others visualization
-                HStack(spacing: 2) {
-                    ForEach(0..<5) { i in
-                        if i < artistContribution.count {
-                            GeometryReader { geo in
+                // Artist top 5 vs others visualization - FIXED to properly display percentages
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        // Display top 5 artists proportionally
+                        ForEach(0..<5) { i in
+                            if i < artistContribution.count {
                                 Rectangle()
                                     .fill(AppStyles.accentColor.opacity(1.0 - (Double(i) * 0.15)))
-                                    .frame(width: calculateWidthForArtist(at: i, in: geo.size.width))
+                                    .frame(width: getPercentageWidth(for: i, in: geo.size.width))
                             }
                         }
-                    }
-                    
-                    // Other artists
-                    if let otherWidth = otherArtistsPercentage, otherWidth > 0 {
-                        GeometryReader { geo in
+                        
+                        // Other artists - now correctly sized
+                        if let otherPercentage = otherArtistsPercentage, otherPercentage > 0 {
                             Rectangle()
                                 .fill(Color.gray)
-                                .frame(width: geo.size.width * otherWidth / 100.0)
+                                .frame(width: geo.size.width * otherPercentage / 100.0)
                         }
                     }
                 }
                 .frame(height: 30)
                 .cornerRadius(AppStyles.cornerRadius)
                 
-                // Artist legend
+                // Artist legend - UPDATED to include percentages
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(Array(artistContribution.prefix(5).enumerated()), id: \.element.id) { index, artist in
                         HStack {
@@ -649,14 +647,14 @@ struct ListeningPatternsView: View {
                             
                             Spacer()
                             
-                            Text("\(artist.totalPlayCount) plays")
+                            Text("\(artist.totalPlayCount) plays (\(getArtistPercentage(for: artist))%)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                     
-                    // Other artists
-                    if let otherPlays = otherArtistsPlayCount, otherPlays > 0 {
+                    // Other artists - UPDATED to include percentage
+                    if let otherPlays = otherArtistsPlayCount, let otherPercentage = otherArtistsPercentage, otherPlays > 0 {
                         HStack {
                             Rectangle()
                                 .fill(Color.gray)
@@ -668,7 +666,7 @@ struct ListeningPatternsView: View {
                             
                             Spacer()
                             
-                            Text("\(otherPlays) plays")
+                            Text("\(otherPlays) plays (\(Int(otherPercentage.rounded()))%)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -720,17 +718,26 @@ struct ListeningPatternsView: View {
         }
     }
     
-    // Helper function to calculate width for an artist proportion
-    private func calculateWidthForArtist(at index: Int, in totalWidth: CGFloat) -> CGFloat {
+    // NEW: Helper function to calculate percentage for a specific artist
+    private func getArtistPercentage(for artist: ArtistData) -> String {
+        let totalPlays = musicLibrary.songs.reduce(0) { $0 + $1.playCount }
+        guard totalPlays > 0 else { return "0" }
+        
+        let percentage = Double(artist.totalPlayCount) / Double(totalPlays) * 100.0
+        return percentage < 10 ? String(format: "%.1f", percentage) : "\(Int(percentage.rounded()))"
+    }
+    
+    // FIXED: Helper function to calculate width based on actual percentage of total plays
+    private func getPercentageWidth(for index: Int, in totalWidth: CGFloat) -> CGFloat {
         guard index < artistContribution.count else { return 0 }
         
         let totalPlays = musicLibrary.songs.reduce(0) { $0 + $1.playCount }
         guard totalPlays > 0 else { return 0 }
         
         let artistPlays = artistContribution[index].totalPlayCount
-        let proportion = Double(artistPlays) / Double(totalPlays)
+        let percentage = Double(artistPlays) / Double(totalPlays) * 100.0
         
-        return CGFloat(proportion) * totalWidth
+        return totalWidth * percentage / 100.0
     }
     
     // Repeat listening score (how many times do you repeat your songs on average)
@@ -772,11 +779,12 @@ struct ListeningPatternsView: View {
         return otherCount > 0 ? otherCount : nil
     }
     
-    // Percentage for other artists visualization
+    // FIXED: Percentage for other artists visualization - now returning actual percentage
     private var otherArtistsPercentage: Double? {
         guard let otherCount = otherArtistsPlayCount else { return nil }
         let totalCount = musicLibrary.songs.reduce(0) { $0 + $1.playCount }
         guard totalCount > 0 else { return nil }
+        // Return actual percentage rather than proportion
         return Double(otherCount) / Double(totalCount) * 100.0
     }
     

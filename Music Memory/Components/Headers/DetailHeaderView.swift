@@ -25,6 +25,7 @@ struct DetailHeaderView: View {
     let artwork: MPMediaItemArtwork?
     let isAlbum: Bool
     let metadata: [MetadataItem]
+    let rank: Int?
     
     init(
         title: String,
@@ -33,7 +34,8 @@ struct DetailHeaderView: View {
         songCount: Int,
         artwork: MPMediaItemArtwork?,
         isAlbum: Bool,
-        metadata: [MetadataItem] = []
+        metadata: [MetadataItem] = [],
+        rank: Int? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -42,26 +44,42 @@ struct DetailHeaderView: View {
         self.artwork = artwork
         self.isAlbum = isAlbum
         self.metadata = metadata
+        self.rank = rank
     }
     
     var body: some View {
         VStack(spacing: AppStyles.smallPadding) {
-            // Artwork or placeholder
-            if let artwork = artwork {
-                Image(uiImage: artwork.image(at: CGSize(width: 200, height: 200)) ?? UIImage(systemName: isAlbum ? "square.stack" : "music.mic")!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 200, height: 200)
-                    .cornerRadius(AppStyles.cornerRadius)
-            } else {
-                Image(systemName: isAlbum ? "square.stack" : "music.mic")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 160, height: 160)
-                    .padding(20)
-                    .background(AppStyles.secondaryColor)
-                    .cornerRadius(AppStyles.cornerRadius)
+            // Artwork or placeholder with rank badge
+            ZStack(alignment: .topLeading) {
+                if let artwork = artwork {
+                    Image(uiImage: artwork.image(at: CGSize(width: 200, height: 200)) ?? UIImage(systemName: isAlbum ? "square.stack" : "music.mic")!)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 200, height: 200)
+                        .cornerRadius(AppStyles.cornerRadius)
+                } else {
+                    Image(systemName: isAlbum ? "square.stack" : "music.mic")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 160, height: 160)
+                        .padding(20)
+                        .background(AppStyles.secondaryColor)
+                        .cornerRadius(AppStyles.cornerRadius)
+                }
+                
+                // Rank badge if available
+                if let rank = rank {
+                    Text("#\(rank)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppStyles.accentColor)
+                        .cornerRadius(8)
+                        .offset(x: -8, y: -8)
+                }
             }
+            .padding(.top, 5) // Add padding to ensure badge is fully visible
             
             // Title
             Text(title)

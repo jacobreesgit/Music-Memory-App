@@ -76,13 +76,6 @@ struct GenreDetailView: View {
         List {
             // Genre header section with optional rank
             Section(header: VStack(alignment: .center, spacing: 4) {
-                if let rank = rank {
-                    Text("Rank #\(rank)")
-                        .font(.headline)
-                        .foregroundColor(AppStyles.accentColor)
-                        .padding(.bottom, 4)
-                }
-                
                 DetailHeaderView(
                     title: genre.name,
                     subtitle: "",
@@ -90,7 +83,8 @@ struct GenreDetailView: View {
                     songCount: genre.songs.count,
                     artwork: genre.artwork,
                     isAlbum: false,
-                    metadata: []
+                    metadata: [],
+                    rank: rank
                 )
             }) {
                 // Empty section content for spacing
