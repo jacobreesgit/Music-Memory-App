@@ -55,15 +55,6 @@ struct PlaylistsView: View {
                     sortOption: $sortOption,
                     placeholder: "Search playlists"
                 )
-                
-                // Results count
-                if !searchText.isEmpty {
-                    Text("Found \(filteredPlaylists.count) results")
-                        .font(AppStyles.captionStyle)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
 
                 List {
                     ForEach(Array(filteredPlaylists.enumerated()), id: \.element.id) { index, playlist in

@@ -63,15 +63,6 @@ struct SongsView: View {
                     sortOption: $sortOption,
                     placeholder: "Search songs"
                 )
-                
-                // Results count
-                if !searchText.isEmpty {
-                    Text("Found \(filteredSongs.count) results")
-                        .font(AppStyles.captionStyle)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
 
                 // List with content
                 List {

@@ -55,15 +55,6 @@ struct ArtistsView: View {
                     sortOption: $sortOption,
                     placeholder: "Search artists"
                 )
-                
-                // Results count
-                if !searchText.isEmpty {
-                    Text("Found \(filteredArtists.count) results")
-                        .font(AppStyles.captionStyle)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
 
                 List {
                     ForEach(Array(filteredArtists.enumerated()), id: \.element.id) { index, artist in

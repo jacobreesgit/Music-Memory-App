@@ -59,15 +59,6 @@ struct AlbumsView: View {
                     sortOption: $sortOption,
                     placeholder: "Search albums"
                 )
-                
-                // Results count
-                if !searchText.isEmpty {
-                    Text("Found \(filteredAlbums.count) results")
-                        .font(AppStyles.captionStyle)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
 
                 List {
                     ForEach(Array(filteredAlbums.enumerated()), id: \.element.id) { index, album in

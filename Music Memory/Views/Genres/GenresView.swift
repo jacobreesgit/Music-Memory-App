@@ -50,15 +50,6 @@ struct GenresView: View {
                 sortOption: $sortOption,
                 placeholder: "Search genres"
             )
-            
-            // Results count
-            if !searchText.isEmpty {
-                Text("Found \(filteredGenres.count) results")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal)
-                    .padding(.bottom, 4)
-            }
 
             List {
                 ForEach(Array(filteredGenres.enumerated()), id: \.element.id) { index, genre in
