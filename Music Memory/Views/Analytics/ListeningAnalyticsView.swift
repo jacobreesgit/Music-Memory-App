@@ -14,32 +14,47 @@ struct ListeningAnalyticsView: View {
     @State private var selectedTab = 0
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Top section with basic stats summary
+        VStack(spacing: 0) {
+            // Stats overview at the top
+            ScrollView {
                 StatsOverviewCard()
-                .padding(.horizontal)
-                
-                // Tab selection for different analytics
-                AnalyticsTabView(selectedTab: $selectedTab)
                     .padding(.horizontal)
-                
-                // Tab content
-                VStack {
-                    switch selectedTab {
-                    case 0:
-                        GenreAnalyticsView()
-                    case 1:
-                        TimeAnalyticsView()
-                    case 2:
-                        ListeningPatternsView()
-                    default:
-                        EmptyView()
-                    }
-                }
-                .padding(.horizontal)
+                    .padding(.vertical)
             }
-            .padding(.vertical)
+            .frame(height: 230)
+            
+            // Tab selection for different analytics
+            AnalyticsTabView(selectedTab: $selectedTab)
+                .padding(.horizontal)
+            
+            // TabView with PageTabViewStyle for swiping between tabs
+            TabView(selection: $selectedTab) {
+                // Genres tab
+                ScrollView {
+                    GenreAnalyticsView()
+                        .padding(.horizontal)
+                        .padding(.vertical)
+                }
+                .tag(0)
+                
+                // Time tab
+                ScrollView {
+                    TimeAnalyticsView()
+                        .padding(.horizontal)
+                        .padding(.vertical)
+                }
+                .tag(1)
+                
+                // Patterns tab
+                ScrollView {
+                    ListeningPatternsView()
+                        .padding(.horizontal)
+                        .padding(.vertical)
+                }
+                .tag(2)
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .animation(.spring(response: 0.35, dampingFraction: 0.86), value: selectedTab)
         }
         .navigationTitle("Listening Analytics")
     }
