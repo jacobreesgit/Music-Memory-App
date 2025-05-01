@@ -11,7 +11,7 @@ import MediaPlayer
 struct GenresView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var searchText = ""
-    @State private var sortOption = SortOption.songCount
+    @State private var sortOption = SortOption.playCount
     
     enum SortOption: String, CaseIterable, Identifiable {
         case songCount = "Song Count"
