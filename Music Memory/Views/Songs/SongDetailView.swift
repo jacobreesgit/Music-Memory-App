@@ -13,6 +13,10 @@ struct SongDetailView: View {
     let song: MPMediaItem
     let rank: Int?
     
+    // State variables for expanded sections
+    @State private var showAllPlaylists = false
+    @State private var showAllRelatedSongs = false
+    
     // Initialize with an optional rank parameter
     init(song: MPMediaItem, rank: Int? = nil) {
         self.song = song
@@ -40,6 +44,23 @@ struct SongDetailView: View {
         return musicLibrary.playlists.filter { playlist in
             playlist.songs.contains { $0.persistentID == song.persistentID }
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    }
+    
+    // Helper function to find related songs (same artist or album)
+    private func findRelatedSongs() -> [MPMediaItem] {
+        // Exclude the current song
+        return musicLibrary.songs.filter { relatedSong in
+            relatedSong.persistentID != song.persistentID && (
+                relatedSong.artist == song.artist ||
+                relatedSong.albumTitle == song.albumTitle
+            )
+        }.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
+    }
+    
+    // Helper function to find genre for this song
+    private func findGenre() -> GenreData? {
+        guard let genreName = song.genre else { return nil }
+        return musicLibrary.genres.first { $0.name == genreName }
     }
     
     var body: some View {
@@ -181,14 +202,83 @@ struct SongDetailView: View {
                 }
             }
             
-            // Playlists section if the song is in any playlists
+            // Genre section
+            if let genre = findGenre() {
+                Section(header: Text("Genre").padding(.leading, -15)) {
+                    NavigationLink(destination: GenreDetailView(genre: genre)) {
+                        GenreRow(genre: genre)
+                    }
+                    .listRowSeparator(.hidden)
+                }
+            }
+            
+            // Related songs section with Show More/Less
+            let relatedSongs = findRelatedSongs()
+            if !relatedSongs.isEmpty {
+                Section(header: Text("Related Songs").padding(.leading, -15)) {
+                    let displayedSongs = showAllRelatedSongs ? relatedSongs : Array(relatedSongs.prefix(5))
+                    
+                    ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, relatedSong in
+                        NavigationLink(destination: SongDetailView(song: relatedSong)) {
+                            SongRow(song: relatedSong)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                    
+                    // Show More/Less button for related songs
+                    if relatedSongs.count > 5 {
+                        Button(action: {
+                            showAllRelatedSongs.toggle()
+                        }) {
+                            HStack {
+                                Text(showAllRelatedSongs ? "Show Less" : "Show More")
+                                    .font(.subheadline)
+                                    .foregroundColor(AppStyles.accentColor)
+                                
+                                Image(systemName: showAllRelatedSongs ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppStyles.accentColor)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowSeparator(.hidden)
+                    }
+                }
+            }
+            
+            // Playlists section with Show More/Less
             let containingPlaylists = findPlaylists()
             if !containingPlaylists.isEmpty {
                 Section(header: Text("In Playlists").padding(.leading, -15)) {
-                    ForEach(containingPlaylists) { playlist in
+                    let displayedPlaylists = showAllPlaylists ? containingPlaylists : Array(containingPlaylists.prefix(5))
+                    
+                    ForEach(displayedPlaylists) { playlist in
                         NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
                             PlaylistRow(playlist: playlist)
                         }
+                        .listRowSeparator(.hidden)
+                    }
+                    
+                    // Show More/Less button for playlists
+                    if containingPlaylists.count > 5 {
+                        Button(action: {
+                            showAllPlaylists.toggle()
+                        }) {
+                            HStack {
+                                Text(showAllPlaylists ? "Show Less" : "Show More")
+                                    .font(.subheadline)
+                                    .foregroundColor(AppStyles.accentColor)
+                                
+                                Image(systemName: showAllPlaylists ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppStyles.accentColor)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                         .listRowSeparator(.hidden)
                     }
                 }

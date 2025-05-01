@@ -13,6 +13,12 @@ struct ArtistDetailView: View {
     let artist: ArtistData
     let rank: Int?
     
+    // State variables for expanded sections
+    @State private var showAllSongs = false
+    @State private var showAllAlbums = false
+    @State private var showAllGenres = false
+    @State private var showAllPlaylists = false
+    
     // Initialize with an optional rank parameter
     init(artist: ArtistData, rank: Int? = nil) {
         self.artist = artist
@@ -68,6 +74,30 @@ struct ArtistDetailView: View {
                 playCount: playCount
             )
         }.sorted { $0.playCount > $1.playCount }
+    }
+    
+    // Helper function to find artist genres
+    private func artistGenres() -> [GenreData] {
+        // Get unique genre names from this artist's songs
+        let genreNames = Set(artist.songs.compactMap { $0.genre })
+        
+        // Find corresponding genre objects
+        let genres = genreNames.compactMap { name -> GenreData? in
+            musicLibrary.genres.first { $0.name == name }
+        }
+        
+        // Sort by play count
+        return genres.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    }
+    
+    // Helper function to find playlists containing this artist's songs
+    private func findPlaylists() -> [PlaylistData] {
+        let artistSongIDs = Set(artist.songs.map { $0.persistentID })
+        
+        return musicLibrary.playlists.filter { playlist in
+            // Check if playlist contains at least one song from this artist
+            playlist.songs.contains { artistSongIDs.contains($0.persistentID) }
+        }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
     // Simple struct to hold album info for display
@@ -139,27 +169,55 @@ struct ArtistDetailView: View {
                     .listRowSeparator(.hidden)
             }
             
-            // Songs section with ranking
-            Section(header: Text("Songs").padding(.leading, -15)) {
-                // Songs list sorted by play count with navigation
-                ForEach(Array(artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }.enumerated()), id: \.element.persistentID) { index, song in
-                    NavigationLink(destination: SongDetailView(song: song)) {
-                        HStack(spacing: 10) {
-                            Text("#\(index + 1)")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(AppStyles.accentColor)
-                                .frame(width: 30, alignment: .leading)
-                            
-                            SongRow(song: song)
+            // Genres section with Show More/Less
+            let genres = artistGenres()
+            if !genres.isEmpty {
+                Section(header: Text("Genres").padding(.leading, -15)) {
+                    let displayedGenres = showAllGenres ? genres : Array(genres.prefix(5))
+                    
+                    ForEach(Array(displayedGenres.enumerated()), id: \.element.id) { index, genre in
+                        NavigationLink(destination: GenreDetailView(genre: genre)) {
+                            HStack(spacing: 10) {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                GenreRow(genre: genre)
+                            }
                         }
+                        .listRowSeparator(.hidden)
                     }
-                    .listRowSeparator(.hidden)
+                    
+                    // Show More/Less button for genres
+                    if genres.count > 5 {
+                        Button(action: {
+                            showAllGenres.toggle()
+                        }) {
+                            HStack {
+                                Text(showAllGenres ? "Show Less" : "Show More")
+                                    .font(.subheadline)
+                                    .foregroundColor(AppStyles.accentColor)
+                                
+                                Image(systemName: showAllGenres ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppStyles.accentColor)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowSeparator(.hidden)
+                    }
                 }
             }
             
-            // Albums section with ranking
+            // Albums section with ranking and Show More/Less
             Section(header: Text("Albums").padding(.leading, -15)) {
-                ForEach(Array(albumData().enumerated()), id: \.element.id) { index, album in
+                let albums = albumData()
+                let displayedAlbums = showAllAlbums ? albums : Array(albums.prefix(5))
+                
+                ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, album in
                     if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
                         NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
                             HStack(spacing: 10) {
@@ -183,6 +241,104 @@ struct ArtistDetailView: View {
                         }
                         .listRowSeparator(.hidden)
                     }
+                }
+                
+                // Show More/Less button for albums
+                if albums.count > 5 {
+                    Button(action: {
+                        showAllAlbums.toggle()
+                    }) {
+                        HStack {
+                            Text(showAllAlbums ? "Show Less" : "Show More")
+                                .font(.subheadline)
+                                .foregroundColor(AppStyles.accentColor)
+                            
+                            Image(systemName: showAllAlbums ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .listRowSeparator(.hidden)
+                }
+            }
+            
+            // Playlists section with Show More/Less
+            let containingPlaylists = findPlaylists()
+            if !containingPlaylists.isEmpty {
+                Section(header: Text("In Playlists").padding(.leading, -15)) {
+                    let displayedPlaylists = showAllPlaylists ? containingPlaylists : Array(containingPlaylists.prefix(5))
+                    
+                    ForEach(displayedPlaylists) { playlist in
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                            PlaylistRow(playlist: playlist)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                    
+                    // Show More/Less button for playlists
+                    if containingPlaylists.count > 5 {
+                        Button(action: {
+                            showAllPlaylists.toggle()
+                        }) {
+                            HStack {
+                                Text(showAllPlaylists ? "Show Less" : "Show More")
+                                    .font(.subheadline)
+                                    .foregroundColor(AppStyles.accentColor)
+                                
+                                Image(systemName: showAllPlaylists ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(AppStyles.accentColor)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowSeparator(.hidden)
+                    }
+                }
+            }
+            
+            // Songs section with ranking and Show More/Less
+            Section(header: Text("Songs").padding(.leading, -15)) {
+                let sortedSongs = artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
+                let displayedSongs = showAllSongs ? sortedSongs : Array(sortedSongs.prefix(5))
+                
+                ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        HStack(spacing: 10) {
+                            Text("#\(index + 1)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 30, alignment: .leading)
+                            
+                            SongRow(song: song)
+                        }
+                    }
+                    .listRowSeparator(.hidden)
+                }
+                
+                // Show More/Less button for songs
+                if sortedSongs.count > 5 {
+                    Button(action: {
+                        showAllSongs.toggle()
+                    }) {
+                        HStack {
+                            Text(showAllSongs ? "Show Less" : "Show More")
+                                .font(.subheadline)
+                                .foregroundColor(AppStyles.accentColor)
+                            
+                            Image(systemName: showAllSongs ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .listRowSeparator(.hidden)
                 }
             }
         }
