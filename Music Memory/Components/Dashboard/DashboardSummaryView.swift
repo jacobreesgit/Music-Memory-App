@@ -240,6 +240,7 @@ struct DashboardSummaryView: View {
                 .padding(.horizontal)
             }
         }
+        .padding(.bottom, 20)
     }
     
     // MARK: - Computed Properties
@@ -439,6 +440,9 @@ struct InsightRow: View {
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
+            
+            Spacer()
         }
+        .padding(.vertical, 12)
     }
 }
