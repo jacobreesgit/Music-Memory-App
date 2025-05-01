@@ -15,131 +15,105 @@ struct SettingsView: View {
     @State private var isRefreshing = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @AppStorage("allowAnalytics") private var allowAnalytics = false
     
     var body: some View {
-        NavigationView {
-            List {
-                // Appearance section
-                Section(header: Text("Appearance")) {
-                    Toggle("Use System Appearance", isOn: $useSystemAppearance)
-                    
-                    if !useSystemAppearance {
-                        Toggle("Dark Mode", isOn: $isDarkMode)
-                            .onChange(of: isDarkMode) { _ in
-                                updateAppearance()
-                            }
-                    }
-                }
+        List {
+            // Appearance section
+            Section(header: Text("APPEARANCE")) {
+                Toggle("Use System Appearance", isOn: $useSystemAppearance)
                 
-                // Library section
-                Section(header: Text("Library")) {
-                    Button(action: {
-                        showingConfirmation = true
-                    }) {
-                        HStack {
-                            if isRefreshing {
-                                ProgressView()
-                                    .padding(.trailing, 5)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .foregroundColor(AppStyles.accentColor)
-                            }
-                            
-                            Text("Refresh Music Library")
+                if !useSystemAppearance {
+                    Toggle("Dark Mode", isOn: $isDarkMode)
+                        .onChange(of: isDarkMode) { _ in
+                            updateAppearance()
                         }
-                    }
-                    .disabled(isRefreshing)
-                    .alert("Refresh Library", isPresented: $showingConfirmation) {
-                        Button("Cancel", role: .cancel) { }
-                        Button("Refresh") {
-                            refreshLibrary()
-                        }
-                    } message: {
-                        Text("This will reload all songs, albums, artists, and playlists from your music library.")
-                    }
-                    
-                    NavigationLink(destination: PrivacySettingsView()) {
-                        HStack {
-                            Image(systemName: "lock.shield")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("Privacy Settings")
-                        }
-                    }
                 }
-                
-                // App information section
-                Section(header: Text("App Information")) {
-                    Button(action: {
-                        showingAbout = true
-                    }) {
-                        HStack {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("About Music Memory")
-                        }
-                    }
-                    .sheet(isPresented: $showingAbout) {
-                        AboutView()
-                    }
-                    
-                    Link(destination: URL(string: "https://github.com/jacobrees/MusicMemory")!) {
-                        HStack {
-                            Image(systemName: "doc.text")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("Documentation")
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Button(action: {
-                        if let url = URL(string: "mailto:support@musicmemory.app") {
-                            UIApplication.shared.open(url)
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "envelope")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("Contact Support")
-                        }
-                    }
-                }
-                
-                // Legal section
-                Section(header: Text("Legal")) {
-                    NavigationLink(destination: TermsView()) {
-                        HStack {
-                            Image(systemName: "doc.text")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("Terms of Service")
-                        }
-                    }
-                    
-                    NavigationLink(destination: PrivacyPolicyView()) {
-                        HStack {
-                            Image(systemName: "hand.raised")
-                                .foregroundColor(AppStyles.accentColor)
-                            Text("Privacy Policy")
-                        }
-                    }
-                }
-                
-                // Version information
-                Section {
+            }
+            
+            // Library section
+            Section(header: Text("LIBRARY")) {
+                Button(action: {
+                    showingConfirmation = true
+                }) {
                     HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 16))
+                        
+                        Text("Refresh Music Library")
+                            .foregroundColor(.blue)
+                    }
+                }
+                .disabled(isRefreshing)
+                .alert("Refresh Library", isPresented: $showingConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Refresh") {
+                        refreshLibrary()
+                    }
+                } message: {
+                    Text("This will reload all songs, albums, artists, and playlists from your music library.")
+                }
+                
+                // Music Library Permission
+                Button(action: {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "lock.shield")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 16))
+                        
+                        Text("Manage Permissions")
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                // Analytics Toggle
+                Toggle("Allow Anonymous Analytics", isOn: $allowAnalytics)
+            }
+            
+            // App information section
+            Section(header: Text("APP INFORMATION")) {
+                Button(action: {
+                    showingAbout = true
+                }) {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("About Music Memory")
+                            .foregroundColor(.blue)
+                    }
+                }
+                .sheet(isPresented: $showingAbout) {
+                    AboutView()
+                }
+            }
+            
+            // Legal section
+            Section(header: Text("LEGAL")) {
+                NavigationLink(destination: TermsView()) {
+                    HStack {
+                        Image(systemName: "doc.text")
+                            .foregroundColor(AppStyles.accentColor)
+                        Text("Terms of Service")
+                    }
+                }
+                
+                NavigationLink(destination: PrivacyPolicyView()) {
+                    HStack {
+                        Image(systemName: "hand.raised")
+                            .foregroundColor(AppStyles.accentColor)
+                        Text("Privacy Policy")
                     }
                 }
             }
-            .navigationTitle("Settings")
-            .listStyle(InsetGroupedListStyle())
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .listStyle(InsetGroupedListStyle())
         .onAppear {
             // Set initial appearance
             updateAppearance()
@@ -168,42 +142,6 @@ struct SettingsView: View {
         for window in windows {
             window.overrideUserInterfaceStyle = useSystemAppearance ? .unspecified : (isDarkMode ? .dark : .light)
         }
-    }
-}
-
-// Privacy Settings View
-struct PrivacySettingsView: View {
-    @AppStorage("allowAnalytics") private var allowAnalytics = false
-    
-    var body: some View {
-        List {
-            Section(header: Text("Data Collection")) {
-                Toggle("Allow Anonymous Analytics", isOn: $allowAnalytics)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("About Music Data")
-                        .font(.headline)
-                    
-                    Text("Music Memory only accesses your music library metadata locally on your device. No song data, listening history, or personal information is ever uploaded to any server.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 8)
-            }
-            
-            Section(header: Text("Permissions")) {
-                Button(action: {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    Text("Manage App Permissions in Settings")
-                        .foregroundColor(AppStyles.accentColor)
-                }
-            }
-        }
-        .navigationTitle("Privacy Settings")
-        .listStyle(InsetGroupedListStyle())
     }
 }
 
@@ -242,6 +180,21 @@ struct AboutView: View {
                     .font(.headline)
             }
             .padding(.top)
+            
+            Button(action: {
+                if let url = URL(string: "mailto:jacobrees@icloud.com") {
+                    UIApplication.shared.open(url)
+                }
+            }) {
+                HStack {
+                    Image(systemName: "envelope")
+                        .font(.system(size: 14))
+                    Text("Contact: jacobrees@icloud.com")
+                        .font(.subheadline)
+                }
+                .foregroundColor(.blue)
+            }
+            .padding(.top, 8)
             
             Spacer()
             
@@ -287,7 +240,7 @@ struct TermsView: View {
                     
                     Text("4. Intellectual Property")
                         .font(.headline)
-                    Text("Music Memory and all related content are protected by copyright, trademark, and other intellectual property laws.")
+                    Text("Music Memory and all related content are protected by copyright, trademark, and other intellectual property laws in the United Kingdom.")
                     
                     Text("5. Disclaimer of Warranties")
                         .font(.headline)
@@ -301,7 +254,7 @@ struct TermsView: View {
                     
                     Text("7. Governing Law")
                         .font(.headline)
-                    Text("These terms shall be governed by the laws of the jurisdiction in which the developer operates, without regard to its conflict of law provisions.")
+                    Text("These terms shall be governed by the laws of England and Wales. Any dispute arising from these terms will be subject to the exclusive jurisdiction of the courts of England and Wales.")
                     
                     Text("8. Changes to Terms")
                         .font(.headline)
@@ -326,7 +279,7 @@ struct PrivacyPolicyView: View {
                 Group {
                     Text("1. Information Collection")
                         .font(.headline)
-                    Text("Music Memory accesses your device's music library metadata only. This includes song titles, artists, albums, and play counts. This data is processed entirely on your device.")
+                    Text("Music Memory accesses your device's music library metadata only. This includes song titles, artists, albums, and play counts. This data is processed entirely on your device, in compliance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.")
                     
                     Text("2. Information Usage")
                         .font(.headline)
@@ -348,15 +301,19 @@ struct PrivacyPolicyView: View {
                     
                     Text("6. Your Rights")
                         .font(.headline)
-                    Text("You can disable music library access at any time through your device settings. You can also disable analytics in the app's privacy settings.")
+                    Text("Under UK data protection law, you have rights including the right to access, correct, or delete your personal data. You can disable music library access at any time through your device settings or disable analytics in the app's privacy settings.")
                     
                     Text("7. Changes to Policy")
                         .font(.headline)
-                    Text("We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.")
+                    Text("We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy in the app.")
                     
-                    Text("8. Contact Us")
+                    Text("8. Data Controller & Contact")
                         .font(.headline)
-                    Text("If you have any questions about this Privacy Policy, please contact us at privacy@musicmemory.app")
+                    Text("The data controller for Music Memory is Jacob Rees (Jaba), based in the United Kingdom. If you have any questions or concerns about this Privacy Policy, please contact us at jacobrees@icloud.com.")
+                    
+                    Text("9. Supervisory Authority")
+                        .font(.headline)
+                    Text("You have the right to lodge a complaint with the Information Commissioner's Office (ICO), the UK data protection regulator.")
                 }
             }
             .padding()

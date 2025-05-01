@@ -12,8 +12,8 @@ import Combine
 struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var selectedTab = 0
-    @State private var navigationState = [0: false, 1: false]
-    @State private var scrollIDs = [0: UUID(), 1: UUID()]
+    @State private var navigationState = [0: false, 1: false, 2: false]
+    @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID()]
     @State private var isKeyboardVisible = false
     
     // Added to track the currently selected library tab
@@ -70,6 +70,13 @@ struct ContentView: View {
                     scrollToTopAction: { scrollIDs[1] = UUID() }
                 )
                 .tag(1)
+                
+                NavigationViewWithState(
+                    rootView: SettingsView().id(scrollIDs[2]),
+                    inDetailView: bindingFor(key: 2),
+                    scrollToTopAction: { scrollIDs[2] = UUID() }
+                )
+                .tag(2)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .padding(.bottom, isKeyboardVisible ? 0 : 56)
@@ -80,7 +87,7 @@ struct ContentView: View {
                     Divider()
                     
                     HStack(spacing: 0) {
-                        ForEach(0..<2) { index in
+                        ForEach(0..<3) { index in
                             Button(action: {
                                 // Haptic feedback
                                 feedbackGenerator.impactOccurred()
@@ -151,6 +158,7 @@ struct ContentView: View {
         switch index {
         case 0: return "chart.bar.fill"
         case 1: return "music.note"
+        case 2: return "gearshape.fill"
         default: return ""
         }
     }
@@ -159,6 +167,7 @@ struct ContentView: View {
         switch index {
         case 0: return "Dashboard"
         case 1: return "Library"
+        case 2: return "Settings"
         default: return ""
         }
     }
