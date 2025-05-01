@@ -149,7 +149,7 @@ struct ContentView: View {
     
     private func iconForIndex(_ index: Int) -> String {
         switch index {
-        case 0: return "chart.bar"
+        case 0: return "chart.bar.fill"
         case 1: return "music.note"
         default: return ""
         }
