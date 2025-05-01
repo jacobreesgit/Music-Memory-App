@@ -44,7 +44,7 @@ struct DashboardView: View {
                                 itemSubtitle: { $0.artist ?? "Unknown" },
                                 itemPlays: { $0.playCount ?? 0 },
                                 iconName: { _ in "music.note" },
-                                destination: { SongDetailView(song: $0) }
+                                destination: { song, rank in SongDetailView(song: song, rank: rank) }
                             )
                             
                             // Top Albums
@@ -59,7 +59,7 @@ struct DashboardView: View {
                                 itemSubtitle: { $0.artist },
                                 itemPlays: { $0.totalPlayCount },
                                 iconName: { _ in "square.stack" },
-                                destination: { AlbumDetailView(album: $0) }
+                                destination: { album, rank in AlbumDetailView(album: album, rank: rank) }
                             )
                             
                             // Top Artists
@@ -74,7 +74,7 @@ struct DashboardView: View {
                                 itemSubtitle: { "\($0.songs.count) songs" },
                                 itemPlays: { $0.totalPlayCount },
                                 iconName: { _ in "music.mic" },
-                                destination: { ArtistDetailView(artist: $0) }
+                                destination: { artist, rank in ArtistDetailView(artist: artist, rank: rank) }
                             )
                             
                             // Top Playlist
@@ -90,7 +90,7 @@ struct DashboardView: View {
                                     itemSubtitle: { "\($0.songs.count) songs" },
                                     itemPlays: { $0.totalPlayCount },
                                     iconName: { _ in "music.note.list" },
-                                    destination: { PlaylistDetailView(playlist: $0) }
+                                    destination: { playlist, rank in PlaylistDetailView(playlist: playlist, rank: rank) }
                                 )
                             }
                         }

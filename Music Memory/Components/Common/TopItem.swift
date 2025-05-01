@@ -24,7 +24,7 @@ struct TopItemsView<T, DestinationView: View>: View {
     let itemSubtitle: (T) -> String
     let itemPlays: (T) -> Int
     let iconName: (T) -> String
-    let destination: (T) -> DestinationView
+    let destination: (T, Int) -> DestinationView
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -37,7 +37,7 @@ struct TopItemsView<T, DestinationView: View>: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
                     ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                        NavigationLink(destination: destination(item)) {
+                        NavigationLink(destination: destination(item, index + 1)) {
                             VStack {
                                 // Rank badge
                                 ZStack(alignment: .topLeading) {
