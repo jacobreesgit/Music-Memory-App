@@ -50,6 +50,10 @@ struct SongsView: View {
         }
     }
     
+    private var originalRanks: [MPMediaEntityPersistentID: Int] {
+        Dictionary(uniqueKeysWithValues: sortedSongs.enumerated().map { ($1.persistentID, $0 + 1) })
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading songs...")
@@ -67,9 +71,9 @@ struct SongsView: View {
                 // List with content
                 List {
                     ForEach(Array(filteredSongs.enumerated()), id: \.element.persistentID) { index, song in
-                        NavigationLink(destination: SongDetailView(song: song, rank: index + 1)) {
+                        NavigationLink(destination: SongDetailView(song: song, rank: originalRanks[song.persistentID])) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
+                                Text("#\(originalRanks[song.persistentID] ?? 0)")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(AppStyles.accentColor)
                                     .frame(width: 30, alignment: .leading)

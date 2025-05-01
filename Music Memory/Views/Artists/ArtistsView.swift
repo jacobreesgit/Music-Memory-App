@@ -42,6 +42,10 @@ struct ArtistsView: View {
         }
     }
     
+    private var originalRanks: [String: Int] {
+        Dictionary(uniqueKeysWithValues: sortedArtists.enumerated().map { ($1.id, $0 + 1) })
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading artists...")
@@ -58,9 +62,9 @@ struct ArtistsView: View {
 
                 List {
                     ForEach(Array(filteredArtists.enumerated()), id: \.element.id) { index, artist in
-                        NavigationLink(destination: ArtistDetailView(artist: artist, rank: index + 1)) {
+                        NavigationLink(destination: ArtistDetailView(artist: artist, rank: originalRanks[artist.id])) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
+                                Text("#\(originalRanks[artist.id] ?? 0)")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(AppStyles.accentColor)
                                     .frame(width: 30, alignment: .leading)

@@ -42,6 +42,10 @@ struct GenresView: View {
         }
     }
     
+    private var originalRanks: [String: Int] {
+        Dictionary(uniqueKeysWithValues: sortedGenres.enumerated().map { ($1.id, $0 + 1) })
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Search and Sort Bar
@@ -53,9 +57,9 @@ struct GenresView: View {
 
             List {
                 ForEach(Array(filteredGenres.enumerated()), id: \.element.id) { index, genre in
-                    NavigationLink(destination: GenreDetailView(genre: genre, rank: index + 1)) {
+                    NavigationLink(destination: GenreDetailView(genre: genre, rank: originalRanks[genre.id])) {
                         HStack(spacing: 10) {
-                            Text("#\(index + 1)")
+                            Text("#\(originalRanks[genre.id] ?? 0)")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(AppStyles.accentColor)
                                 .frame(width: 30, alignment: .leading)

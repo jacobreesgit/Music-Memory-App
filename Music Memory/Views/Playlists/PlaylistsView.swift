@@ -42,6 +42,10 @@ struct PlaylistsView: View {
         }
     }
     
+    private var originalRanks: [String: Int] {
+        Dictionary(uniqueKeysWithValues: sortedPlaylists.enumerated().map { ($1.id, $0 + 1) })
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading playlists...")
@@ -58,9 +62,9 @@ struct PlaylistsView: View {
 
                 List {
                     ForEach(Array(filteredPlaylists.enumerated()), id: \.element.id) { index, playlist in
-                        NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: index + 1)) {
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: originalRanks[playlist.id])) {
                             HStack(spacing: 10) {
-                                Text("#\(index + 1)")
+                                Text("#\(originalRanks[playlist.id] ?? 0)")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(AppStyles.accentColor)
                                     .frame(width: 30, alignment: .leading)
