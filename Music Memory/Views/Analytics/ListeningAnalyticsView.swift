@@ -100,10 +100,52 @@ struct StatsOverviewCard: View {
             
             Divider()
             
-            // Favorite artist detail - using the actual ArtistRow component
+            // Updated top artist section with matching chevron style
             if let topArtist = musicLibrary.artists.first {
                 NavigationLink(destination: ArtistDetailView(artist: topArtist)) {
-                    ArtistRow(artist: topArtist)
+                    HStack {
+                        // Use existing ArtistRow without its trailing content
+                        HStack(spacing: AppStyles.smallPadding) {
+                            // Artwork or placeholder
+                            if let artwork = topArtist.artwork {
+                                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "music.mic")!)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 50, height: 50)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                            } else {
+                                // Fallback to icon if no artwork is available
+                                ZStack {
+                                    Circle()
+                                        .fill(AppStyles.secondaryColor)
+                                        .frame(width: 50, height: 50)
+                                    
+                                    Image(systemName: "music.mic")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                            
+                            // Artist name (vertically centered)
+                            Text(topArtist.name)
+                                .font(AppStyles.bodyStyle)
+                                .lineLimit(1)
+                            
+                            Spacer()
+                            
+                            // Play count with "plays" text
+                            Text("\(topArtist.totalPlayCount) plays")
+                                .font(AppStyles.playCountStyle)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        
+                        // Add custom chevron with proper spacing
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color.secondary.opacity(0.5))
+                            .padding(.leading, 8)
+                    }
+                    .foregroundColor(.primary)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
