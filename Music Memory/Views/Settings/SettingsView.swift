@@ -15,116 +15,161 @@ struct SettingsView: View {
     @State private var isRefreshing = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
-    @AppStorage("allowAnalytics") private var allowAnalytics = false
-    @AppStorage("hideZeroPlayCounts") private var hideZeroPlayCounts = true // New setting, true by default
+    // Analytics toggle completely removed
     
     var body: some View {
-        List {
-            // Appearance section
-            Section(header: Text("APPEARANCE")) {
-                Toggle("Use System Appearance", isOn: $useSystemAppearance)
+        VStack(spacing: 0) {
+            List {
+                // APPEARANCE SECTION
+                Section(header:
+                    Text("APPEARANCE")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 15)
+                        .padding(.bottom, 5)
+                ) {
+                    Toggle("Use System Appearance", isOn: $useSystemAppearance)
+                        .padding(.vertical, 2)
+                    
+                    if !useSystemAppearance {
+                        Toggle("Dark Mode", isOn: $isDarkMode)
+                            .padding(.vertical, 2)
+                            .onChange(of: isDarkMode) { _ in
+                                updateAppearance()
+                            }
+                    }
+                }
                 
-                if !useSystemAppearance {
-                    Toggle("Dark Mode", isOn: $isDarkMode)
-                        .onChange(of: isDarkMode) { _ in
-                            updateAppearance()
+                // LIBRARY SECTION
+                Section(header:
+                    Text("LIBRARY")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 15)
+                        .padding(.bottom, 5)
+                ) {
+                    Toggle("Hide Items with 0 Plays", isOn: .constant(true))
+                        .padding(.vertical, 2)
+                    
+                    Button(action: {
+                        showingConfirmation = true
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            
+                            Text("Refresh Music Library")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                }
-            }
-            
-            // Library section
-            Section(header: Text("LIBRARY")) {
-                // Hide zero play count items toggle
-                Toggle("Hide Items with 0 Plays", isOn: $hideZeroPlayCounts)
-                    .onChange(of: hideZeroPlayCounts) { _ in
-                        // Trigger library refresh to apply the filter
-                        musicLibrary.applyZeroPlayCountFilter()
                     }
-                
-                Button(action: {
-                    showingConfirmation = true
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 16))
-                        
-                        Text("Refresh Music Library")
-                            .foregroundColor(.blue)
+                    .padding(.vertical, 6)
+                    
+                    Button(action: {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "lock.shield")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            
+                            Text("Manage Permissions")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                }
-                .disabled(isRefreshing)
-                .alert("Refresh Library", isPresented: $showingConfirmation) {
-                    Button("Cancel", role: .cancel) { }
-                    Button("Refresh") {
-                        refreshLibrary()
-                    }
-                } message: {
-                    Text("This will reload all songs, albums, artists, and playlists from your music library.")
+                    .padding(.vertical, 6)
+                    
+                    // Analytics toggle completely removed
                 }
                 
-                // Music Library Permission
-                Button(action: {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
+                // APP INFORMATION SECTION
+                Section(header:
+                    Text("APP INFORMATION")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 15)
+                        .padding(.bottom, 5)
+                ) {
+                    Button(action: {
+                        showingAbout = true
+                    }) {
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            
+                            Text("About Music Memory")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                }) {
-                    HStack {
-                        Image(systemName: "lock.shield")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 16))
-                        
-                        Text("Manage Permissions")
-                            .foregroundColor(.blue)
-                    }
+                    .padding(.vertical, 6)
                 }
                 
-                // Analytics Toggle
-                Toggle("Allow Anonymous Analytics", isOn: $allowAnalytics)
-            }
-            
-            // App information section
-            Section(header: Text("APP INFORMATION")) {
-                Button(action: {
-                    showingAbout = true
-                }) {
-                    HStack {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(.blue)
-                        Text("About Music Memory")
-                            .foregroundColor(.blue)
+                // LEGAL SECTION
+                Section(header:
+                    Text("LEGAL")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 15)
+                        .padding(.bottom, 5)
+                ) {
+                    NavigationLink(destination: TermsView()) {
+                        HStack {
+                            Image(systemName: "doc.text")
+                                .foregroundColor(.purple)
+                                .frame(width: 20)
+                            
+                            Text("Terms of Service")
+                        }
                     }
-                }
-                .sheet(isPresented: $showingAbout) {
-                    AboutView()
-                }
-            }
-            
-            // Legal section
-            Section(header: Text("LEGAL")) {
-                NavigationLink(destination: TermsView()) {
-                    HStack {
-                        Image(systemName: "doc.text")
-                            .foregroundColor(AppStyles.accentColor)
-                        Text("Terms of Service")
+                    .padding(.vertical, 2)
+                    
+                    NavigationLink(destination: PrivacyPolicyView()) {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                                .foregroundColor(.purple)
+                                .frame(width: 20)
+                            
+                            Text("Privacy Policy")
+                        }
                     }
-                }
-                
-                NavigationLink(destination: PrivacyPolicyView()) {
-                    HStack {
-                        Image(systemName: "hand.raised")
-                            .foregroundColor(AppStyles.accentColor)
-                        Text("Privacy Policy")
-                    }
+                    .padding(.vertical, 2)
                 }
             }
+            .listStyle(InsetGroupedListStyle())
+            // This removes extra separator lines below the list
+            .environment(\.defaultMinListRowHeight, 0)
+            // Remove inset on all sides
+            .listRowInsets(EdgeInsets())
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .listStyle(InsetGroupedListStyle())
         .onAppear {
             // Set initial appearance
             updateAppearance()
+            
+            // Improve list appearance
+            UITableView.appearance().backgroundColor = .systemGroupedBackground
+            
+            // Fix separator insets for alignment
+            UITableView.appearance().separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+            UITableView.appearance().separatorStyle = .singleLine
+        }
+        .alert("Refresh Library", isPresented: $showingConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Refresh") {
+                refreshLibrary()
+            }
+        } message: {
+            Text("This will reload all songs, albums, artists, and playlists from your music library.")
+        }
+        .sheet(isPresented: $showingAbout) {
+            AboutView()
         }
     }
     
