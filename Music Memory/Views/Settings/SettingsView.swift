@@ -16,6 +16,7 @@ struct SettingsView: View {
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
     @AppStorage("allowAnalytics") private var allowAnalytics = false
+    @AppStorage("hideZeroPlayCounts") private var hideZeroPlayCounts = true // New setting, true by default
     
     var body: some View {
         List {
@@ -33,6 +34,13 @@ struct SettingsView: View {
             
             // Library section
             Section(header: Text("LIBRARY")) {
+                // Hide zero play count items toggle
+                Toggle("Hide Items with 0 Plays", isOn: $hideZeroPlayCounts)
+                    .onChange(of: hideZeroPlayCounts) { _ in
+                        // Trigger library refresh to apply the filter
+                        musicLibrary.applyZeroPlayCountFilter()
+                    }
+                
                 Button(action: {
                     showingConfirmation = true
                 }) {
@@ -319,12 +327,5 @@ struct PrivacyPolicyView: View {
             .padding()
         }
         .navigationTitle("Privacy Policy")
-    }
-}
-
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SettingsView()
-            .environmentObject(MusicLibraryModel())
     }
 }

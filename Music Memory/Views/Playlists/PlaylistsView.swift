@@ -35,15 +35,15 @@ struct PlaylistsView: View {
     var sortedPlaylists: [PlaylistData] {
         switch sortOption {
         case .playCount:
-            return musicLibrary.playlists.sorted {
+            return musicLibrary.filteredPlaylists.sorted {
                 sortAscending ? $0.totalPlayCount < $1.totalPlayCount : $0.totalPlayCount > $1.totalPlayCount
             }
         case .name:
-            return musicLibrary.playlists.sorted {
+            return musicLibrary.filteredPlaylists.sorted {
                 sortAscending ? $0.name < $1.name : $0.name > $1.name
             }
         case .songCount:
-            return musicLibrary.playlists.sorted {
+            return musicLibrary.filteredPlaylists.sorted {
                 sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
             }
         }
@@ -68,31 +68,52 @@ struct PlaylistsView: View {
                     placeholder: "Search playlists"
                 )
 
-                List {
-                    ForEach(Array(filteredPlaylists.enumerated()), id: \.element.id) { index, playlist in
-                        NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: originalRanks[playlist.id])) {
-                            HStack(spacing: 10) {
-                                Text("#\(originalRanks[playlist.id] ?? 0)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                                
-                                PlaylistRow(playlist: playlist)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                    
-                    if filteredPlaylists.isEmpty && !searchText.isEmpty {
-                        Text("No playlists found matching '\(searchText)'")
+                if musicLibrary.filteredPlaylists.isEmpty {
+                    // Show message when there are no playlists in the library
+                    VStack(spacing: 20) {
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 50))
                             .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .listRowSeparator(.hidden)
+                            .padding(.top, 50)
+                        
+                        Text("No playlists found in your library")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Playlists with play count information will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(Array(filteredPlaylists.enumerated()), id: \.element.id) { index, playlist in
+                            NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: originalRanks[playlist.id])) {
+                                HStack(spacing: 10) {
+                                    Text("#\(originalRanks[playlist.id] ?? 0)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                    
+                                    PlaylistRow(playlist: playlist)
+                                }
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        if filteredPlaylists.isEmpty && !searchText.isEmpty {
+                            Text("No playlists found matching '\(searchText)'")
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding()
+                                .listRowSeparator(.hidden)
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
-                .listStyle(PlainListStyle())
-                .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
             }
         }
     }

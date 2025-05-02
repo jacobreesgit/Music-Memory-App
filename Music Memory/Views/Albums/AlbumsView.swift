@@ -37,19 +37,19 @@ struct AlbumsView: View {
     var sortedAlbums: [AlbumData] {
         switch sortOption {
         case .playCount:
-            return musicLibrary.albums.sorted {
+            return musicLibrary.filteredAlbums.sorted {
                 sortAscending ? $0.totalPlayCount < $1.totalPlayCount : $0.totalPlayCount > $1.totalPlayCount
             }
         case .title:
-            return musicLibrary.albums.sorted {
+            return musicLibrary.filteredAlbums.sorted {
                 sortAscending ? $0.title < $1.title : $0.title > $1.title
             }
         case .artist:
-            return musicLibrary.albums.sorted {
+            return musicLibrary.filteredAlbums.sorted {
                 sortAscending ? $0.artist < $1.artist : $0.artist > $1.artist
             }
         case .songCount:
-            return musicLibrary.albums.sorted {
+            return musicLibrary.filteredAlbums.sorted {
                 sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
             }
         }
@@ -74,31 +74,52 @@ struct AlbumsView: View {
                     placeholder: "Search albums"
                 )
 
-                List {
-                    ForEach(Array(filteredAlbums.enumerated()), id: \.element.id) { index, album in
-                        NavigationLink(destination: AlbumDetailView(album: album, rank: originalRanks[album.id])) {
-                            HStack(spacing: 10) {
-                                Text("#\(originalRanks[album.id] ?? 0)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                                
-                                AlbumRow(album: album)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                    
-                    if filteredAlbums.isEmpty && !searchText.isEmpty {
-                        Text("No albums found matching '\(searchText)'")
+                if musicLibrary.filteredAlbums.isEmpty {
+                    // Show message when there are no albums in the library
+                    VStack(spacing: 20) {
+                        Image(systemName: "square.stack")
+                            .font(.system(size: 50))
                             .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .listRowSeparator(.hidden)
+                            .padding(.top, 50)
+                        
+                        Text("No albums found in your library")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Albums with play count information will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(Array(filteredAlbums.enumerated()), id: \.element.id) { index, album in
+                            NavigationLink(destination: AlbumDetailView(album: album, rank: originalRanks[album.id])) {
+                                HStack(spacing: 10) {
+                                    Text("#\(originalRanks[album.id] ?? 0)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                    
+                                    AlbumRow(album: album)
+                                }
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        if filteredAlbums.isEmpty && !searchText.isEmpty {
+                            Text("No albums found matching '\(searchText)'")
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding()
+                                .listRowSeparator(.hidden)
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
-                .listStyle(PlainListStyle())
-                .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
             }
         }
     }

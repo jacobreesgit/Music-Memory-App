@@ -35,15 +35,15 @@ struct ArtistsView: View {
     var sortedArtists: [ArtistData] {
         switch sortOption {
         case .playCount:
-            return musicLibrary.artists.sorted {
+            return musicLibrary.filteredArtists.sorted {
                 sortAscending ? $0.totalPlayCount < $1.totalPlayCount : $0.totalPlayCount > $1.totalPlayCount
             }
         case .name:
-            return musicLibrary.artists.sorted {
+            return musicLibrary.filteredArtists.sorted {
                 sortAscending ? $0.name < $1.name : $0.name > $1.name
             }
         case .songCount:
-            return musicLibrary.artists.sorted {
+            return musicLibrary.filteredArtists.sorted {
                 sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
             }
         }
@@ -68,31 +68,52 @@ struct ArtistsView: View {
                     placeholder: "Search artists"
                 )
 
-                List {
-                    ForEach(Array(filteredArtists.enumerated()), id: \.element.id) { index, artist in
-                        NavigationLink(destination: ArtistDetailView(artist: artist, rank: originalRanks[artist.id])) {
-                            HStack(spacing: 10) {
-                                Text("#\(originalRanks[artist.id] ?? 0)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                                
-                                ArtistRow(artist: artist)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                    
-                    if filteredArtists.isEmpty && !searchText.isEmpty {
-                        Text("No artists found matching '\(searchText)'")
+                if musicLibrary.filteredArtists.isEmpty {
+                    // Show message when there are no artists in the library
+                    VStack(spacing: 20) {
+                        Image(systemName: "music.mic")
+                            .font(.system(size: 50))
                             .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .listRowSeparator(.hidden)
+                            .padding(.top, 50)
+                        
+                        Text("No artists found in your library")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Artists with play count information will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(Array(filteredArtists.enumerated()), id: \.element.id) { index, artist in
+                            NavigationLink(destination: ArtistDetailView(artist: artist, rank: originalRanks[artist.id])) {
+                                HStack(spacing: 10) {
+                                    Text("#\(originalRanks[artist.id] ?? 0)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
+                                    
+                                    ArtistRow(artist: artist)
+                                }
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        if filteredArtists.isEmpty && !searchText.isEmpty {
+                            Text("No artists found matching '\(searchText)'")
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding()
+                                .listRowSeparator(.hidden)
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
-                .listStyle(PlainListStyle())
-                .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
             }
         }
     }
