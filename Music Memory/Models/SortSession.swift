@@ -22,12 +22,29 @@ struct SortSession: Identifiable, Codable {
     var isComplete: Bool
     var artworkData: Data? // Store artwork data
     
+    // New properties to track battle progress
+    var currentBattleIndex: Int = 0 // Track the current battle number
+    var battleHistory: [BattleRecord] = [] // Store history of battles
+    
     // Source type for the sort session
     enum SortSource: String, Codable {
         case album
         case artist
         case genre
         case playlist
+    }
+    
+    // Structure to record battle information
+    struct BattleRecord: Codable, Equatable {
+        let leftSongID: String
+        let rightSongID: String
+        let battleIndex: Int
+        
+        static func == (lhs: BattleRecord, rhs: BattleRecord) -> Bool {
+            return lhs.leftSongID == rhs.leftSongID &&
+                   lhs.rightSongID == rhs.rightSongID &&
+                   lhs.battleIndex == rhs.battleIndex
+        }
     }
     
     // MARK: - Computed Properties
@@ -62,6 +79,8 @@ struct SortSession: Identifiable, Codable {
         self.songIDs = songs.map { $0.persistentID.description }
         self.sortedIDs = []
         self.isComplete = false
+        self.currentBattleIndex = 0
+        self.battleHistory = []
         
         // Convert artwork to data if available
         if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
@@ -86,9 +105,27 @@ class SortSessionStore: ObservableObject {
     func loadSessions() {
         if let data = UserDefaults.standard.data(forKey: saveKey) {
             if let decoded = try? JSONDecoder().decode([SortSession].self, from: data) {
-                sessions = decoded
+                // Apply migration before publishing
+                sessions = migrateSessionsIfNeeded(decoded)
             }
         }
+    }
+    
+    /// Migrate older sessions to include the new properties
+    private func migrateSessionsIfNeeded(_ sessions: [SortSession]) -> [SortSession] {
+        var migratedSessions: [SortSession] = []
+        
+        for var session in sessions {
+            // Check if this is an older session with currentBattleIndex not set properly
+            if session.currentBattleIndex == 0 && session.sortedIDs.count > 0 {
+                // Set it to match the number of completed sorts
+                session.currentBattleIndex = session.sortedIDs.count
+            }
+            
+            migratedSessions.append(session)
+        }
+        
+        return migratedSessions
     }
     
     /// Save sessions to UserDefaults

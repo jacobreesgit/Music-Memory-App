@@ -1,6 +1,8 @@
 //
-//  SortSessionView.swift - MODIFIED
+//  SortSessionView.swift
 //  Music Memory
+//
+//  Created by Jacob Rees on 07/05/2025.
 //
 
 import SwiftUI
@@ -14,16 +16,12 @@ struct SortSessionView: View {
     // State for the sorting interface
     @State private var currentLeftIndex = 0
     @State private var currentRightIndex = 0
-    @State private var currentBattleIndex = 0
     @State private var totalBattles = 0
     @State private var remainingSongs = [MPMediaItem]()
     @State private var sortedSongs = [MPMediaItem]()
     @State private var isComparing = false
     @State private var showCancelAlert = false
     @State private var isCompleted = false
-    
-    // State for handling previous battles
-    @State private var battleHistory: [(left: MPMediaItem, right: MPMediaItem)] = []
     
     // Load song data from persistent IDs
     private func loadSongs(from ids: [String]) -> [MPMediaItem] {
@@ -82,19 +80,19 @@ struct SortSessionView: View {
                 
                 // Battle header with percentage right-aligned
                 HStack {
-                    Text("Battle #\(currentBattleIndex + 1)")
+                    Text("Battle #\(session.currentBattleIndex + 1)")
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
                     
                     Spacer()
                     
-                    Text("\(Int((Double(currentBattleIndex) / Double(max(1, totalBattles))) * 100))% sorted")
+                    Text("\(Int((Double(session.currentBattleIndex) / Double(max(1, totalBattles))) * 100))% sorted")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
                 // Progress bar
-                ProgressView(value: Double(currentBattleIndex), total: Double(max(1, totalBattles)))
+                ProgressView(value: Double(session.currentBattleIndex), total: Double(max(1, totalBattles)))
                     .progressViewStyle(LinearProgressViewStyle())
                     .tint(AppStyles.accentColor)
                     .padding(.top, 4)
@@ -105,80 +103,21 @@ struct SortSessionView: View {
             if remainingSongs.count >= 2 {
                 Spacer(minLength: 80)
                 
-                // Song options
-                HStack(spacing: 0) {
-                    Spacer()
-                    
+                // Song options in an HStack with equal alignment
+                HStack(alignment: .top, spacing: 30) {
                     // Left song
-                    VStack(spacing: 8) {
-                        // Left artwork
-                        if let artwork = remainingSongs[currentLeftIndex].artwork {
-                            Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 140, height: 140)
-                                .cornerRadius(8)
-                        } else {
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.black)
-                                    .frame(width: 140, height: 140)
-                                    .cornerRadius(8)
-                                
-                                Image(systemName: "music.note")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        
-                        // Title
-                        Text(remainingSongs[currentLeftIndex].title ?? "Unknown")
-                            .font(.system(size: 16, weight: .medium))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .frame(width: 140)
-                    }
-                    .onTapGesture {
-                        selectSong(isLeft: true)
-                    }
-                    
-                    Spacer()
+                    SongOptionView(
+                        song: remainingSongs[currentLeftIndex],
+                        action: { selectSong(isLeft: true) }
+                    )
                     
                     // Right song
-                    VStack(spacing: 8) {
-                        // Right artwork
-                        if let artwork = remainingSongs[currentRightIndex].artwork {
-                            Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 140, height: 140)
-                                .cornerRadius(8)
-                        } else {
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.black)
-                                    .frame(width: 140, height: 140)
-                                    .cornerRadius(8)
-                                
-                                Image(systemName: "music.note")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        
-                        // Title
-                        Text(remainingSongs[currentRightIndex].title ?? "Unknown")
-                            .font(.system(size: 16, weight: .medium))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .frame(width: 140)
-                    }
-                    .onTapGesture {
-                        selectSong(isLeft: false)
-                    }
-                    
-                    Spacer()
+                    SongOptionView(
+                        song: remainingSongs[currentRightIndex],
+                        action: { selectSong(isLeft: false) }
+                    )
                 }
+                .padding(.horizontal)
                 
                 Spacer(minLength: 80)
                 
@@ -218,8 +157,8 @@ struct SortSessionView: View {
                         .cornerRadius(8)
                         .foregroundColor(.red)
                     }
-                    .disabled(currentBattleIndex < 1 || battleHistory.isEmpty)
-                    .opacity(currentBattleIndex < 1 || battleHistory.isEmpty ? 0.5 : 1.0)
+                    .disabled(session.currentBattleIndex < 1 || session.battleHistory.isEmpty)
+                    .opacity(session.currentBattleIndex < 1 || session.battleHistory.isEmpty ? 0.5 : 1.0)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 20)
@@ -255,24 +194,41 @@ struct SortSessionView: View {
         // Filter out already sorted songs for remaining pool
         remainingSongs = allSongs.filter { !sortedIDs.contains($0.persistentID) }
         
-        // Shuffle remaining songs for initial comparisons
-        remainingSongs.shuffle()
-        
-        // Set initial indices
-        if remainingSongs.count >= 2 {
-            currentLeftIndex = 0
-            currentRightIndex = 1
+        // Shuffle remaining songs for initial comparisons if this is a new session
+        if session.battleHistory.isEmpty {
+            remainingSongs.shuffle()
         }
         
-        // Set initial battle index
-        currentBattleIndex = session.sortedIDs.count
+        // Set initial indices or restore from saved battle state
+        if remainingSongs.count >= 2 {
+            // If we have existing battle history, try to restore the current battle
+            if !session.battleHistory.isEmpty, let lastBattle = session.battleHistory.last {
+                // Try to find the indices of the last battle songs in the remaining songs
+                if let leftIndex = findSongIndex(withID: lastBattle.leftSongID),
+                   let rightIndex = findSongIndex(withID: lastBattle.rightSongID) {
+                    currentLeftIndex = leftIndex
+                    currentRightIndex = rightIndex
+                } else {
+                    // If we can't find the exact songs, set up a new comparison
+                    currentLeftIndex = 0
+                    currentRightIndex = 1
+                }
+            } else {
+                // Default for new session
+                currentLeftIndex = 0
+                currentRightIndex = 1
+            }
+        }
         
         // Calculate total expected battles (n log n for sorting)
         let n = Double(allSongs.count)
         totalBattles = Int(n * log2(n))
-        
-        // Initialize battle history
-        battleHistory = []
+    }
+    
+    // Find the index of a song in remainingSongs by its ID
+    private func findSongIndex(withID idString: String) -> Int? {
+        guard let id = UInt64(idString) else { return nil }
+        return remainingSongs.firstIndex { $0.persistentID == id }
     }
     
     // Handle song selection
@@ -295,6 +251,7 @@ struct SortSessionView: View {
         
         // Update session data
         session.sortedIDs.append(selected.persistentID.description)
+        session.currentBattleIndex += 1
         saveSession()
         
         // Remove the selected song from the pool
@@ -307,9 +264,6 @@ struct SortSessionView: View {
         if selectedIndex <= currentRightIndex {
             currentRightIndex = currentRightIndex - 1
         }
-        
-        // Increment battle index
-        currentBattleIndex += 1
         
         // Check if we're done
         if remainingSongs.count < 2 {
@@ -357,10 +311,8 @@ struct SortSessionView: View {
         // Update session data
         session.sortedIDs.append(left.persistentID.description)
         session.sortedIDs.append(right.persistentID.description)
+        session.currentBattleIndex += 1
         saveSession()
-        
-        // Increment battle index
-        currentBattleIndex += 1
         
         // Check if we're done
         if remainingSongs.count < 2 {
@@ -390,7 +342,8 @@ struct SortSessionView: View {
         setupNextComparison()
         
         // Increment battle index
-        currentBattleIndex += 1
+        session.currentBattleIndex += 1
+        saveSession()
     }
     
     // Set up the next comparison
@@ -415,19 +368,25 @@ struct SortSessionView: View {
         let leftSong = remainingSongs[currentLeftIndex]
         let rightSong = remainingSongs[currentRightIndex]
         
-        // Add to history
-        battleHistory.append((left: leftSong, right: rightSong))
+        // Add to history in the session model (for persistence)
+        let battleRecord = SortSession.BattleRecord(
+            leftSongID: leftSong.persistentID.description,
+            rightSongID: rightSong.persistentID.description,
+            battleIndex: session.currentBattleIndex
+        )
+        
+        session.battleHistory.append(battleRecord)
     }
     
     // Go back to the previous battle
     private func goBackToPreviousBattle() {
-        guard !battleHistory.isEmpty, currentBattleIndex > 0 else { return }
+        guard !session.battleHistory.isEmpty, session.currentBattleIndex > 0 else { return }
         
         // Get the previous battle
-        let previousBattle = battleHistory.removeLast()
+        let previousBattle = session.battleHistory.removeLast()
         
         // Decrement battle index
-        currentBattleIndex -= 1
+        session.currentBattleIndex -= 1
         
         // Check if we need to restore a sorted song
         if !sortedSongs.isEmpty {
@@ -437,9 +396,12 @@ struct SortSessionView: View {
                 let lastID = session.sortedIDs.last!
                 let secondLastID = session.sortedIDs[session.sortedIDs.count - 2]
                 
-                // If the last two songs were from the previous battle
-                if UInt64(lastID) == previousBattle.left.persistentID || UInt64(lastID) == previousBattle.right.persistentID,
-                   UInt64(secondLastID) == previousBattle.left.persistentID || UInt64(secondLastID) == previousBattle.right.persistentID {
+                // Check if the last two sorted songs were from the same battle
+                if session.sortedIDs.count - sortedSongs.count <= 1 &&
+                   (UInt64(lastID) == UInt64(previousBattle.leftSongID) ||
+                    UInt64(lastID) == UInt64(previousBattle.rightSongID)) &&
+                   (UInt64(secondLastID) == UInt64(previousBattle.leftSongID) ||
+                    UInt64(secondLastID) == UInt64(previousBattle.rightSongID)) {
                     // This was likely an "I Like Both" action, remove both
                     let lastSong = sortedSongs.removeLast()
                     let secondLastSong = sortedSongs.removeLast()
@@ -466,12 +428,18 @@ struct SortSessionView: View {
         }
         
         // Find the indices of the previous battle songs in the remaining songs
-        if let leftIndex = remainingSongs.firstIndex(where: { $0.persistentID == previousBattle.left.persistentID }),
-           let rightIndex = remainingSongs.firstIndex(where: { $0.persistentID == previousBattle.right.persistentID }) {
-            currentLeftIndex = leftIndex
-            currentRightIndex = rightIndex
+        if let leftSongID = UInt64(previousBattle.leftSongID),
+           let rightSongID = UInt64(previousBattle.rightSongID) {
+            if let leftIndex = remainingSongs.firstIndex(where: { $0.persistentID == leftSongID }),
+               let rightIndex = remainingSongs.firstIndex(where: { $0.persistentID == rightSongID }) {
+                currentLeftIndex = leftIndex
+                currentRightIndex = rightIndex
+            } else {
+                // If we can't find the exact songs, just set up a new comparison
+                setupNextComparison()
+            }
         } else {
-            // If we can't find the exact songs, just set up a new comparison
+            // If we can't parse the IDs, just set up a new comparison
             setupNextComparison()
         }
         
@@ -492,5 +460,50 @@ struct SortSessionView: View {
     // Save session to the store
     private func saveSession() {
         sortSessionStore.updateSession(session)
+    }
+}
+
+// MARK: - Song Option View
+
+struct SongOptionView: View {
+    let song: MPMediaItem
+    let action: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 12) {
+            // Artwork container with fixed position
+            ZStack {
+                if let artwork = song.artwork {
+                    Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 140, height: 140)
+                        .cornerRadius(8)
+                } else {
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.black)
+                            .frame(width: 140, height: 140)
+                            .cornerRadius(8)
+                        
+                        Image(systemName: "music.note")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+            
+            // Song title in separate container that allows expansion
+            Text(song.title ?? "Unknown")
+                .font(.system(size: 16, weight: .medium))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .frame(width: 140)
+        }
+        .frame(width: 140)
+        .contentShape(Rectangle()) // Make the whole area tappable
+        .onTapGesture {
+            action()
+        }
     }
 }
