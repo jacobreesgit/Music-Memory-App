@@ -10,6 +10,7 @@ import MediaPlayer
 
 struct GenreDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @EnvironmentObject var sortSessionStore: SortSessionStore
     let genre: GenreData
     let rank: Int?
     
@@ -18,6 +19,16 @@ struct GenreDetailView: View {
     @State private var showAllArtists = false
     @State private var showAllAlbums = false
     @State private var showAllPlaylists = false
+    
+    // State for sorting navigation
+    @State private var isNavigatingToSortSession = false
+    @State private var navigatingSortSession = SortSession(
+        title: "",
+        songs: [],
+        source: .genre,
+        sourceID: "",
+        sourceName: ""
+    )
     
     // Initialize with an optional rank parameter
     init(genre: GenreData, rank: Int? = nil) {
@@ -72,6 +83,25 @@ struct GenreDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
+    // Create a sort session from genre songs
+    private func createSortSession() {
+        // Create a new sort session from this genre's songs
+        navigatingSortSession = SortSession(
+            title: "Sort: \(genre.name)",
+            songs: genre.songs,
+            source: .genre,
+            sourceID: genre.id,
+            sourceName: genre.name,
+            artwork: genre.artwork
+        )
+        
+        // Add to session store
+        sortSessionStore.addSession(navigatingSortSession)
+        
+        // Navigate to sorting interface
+        isNavigatingToSortSession = true
+    }
+    
     var body: some View {
         List {
             // Genre header section with optional rank
@@ -89,6 +119,43 @@ struct GenreDetailView: View {
             }) {
                 // Empty section content for spacing
             }
+            
+            // MARK: - Sort Songs Button
+            Button(action: {
+                createSortSession()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 18))
+                    
+                    Text("Sort Songs")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.white)
+                .background(AppStyles.accentColor.gradient)
+                .cornerRadius(AppStyles.cornerRadius)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 0)
+            .background(
+                NavigationLink(
+                    destination: SortSessionView(session: navigatingSortSession),
+                    isActive: $isNavigatingToSortSession,
+                    label: { EmptyView() }
+                )
+                .opacity(0)
+            )
+            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+            .listRowInsets(EdgeInsets()) // Remove default insets
+            .listRowSeparator(.hidden)
             
             // Genre Statistics section
             Section(header: Text("Genre Statistics")
@@ -278,6 +345,7 @@ struct GenreDetailView: View {
                 }
             }
         }
+        .listSectionSpacing(0) // Custom section spacing to reduce space between sections
         .navigationTitle(genre.name)
         .navigationBarTitleDisplayMode(.inline)
     }

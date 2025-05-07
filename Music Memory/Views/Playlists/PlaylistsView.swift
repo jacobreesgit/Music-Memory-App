@@ -13,6 +13,8 @@ struct PlaylistsView: View {
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
     @State private var sortAscending = false // Default to descending
+    @State private var displayedPlaylistCount = 75  // Start with 75 playlists
+    @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -24,8 +26,10 @@ struct PlaylistsView: View {
     
     var filteredPlaylists: [PlaylistData] {
         if searchText.isEmpty {
-            return sortedPlaylists
+            // When not searching, only show the current batch
+            return Array(sortedPlaylists.prefix(displayedPlaylistCount))
         } else {
+            // When searching, search through ALL playlists
             return sortedPlaylists.filter {
                 $0.name.lowercased().contains(searchText.lowercased())
             }
@@ -53,6 +57,25 @@ struct PlaylistsView: View {
         Dictionary(uniqueKeysWithValues: sortedPlaylists.enumerated().map { ($1.id, $0 + 1) })
     }
     
+    // Function to load more playlists when needed
+    private func loadMorePlaylistsIfNeeded(currentItem item: PlaylistData) {
+        // Check if this is approaching the end of the displayed items
+        if let index = filteredPlaylists.firstIndex(where: { $0.id == item.id }),
+           index >= filteredPlaylists.count - 15, // Load when 15 items from end
+           displayedPlaylistCount < sortedPlaylists.count,
+           !isLoadingMore,
+           searchText.isEmpty {  // Only load more when not searching
+            
+            isLoadingMore = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Load next batch
+                displayedPlaylistCount = min(displayedPlaylistCount + 75, sortedPlaylists.count)
+                isLoadingMore = false
+            }
+        }
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading playlists...")
@@ -67,6 +90,20 @@ struct PlaylistsView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search playlists"
                 )
+                .onChange(of: searchText) { _ in
+                    // Reset batch loading when search text changes
+                    if searchText.isEmpty {
+                        displayedPlaylistCount = min(75, sortedPlaylists.count)
+                    }
+                }
+                .onChange(of: sortOption) { _ in
+                    // Reset batch loading when sort option changes
+                    displayedPlaylistCount = min(75, sortedPlaylists.count)
+                }
+                .onChange(of: sortAscending) { _ in
+                    // Reset batch loading when sort direction changes
+                    displayedPlaylistCount = min(75, sortedPlaylists.count)
+                }
 
                 if musicLibrary.filteredPlaylists.isEmpty {
                     // Show message when there are no playlists in the library
@@ -100,6 +137,42 @@ struct PlaylistsView: View {
                                     PlaylistRow(playlist: playlist)
                                 }
                             }
+                            .listRowSeparator(.hidden)
+                            .onAppear {
+                                // Trigger loading more playlists when reaching the end
+                                loadMorePlaylistsIfNeeded(currentItem: playlist)
+                            }
+                        }
+                        
+                        // Loading indicator when fetching more playlists
+                        if isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // "Load More" button when there are more playlists and not searching
+                        if displayedPlaylistCount < sortedPlaylists.count && !isLoadingMore && searchText.isEmpty {
+                            Button(action: {
+                                isLoadingMore = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    displayedPlaylistCount = min(displayedPlaylistCount + 75, sortedPlaylists.count)
+                                    isLoadingMore = false
+                                }
+                            }) {
+                                Text("Load More Playlists")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(AppStyles.secondaryColor)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
                             .listRowSeparator(.hidden)
                         }
                         

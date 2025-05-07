@@ -13,6 +13,8 @@ struct ArtistsView: View {
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
     @State private var sortAscending = false // Default to descending
+    @State private var displayedArtistCount = 75  // Start with 75 artists
+    @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -24,8 +26,10 @@ struct ArtistsView: View {
     
     var filteredArtists: [ArtistData] {
         if searchText.isEmpty {
-            return sortedArtists
+            // When not searching, only show the current batch
+            return Array(sortedArtists.prefix(displayedArtistCount))
         } else {
+            // When searching, search through ALL artists
             return sortedArtists.filter {
                 $0.name.lowercased().contains(searchText.lowercased())
             }
@@ -53,6 +57,25 @@ struct ArtistsView: View {
         Dictionary(uniqueKeysWithValues: sortedArtists.enumerated().map { ($1.id, $0 + 1) })
     }
     
+    // Function to load more artists when needed
+    private func loadMoreArtistsIfNeeded(currentItem item: ArtistData) {
+        // Check if this is approaching the end of the displayed items
+        if let index = filteredArtists.firstIndex(where: { $0.id == item.id }),
+           index >= filteredArtists.count - 15, // Load when 15 items from end
+           displayedArtistCount < sortedArtists.count,
+           !isLoadingMore,
+           searchText.isEmpty {  // Only load more when not searching
+            
+            isLoadingMore = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Load next batch
+                displayedArtistCount = min(displayedArtistCount + 75, sortedArtists.count)
+                isLoadingMore = false
+            }
+        }
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading artists...")
@@ -67,6 +90,20 @@ struct ArtistsView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search artists"
                 )
+                .onChange(of: searchText) { _ in
+                    // Reset batch loading when search text changes
+                    if searchText.isEmpty {
+                        displayedArtistCount = min(75, sortedArtists.count)
+                    }
+                }
+                .onChange(of: sortOption) { _ in
+                    // Reset batch loading when sort option changes
+                    displayedArtistCount = min(75, sortedArtists.count)
+                }
+                .onChange(of: sortAscending) { _ in
+                    // Reset batch loading when sort direction changes
+                    displayedArtistCount = min(75, sortedArtists.count)
+                }
 
                 if musicLibrary.filteredArtists.isEmpty {
                     // Show message when there are no artists in the library
@@ -100,6 +137,42 @@ struct ArtistsView: View {
                                     ArtistRow(artist: artist)
                                 }
                             }
+                            .listRowSeparator(.hidden)
+                            .onAppear {
+                                // Trigger loading more artists when reaching the end
+                                loadMoreArtistsIfNeeded(currentItem: artist)
+                            }
+                        }
+                        
+                        // Loading indicator when fetching more artists
+                        if isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // "Load More" button when there are more artists and not searching
+                        if displayedArtistCount < sortedArtists.count && !isLoadingMore && searchText.isEmpty {
+                            Button(action: {
+                                isLoadingMore = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    displayedArtistCount = min(displayedArtistCount + 75, sortedArtists.count)
+                                    isLoadingMore = false
+                                }
+                            }) {
+                                Text("Load More Artists")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(AppStyles.secondaryColor)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
                             .listRowSeparator(.hidden)
                         }
                         

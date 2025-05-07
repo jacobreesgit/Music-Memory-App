@@ -13,6 +13,8 @@ struct AlbumsView: View {
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
     @State private var sortAscending = false // Default to descending
+    @State private var displayedAlbumCount = 75  // Start with 75 albums
+    @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -25,8 +27,10 @@ struct AlbumsView: View {
     
     var filteredAlbums: [AlbumData] {
         if searchText.isEmpty {
-            return sortedAlbums
+            // When not searching, only show the current batch
+            return Array(sortedAlbums.prefix(displayedAlbumCount))
         } else {
+            // When searching, search through ALL albums
             return sortedAlbums.filter {
                 $0.title.lowercased().contains(searchText.lowercased()) ||
                 $0.artist.lowercased().contains(searchText.lowercased())
@@ -59,6 +63,25 @@ struct AlbumsView: View {
         Dictionary(uniqueKeysWithValues: sortedAlbums.enumerated().map { ($1.id, $0 + 1) })
     }
     
+    // Function to load more albums when needed
+    private func loadMoreAlbumsIfNeeded(currentItem item: AlbumData) {
+        // Check if this is approaching the end of the displayed items
+        if let index = filteredAlbums.firstIndex(where: { $0.id == item.id }),
+           index >= filteredAlbums.count - 15, // Load when 15 items from end
+           displayedAlbumCount < sortedAlbums.count,
+           !isLoadingMore,
+           searchText.isEmpty {  // Only load more when not searching
+            
+            isLoadingMore = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Load next batch
+                displayedAlbumCount = min(displayedAlbumCount + 75, sortedAlbums.count)
+                isLoadingMore = false
+            }
+        }
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading albums...")
@@ -73,6 +96,20 @@ struct AlbumsView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search albums"
                 )
+                .onChange(of: searchText) { _ in
+                    // Reset batch loading when search text changes
+                    if searchText.isEmpty {
+                        displayedAlbumCount = min(75, sortedAlbums.count)
+                    }
+                }
+                .onChange(of: sortOption) { _ in
+                    // Reset batch loading when sort option changes
+                    displayedAlbumCount = min(75, sortedAlbums.count)
+                }
+                .onChange(of: sortAscending) { _ in
+                    // Reset batch loading when sort direction changes
+                    displayedAlbumCount = min(75, sortedAlbums.count)
+                }
 
                 if musicLibrary.filteredAlbums.isEmpty {
                     // Show message when there are no albums in the library
@@ -106,6 +143,42 @@ struct AlbumsView: View {
                                     AlbumRow(album: album)
                                 }
                             }
+                            .listRowSeparator(.hidden)
+                            .onAppear {
+                                // Trigger loading more albums when reaching the end
+                                loadMoreAlbumsIfNeeded(currentItem: album)
+                            }
+                        }
+                        
+                        // Loading indicator when fetching more albums
+                        if isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // "Load More" button when there are more albums and not searching
+                        if displayedAlbumCount < sortedAlbums.count && !isLoadingMore && searchText.isEmpty {
+                            Button(action: {
+                                isLoadingMore = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    displayedAlbumCount = min(displayedAlbumCount + 75, sortedAlbums.count)
+                                    isLoadingMore = false
+                                }
+                            }) {
+                                Text("Load More Albums")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(AppStyles.secondaryColor)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
                             .listRowSeparator(.hidden)
                         }
                         

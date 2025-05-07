@@ -288,6 +288,7 @@ struct SongDetailView: View {
                 }
             }
         }
+        .listSectionSpacing(0)
         .navigationTitle(song.title ?? "Unknown")
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -10,6 +10,7 @@ import MediaPlayer
 
 struct ArtistDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @EnvironmentObject var sortSessionStore: SortSessionStore
     let artist: ArtistData
     let rank: Int?
     
@@ -18,6 +19,16 @@ struct ArtistDetailView: View {
     @State private var showAllAlbums = false
     @State private var showAllGenres = false
     @State private var showAllPlaylists = false
+    
+    // State for sorting navigation
+    @State private var isNavigatingToSortSession = false
+    @State private var navigatingSortSession = SortSession(
+        title: "",
+        songs: [],
+        source: .artist,
+        sourceID: "",
+        sourceName: ""
+    )
     
     // Initialize with an optional rank parameter
     init(artist: ArtistData, rank: Int? = nil) {
@@ -100,6 +111,25 @@ struct ArtistDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
+    // Create a sort session from artist songs
+    private func createSortSession() {
+        // Create a new sort session from this artist's songs
+        navigatingSortSession = SortSession(
+            title: "Sort: \(artist.name)",
+            songs: artist.songs,
+            source: .artist,
+            sourceID: artist.id,
+            sourceName: artist.name,
+            artwork: artist.artwork
+        )
+        
+        // Add to session store
+        sortSessionStore.addSession(navigatingSortSession)
+        
+        // Navigate to sorting interface
+        isNavigatingToSortSession = true
+    }
+    
     // Simple struct to hold album info for display
     private struct AlbumInfo: Identifiable {
         var id: String { title }
@@ -126,6 +156,43 @@ struct ArtistDetailView: View {
             }) {
                 // Empty section content for spacing
             }
+            
+            // MARK: - Sort Songs Button
+            Button(action: {
+                createSortSession()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 18))
+                    
+                    Text("Sort Songs")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.white)
+                .background(AppStyles.accentColor.gradient)
+                .cornerRadius(AppStyles.cornerRadius)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 0)
+            .background(
+                NavigationLink(
+                    destination: SortSessionView(session: navigatingSortSession),
+                    isActive: $isNavigatingToSortSession,
+                    label: { EmptyView() }
+                )
+                .opacity(0)
+            )
+            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+            .listRowInsets(EdgeInsets()) // Remove default insets
+            .listRowSeparator(.hidden)
             
             // Artist Statistics section
             Section(header: Text("Artist Statistics")
@@ -348,6 +415,7 @@ struct ArtistDetailView: View {
                 }
             }
         }
+        .listSectionSpacing(0) // Custom section spacing to reduce space between sections
         .navigationTitle(artist.name)
         .navigationBarTitleDisplayMode(.inline)
     }

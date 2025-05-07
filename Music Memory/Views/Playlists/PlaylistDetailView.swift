@@ -10,6 +10,7 @@ import MediaPlayer
 
 struct PlaylistDetailView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @EnvironmentObject var sortSessionStore: SortSessionStore
     let playlist: PlaylistData
     let rank: Int?
     
@@ -18,6 +19,16 @@ struct PlaylistDetailView: View {
     @State private var showAllSongs = false
     @State private var showAllAlbums = false
     @State private var showAllGenres = false
+    
+    // State for sorting navigation
+    @State private var isNavigatingToSortSession = false
+    @State private var navigatingSortSession = SortSession(
+        title: "",
+        songs: [],
+        source: .playlist,
+        sourceID: "",
+        sourceName: ""
+    )
     
     // Initialize with an optional rank parameter
     init(playlist: PlaylistData, rank: Int? = nil) {
@@ -82,6 +93,25 @@ struct PlaylistDetailView: View {
         return genres.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
+    // Create a sort session from playlist songs
+    private func createSortSession() {
+        // Create a new sort session from this playlist's songs
+        navigatingSortSession = SortSession(
+            title: "Sort: \(playlist.name)",
+            songs: playlist.songs,
+            source: .playlist,
+            sourceID: playlist.id,
+            sourceName: playlist.name,
+            artwork: playlist.artwork
+        )
+        
+        // Add to session store
+        sortSessionStore.addSession(navigatingSortSession)
+        
+        // Navigate to sorting interface
+        isNavigatingToSortSession = true
+    }
+    
     var body: some View {
         List {
             // Playlist header section with optional rank
@@ -99,6 +129,43 @@ struct PlaylistDetailView: View {
             }) {
                 // Empty section content for spacing
             }
+            
+            // MARK: - Sort Songs Button
+            Button(action: {
+                createSortSession()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 18))
+                    
+                    Text("Sort Songs")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.white)
+                .background(AppStyles.accentColor.gradient)
+                .cornerRadius(AppStyles.cornerRadius)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 0)
+            .background(
+                NavigationLink(
+                    destination: SortSessionView(session: navigatingSortSession),
+                    isActive: $isNavigatingToSortSession,
+                    label: { EmptyView() }
+                )
+                .opacity(0)
+            )
+            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+            .listRowInsets(EdgeInsets()) // Remove default insets
+            .listRowSeparator(.hidden)
             
             // Playlist Statistics section
             Section(header: Text("Playlist Statistics")
@@ -354,6 +421,7 @@ struct PlaylistDetailView: View {
                 }
             }
         }
+        .listSectionSpacing(0) // Custom section spacing to reduce space between sections
         .navigationTitle(playlist.name)
         .navigationBarTitleDisplayMode(.inline)
     }

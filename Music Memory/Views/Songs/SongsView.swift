@@ -13,6 +13,8 @@ struct SongsView: View {
     @State private var searchText = ""
     @State private var sortOption = SortOption.playCount
     @State private var sortAscending = false // Default to descending
+    @State private var displayedSongCount = 50  // Start with 50 songs
+    @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
         case playCount = "Play Count"
@@ -26,8 +28,10 @@ struct SongsView: View {
     
     var filteredSongs: [MPMediaItem] {
         if searchText.isEmpty {
-            return sortedSongs
+            // When not searching, only show the current batch
+            return Array(sortedSongs.prefix(displayedSongCount))
         } else {
+            // When searching, search through ALL songs
             return sortedSongs.filter {
                 ($0.title?.lowercased().contains(searchText.lowercased()) ?? false) ||
                 ($0.artist?.lowercased().contains(searchText.lowercased()) ?? false) ||
@@ -71,6 +75,26 @@ struct SongsView: View {
         Dictionary(uniqueKeysWithValues: sortedSongs.enumerated().map { ($1.persistentID, $0 + 1) })
     }
     
+    // Function to load more songs when needed
+    private func loadMoreSongsIfNeeded(currentItem item: MPMediaItem) {
+        // Check if this is approaching the end of the displayed items
+        if let index = filteredSongs.firstIndex(where: { $0.persistentID == item.persistentID }),
+           index >= filteredSongs.count - 15,
+           displayedSongCount < sortedSongs.count,
+           !isLoadingMore,
+           searchText.isEmpty {  // Only load more when not searching
+            
+            isLoadingMore = true
+            
+            // Reduced delay from 0.5 to 0.2 seconds for faster response
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Increased batch size from 50 to 75 songs
+                displayedSongCount = min(displayedSongCount + 75, sortedSongs.count)
+                isLoadingMore = false
+            }
+        }
+    }
+    
     var body: some View {
         if musicLibrary.isLoading {
             LoadingView(message: "Loading songs...")
@@ -85,6 +109,20 @@ struct SongsView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search songs"
                 )
+                .onChange(of: searchText) { _ in
+                    // Reset batch loading when search text changes
+                    if searchText.isEmpty {
+                        displayedSongCount = min(50, sortedSongs.count)
+                    }
+                }
+                .onChange(of: sortOption) { _ in
+                    // Reset batch loading when sort option changes
+                    displayedSongCount = min(50, sortedSongs.count)
+                }
+                .onChange(of: sortAscending) { _ in
+                    // Reset batch loading when sort direction changes
+                    displayedSongCount = min(50, sortedSongs.count)
+                }
 
                 // List with content
                 if musicLibrary.filteredSongs.isEmpty {
@@ -120,8 +158,45 @@ struct SongsView: View {
                                 }
                             }
                             .listRowSeparator(.hidden)
+                            .onAppear {
+                                // Trigger loading more songs when reaching the end
+                                loadMoreSongsIfNeeded(currentItem: song)
+                            }
                         }
                         
+                        // Loading indicator when fetching more songs
+                        if isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // "Load More" button when there are more songs and not searching
+                        if displayedSongCount < sortedSongs.count && !isLoadingMore && searchText.isEmpty {
+                            Button(action: {
+                                isLoadingMore = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    displayedSongCount = min(displayedSongCount + 50, sortedSongs.count)
+                                    isLoadingMore = false
+                                }
+                            }) {
+                                Text("Load More Songs")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(AppStyles.secondaryColor)
+                                    .cornerRadius(AppStyles.cornerRadius)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // No results message when searching
                         if filteredSongs.isEmpty && !searchText.isEmpty {
                             Text("No songs found matching '\(searchText)'")
                                 .foregroundColor(.secondary)
