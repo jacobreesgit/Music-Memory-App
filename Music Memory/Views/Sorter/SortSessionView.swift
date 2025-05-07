@@ -1,8 +1,6 @@
 //
-//  SortSessionView.swift
+//  SortSessionView.swift - MODIFIED
 //  Music Memory
-//
-//  Created by Jacob Rees on 07/05/2025.
 //
 
 import SwiftUI
@@ -17,11 +15,15 @@ struct SortSessionView: View {
     @State private var currentLeftIndex = 0
     @State private var currentRightIndex = 0
     @State private var currentBattleIndex = 0
+    @State private var totalBattles = 0
     @State private var remainingSongs = [MPMediaItem]()
     @State private var sortedSongs = [MPMediaItem]()
     @State private var isComparing = false
     @State private var showCancelAlert = false
     @State private var isCompleted = false
+    
+    // State for handling previous battles
+    @State private var battleHistory: [(left: MPMediaItem, right: MPMediaItem)] = []
     
     // Load song data from persistent IDs
     private func loadSongs(from ids: [String]) -> [MPMediaItem] {
@@ -72,86 +74,173 @@ struct SortSessionView: View {
     }
     
     private var sortingView: some View {
-        VStack(spacing: 16) {
-            // Progress indicator
-            VStack(spacing: 4) {
-                ProgressView(value: Double(currentBattleIndex), total: Double(session.songIDs.count))
-                    .progressViewStyle(.linear)
-                    .tint(AppStyles.accentColor)
+        VStack(spacing: 0) {
+            // Top header section with padding
+            VStack(alignment: .leading, spacing: 10) {
+                // Extra padding above battle header to match screenshot
+                Spacer().frame(height: 20)
                 
+                // Battle header with percentage right-aligned
                 HStack {
-                    Text("Progress: \(Int((Double(currentBattleIndex) / Double(session.songIDs.count)) * 100))%")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text("Battle #\(currentBattleIndex + 1)")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
                     
                     Spacer()
                     
-                    Text("\(currentBattleIndex)/\(session.songIDs.count) comparisons")
-                        .font(.caption)
+                    Text("\(Int((Double(currentBattleIndex) / Double(max(1, totalBattles))) * 100))% sorted")
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+                
+                // Progress bar
+                ProgressView(value: Double(currentBattleIndex), total: Double(max(1, totalBattles)))
+                    .progressViewStyle(LinearProgressViewStyle())
+                    .tint(AppStyles.accentColor)
+                    .padding(.top, 4)
             }
             .padding(.horizontal)
             
-            // Battle interface
+            // Main battle area with flexible spacing
             if remainingSongs.count >= 2 {
-                VStack(spacing: 24) {
-                    Text("Which song do you prefer?")
-                        .font(AppStyles.headlineStyle)
-                        .foregroundColor(AppStyles.accentColor)
-                    
-                    // Left song option
-                    Button(action: { selectSong(isLeft: true) }) {
-                        SongComparisonView(
-                            song: remainingSongs[currentLeftIndex],
-                            isHighlighted: false
-                        )
-                    }
-                    .buttonStyle(SongSelectionButtonStyle())
-                    
-                    // VS indicator
-                    Text("VS")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, -8)
-                    
-                    // Right song option
-                    Button(action: { selectSong(isLeft: false) }) {
-                        SongComparisonView(
-                            song: remainingSongs[currentRightIndex],
-                            isHighlighted: false
-                        )
-                    }
-                    .buttonStyle(SongSelectionButtonStyle())
-                    
-                    // Skip button
-                    Button(action: { skipComparison() }) {
-                        HStack {
-                            Image(systemName: "arrow.right.circle")
-                            Text("Skip this comparison")
-                        }
-                        .font(.subheadline)
-                        .foregroundColor(AppStyles.accentColor.opacity(0.8))
-                    }
-                    .padding(.top, 8)
-                }
-                .padding()
-                .disabled(isComparing)
+                Spacer(minLength: 80)
                 
+                // Song options
+                HStack(spacing: 0) {
+                    Spacer()
+                    
+                    // Left song
+                    VStack(spacing: 8) {
+                        // Left artwork
+                        if let artwork = remainingSongs[currentLeftIndex].artwork {
+                            Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 140, height: 140)
+                                .cornerRadius(8)
+                        } else {
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.black)
+                                    .frame(width: 140, height: 140)
+                                    .cornerRadius(8)
+                                
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        
+                        // Title
+                        Text(remainingSongs[currentLeftIndex].title ?? "Unknown")
+                            .font(.system(size: 16, weight: .medium))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .frame(width: 140)
+                    }
+                    .onTapGesture {
+                        selectSong(isLeft: true)
+                    }
+                    
+                    Spacer()
+                    
+                    // Right song
+                    VStack(spacing: 8) {
+                        // Right artwork
+                        if let artwork = remainingSongs[currentRightIndex].artwork {
+                            Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 140, height: 140)
+                                .cornerRadius(8)
+                        } else {
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.black)
+                                    .frame(width: 140, height: 140)
+                                    .cornerRadius(8)
+                                
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        
+                        // Title
+                        Text(remainingSongs[currentRightIndex].title ?? "Unknown")
+                            .font(.system(size: 16, weight: .medium))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .frame(width: 140)
+                    }
+                    .onTapGesture {
+                        selectSong(isLeft: false)
+                    }
+                    
+                    Spacer()
+                }
+                
+                Spacer(minLength: 80)
+                
+                // Buttons section
+                VStack(spacing: 12) {
+                    Button(action: { selectBoth() }) {
+                        Text("I Like Both")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(Color(UIColor.systemGray5))
+                            .cornerRadius(8)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Button(action: { skipComparison() }) {
+                        Text("No Opinion")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(Color(UIColor.systemGray5))
+                            .cornerRadius(8)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    // Back button - always present but disabled as needed
+                    Button(action: { goBackToPreviousBattle() }) {
+                        HStack {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 14))
+                            Text("Go Back")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Color.red.opacity(0.15))
+                        .cornerRadius(8)
+                        .foregroundColor(.red)
+                    }
+                    .disabled(currentBattleIndex < 1 || battleHistory.isEmpty)
+                    .opacity(currentBattleIndex < 1 || battleHistory.isEmpty ? 0.5 : 1.0)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 20)
             } else {
                 // Loading or completion state
+                Spacer()
+                
                 VStack(spacing: 16) {
                     ProgressView()
                         .scaleEffect(1.5)
                         .padding()
                     
                     Text(remainingSongs.isEmpty ? "Finalizing results..." : "Preparing songs...")
-                        .font(AppStyles.bodyStyle)
+                        .font(.body)
                         .foregroundColor(.secondary)
                 }
-                .frame(maxHeight: .infinity)
+                
+                Spacer()
             }
         }
+        .disabled(isComparing)
     }
     
     // Start the sorting session
@@ -177,6 +266,13 @@ struct SortSessionView: View {
         
         // Set initial battle index
         currentBattleIndex = session.sortedIDs.count
+        
+        // Calculate total expected battles (n log n for sorting)
+        let n = Double(allSongs.count)
+        totalBattles = Int(n * log2(n))
+        
+        // Initialize battle history
+        battleHistory = []
     }
     
     // Handle song selection
@@ -184,6 +280,9 @@ struct SortSessionView: View {
         guard remainingSongs.count >= 2 else { return }
         
         isComparing = true
+        
+        // Record the current battle before making changes
+        recordCurrentBattle()
         
         // Get the selected and unselected songs
         let selectedIndex = isLeft ? currentLeftIndex : currentRightIndex
@@ -229,12 +328,69 @@ struct SortSessionView: View {
         isComparing = false
     }
     
+    // Handle "I Like Both" selection
+    private func selectBoth() {
+        guard remainingSongs.count >= 2 else { return }
+        
+        isComparing = true
+        
+        // Record the current battle before making changes
+        recordCurrentBattle()
+        
+        // Add both songs to sorted list
+        let left = remainingSongs[currentLeftIndex]
+        let right = remainingSongs[currentRightIndex]
+        
+        // Order matters, so we'll remove from higher index first to avoid index shifting issues
+        if currentLeftIndex > currentRightIndex {
+            remainingSongs.remove(at: currentLeftIndex)
+            remainingSongs.remove(at: currentRightIndex)
+        } else {
+            remainingSongs.remove(at: currentRightIndex)
+            remainingSongs.remove(at: currentLeftIndex)
+        }
+        
+        // Add both to sorted list - in the order they appeared
+        sortedSongs.append(left)
+        sortedSongs.append(right)
+        
+        // Update session data
+        session.sortedIDs.append(left.persistentID.description)
+        session.sortedIDs.append(right.persistentID.description)
+        saveSession()
+        
+        // Increment battle index
+        currentBattleIndex += 1
+        
+        // Check if we're done
+        if remainingSongs.count < 2 {
+            // Add any remaining song (should be at most 1)
+            if let lastSong = remainingSongs.first {
+                sortedSongs.append(lastSong)
+                session.sortedIDs.append(lastSong.persistentID.description)
+            }
+            
+            finishSorting()
+        } else {
+            // Set up next comparison
+            setupNextComparison()
+        }
+        
+        isComparing = false
+    }
+    
     // Skip the current comparison
     private func skipComparison() {
         guard remainingSongs.count >= 2 else { return }
         
+        // Record the current battle before making changes
+        recordCurrentBattle()
+        
         // Just set up a new comparison
         setupNextComparison()
+        
+        // Increment battle index
+        currentBattleIndex += 1
     }
     
     // Set up the next comparison
@@ -252,6 +408,77 @@ struct SortSessionView: View {
         currentRightIndex = rightIndex
     }
     
+    // Record the current battle state for history
+    private func recordCurrentBattle() {
+        guard remainingSongs.count >= 2 else { return }
+        
+        let leftSong = remainingSongs[currentLeftIndex]
+        let rightSong = remainingSongs[currentRightIndex]
+        
+        // Add to history
+        battleHistory.append((left: leftSong, right: rightSong))
+    }
+    
+    // Go back to the previous battle
+    private func goBackToPreviousBattle() {
+        guard !battleHistory.isEmpty, currentBattleIndex > 0 else { return }
+        
+        // Get the previous battle
+        let previousBattle = battleHistory.removeLast()
+        
+        // Decrement battle index
+        currentBattleIndex -= 1
+        
+        // Check if we need to restore a sorted song
+        if !sortedSongs.isEmpty {
+            // Remove the last one or two songs from sorted songs
+            if sortedSongs.count >= 2 && session.sortedIDs.count >= 2 {
+                // Check if the last action was "I Like Both" by comparing the last two IDs
+                let lastID = session.sortedIDs.last!
+                let secondLastID = session.sortedIDs[session.sortedIDs.count - 2]
+                
+                // If the last two songs were from the previous battle
+                if UInt64(lastID) == previousBattle.left.persistentID || UInt64(lastID) == previousBattle.right.persistentID,
+                   UInt64(secondLastID) == previousBattle.left.persistentID || UInt64(secondLastID) == previousBattle.right.persistentID {
+                    // This was likely an "I Like Both" action, remove both
+                    let lastSong = sortedSongs.removeLast()
+                    let secondLastSong = sortedSongs.removeLast()
+                    
+                    // Add them back to the remaining songs
+                    remainingSongs.append(lastSong)
+                    remainingSongs.append(secondLastSong)
+                    
+                    // Remove from session IDs
+                    session.sortedIDs.removeLast()
+                    session.sortedIDs.removeLast()
+                } else {
+                    // Just remove the last one
+                    let lastSong = sortedSongs.removeLast()
+                    remainingSongs.append(lastSong)
+                    session.sortedIDs.removeLast()
+                }
+            } else {
+                // Just remove the last one
+                let lastSong = sortedSongs.removeLast()
+                remainingSongs.append(lastSong)
+                session.sortedIDs.removeLast()
+            }
+        }
+        
+        // Find the indices of the previous battle songs in the remaining songs
+        if let leftIndex = remainingSongs.firstIndex(where: { $0.persistentID == previousBattle.left.persistentID }),
+           let rightIndex = remainingSongs.firstIndex(where: { $0.persistentID == previousBattle.right.persistentID }) {
+            currentLeftIndex = leftIndex
+            currentRightIndex = rightIndex
+        } else {
+            // If we can't find the exact songs, just set up a new comparison
+            setupNextComparison()
+        }
+        
+        // Save the updated session
+        saveSession()
+    }
+    
     // Complete the sorting process
     private func finishSorting() {
         // Mark session as complete
@@ -265,78 +492,5 @@ struct SortSessionView: View {
     // Save session to the store
     private func saveSession() {
         sortSessionStore.updateSession(session)
-    }
-}
-
-// Custom button style for song selection
-struct SongSelectionButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: AppStyles.cornerRadius)
-                    .fill(Color.secondary.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppStyles.cornerRadius)
-                            .stroke(
-                                configuration.isPressed ?
-                                AppStyles.accentColor : Color.clear,
-                                lineWidth: 2
-                            )
-                    )
-            )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
-// View for displaying a song in the comparison interface
-struct SongComparisonView: View {
-    let song: MPMediaItem
-    let isHighlighted: Bool
-    
-    var body: some View {
-        HStack(spacing: AppStyles.smallPadding) {
-            // Artwork
-            if let artwork = song.artwork {
-                Image(uiImage: artwork.image(at: CGSize(width: 60, height: 60)) ?? UIImage(systemName: "music.note")!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(AppStyles.cornerRadius)
-            } else {
-                Image(systemName: "music.note")
-                    .frame(width: 60, height: 60)
-                    .background(AppStyles.secondaryColor)
-                    .cornerRadius(AppStyles.cornerRadius)
-            }
-            
-            // Song info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(song.title ?? "Unknown")
-                    .font(AppStyles.bodyStyle)
-                    .fontWeight(isHighlighted ? .bold : .regular)
-                    .lineLimit(1)
-                
-                Text(song.artist ?? "Unknown")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                
-                Text(song.albumTitle ?? "Unknown")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            // Play count
-            Text("\(song.playCount ?? 0) plays")
-                .font(AppStyles.captionStyle)
-                .foregroundColor(isHighlighted ? AppStyles.accentColor : .secondary)
-        }
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
     }
 }
