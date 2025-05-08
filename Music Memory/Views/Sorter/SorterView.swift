@@ -14,6 +14,8 @@ struct SorterView: View {
     @State private var searchText = ""
     @State private var sortOption = SortOption.date
     @State private var sortAscending = false // Default to descending (newest first)
+    @State private var sessionToDelete: SortSession? = nil
+    @State private var showingDeleteAlert = false
     
     enum SortOption: String, CaseIterable, Identifiable {
         case date = "Date"
@@ -48,6 +50,14 @@ struct SorterView: View {
             return sortSessionStore.sessions.sorted {
                 sortAscending ? $0.sourceName < $1.sourceName : $0.sourceName > $1.sourceName
             }
+        }
+    }
+    
+    // Function to delete a specific session
+    private func deleteSession(_ session: SortSession) {
+        if let index = sortSessionStore.sessions.firstIndex(where: { $0.id == session.id }) {
+            sortSessionStore.sessions.remove(at: index)
+            sortSessionStore.saveSessions()
         }
     }
     
@@ -102,6 +112,25 @@ struct SorterView: View {
                             ) {
                                 SortSessionRow(session: session)
                             }
+                            .contextMenu {
+                                if session.isComplete {
+                                    // For completed sessions, show "Delete Session"
+                                    Button(role: .destructive, action: {
+                                        sessionToDelete = session
+                                        showingDeleteAlert = true
+                                    }) {
+                                        Label("Delete Sort Session", systemImage: "trash")
+                                    }
+                                } else {
+                                    // For in-progress sessions, show "Discard"
+                                    Button(role: .destructive, action: {
+                                        sessionToDelete = session
+                                        showingDeleteAlert = true
+                                    }) {
+                                        Label("Discard", systemImage: "xmark.circle")
+                                    }
+                                }
+                            }
                             .listRowSeparator(.hidden)
                         }
                         .onDelete(perform: sortSessionStore.deleteSession)
@@ -116,6 +145,18 @@ struct SorterView: View {
                     }
                     .listStyle(PlainListStyle())
                     .scrollDismissesKeyboard(.immediately)
+                    .alert("Delete Sort Session?", isPresented: $showingDeleteAlert) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Delete", role: .destructive) {
+                            if let session = sessionToDelete {
+                                deleteSession(session)
+                            }
+                        }
+                    } message: {
+                        Text(sessionToDelete?.isComplete ?? true ?
+                             "This will permanently delete this song ranking. This action cannot be undone." :
+                             "This will cancel your sorting progress. This action cannot be undone.")
+                    }
                 }
             }
             .navigationTitle("Sorter")

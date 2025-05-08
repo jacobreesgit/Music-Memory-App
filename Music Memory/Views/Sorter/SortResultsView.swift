@@ -20,12 +20,23 @@ struct SortResultsView: View {
     
     var body: some View {
         List {
-            // Header section
-            Section {
-                SortResultsHeaderView(session: session)
+            // Header section with DetailHeaderView (consistent with other detail views)
+            Section(header: VStack(alignment: .center, spacing: 4) {
+                DetailHeaderView(
+                    title: session.title,
+                    subtitle: "\(sourceTypeString(session.source)): \(session.sourceName)",
+                    plays: sortedSongs.reduce(0) { $0 + ($1.playCount ?? 0) },
+                    songCount: sortedSongs.count,
+                    artwork: artworkFromData(session.artworkData),
+                    isAlbum: false,
+                    metadata: [],
+                    rank: nil
+                )
+            }) {
+                // Empty section content for spacing
             }
             
-            // Stats section
+            // Statistics section
             Section(header: Text("Statistics")
                 .padding(.leading, -15)) {
                 MetadataRow(icon: "music.note.list", title: "Ranked Songs", value: "\(sortedSongs.count)")
@@ -48,7 +59,7 @@ struct SortResultsView: View {
                     .listRowSeparator(.hidden)
             }
             
-            // Results section - ranked songs
+            // Results section - ranked songs (similar to songs sections in other detail views)
             Section(header: Text("Ranking")
                 .padding(.leading, -15)) {
                 if sortedSongs.isEmpty {
@@ -60,7 +71,7 @@ struct SortResultsView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(Array(sortedSongs.enumerated()), id: \.element.persistentID) { index, song in
-                        NavigationLink(destination: SongDetailView(song: song)) {
+                        NavigationLink(destination: SongDetailView(song: song, rank: index + 1)) {
                             HStack(spacing: 10) {
                                 Text("#\(index + 1)")
                                     .font(.system(size: 16, weight: .bold))
@@ -75,7 +86,9 @@ struct SortResultsView: View {
                 }
             }
         }
+        .listSectionSpacing(0) // Match other detail views' section spacing
         .navigationTitle(session.title)
+        .navigationBarTitleDisplayMode(.inline) // Consistent with other detail views
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -84,7 +97,7 @@ struct SortResultsView: View {
                     }
                     
                     Button(role: .destructive, action: { showingDeleteAlert = true }) {
-                        Label("Delete Sort", systemImage: "trash")
+                        Label("Delete Sort Session", systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -108,6 +121,17 @@ struct SortResultsView: View {
         }
         .onAppear {
             loadSongs()
+        }
+    }
+    
+    // Helper to convert artwork data to MPMediaItemArtwork
+    private func artworkFromData(_ data: Data?) -> MPMediaItemArtwork? {
+        guard let artworkData = data, let uiImage = UIImage(data: artworkData) else {
+            return nil
+        }
+        
+        return MPMediaItemArtwork(boundsSize: uiImage.size) { _ in
+            return uiImage
         }
     }
     
@@ -163,83 +187,6 @@ struct SortResultsView: View {
         text += "\nRanked with Music Memory app"
         
         return text
-    }
-}
-
-// Header view for sort results
-struct SortResultsHeaderView: View {
-    let session: SortSession
-    
-    var body: some View {
-        VStack(spacing: AppStyles.smallPadding) {
-            // Artwork or placeholder
-            if let artworkData = session.artworkData, let uiImage = UIImage(data: artworkData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 150, height: 150)
-                    .cornerRadius(AppStyles.cornerRadius)
-            } else {
-                // Fallback to icon based on source type
-                ZStack {
-                    RoundedRectangle(cornerRadius: AppStyles.cornerRadius)
-                        .fill(AppStyles.secondaryColor)
-                        .frame(width: 150, height: 150)
-                    
-                    Image(systemName: iconForSource(session.source))
-                        .font(.system(size: 60))
-                        .foregroundColor(.primary)
-                }
-            }
-            
-            // Title
-            Text(session.title)
-                .font(AppStyles.subtitleStyle)
-                .lineLimit(1)
-                .multilineTextAlignment(.center)
-            
-            // Source
-            Text("\(sourceTypeString(session.source)): \(session.sourceName)")
-                .font(AppStyles.headlineStyle)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .multilineTextAlignment(.center)
-            
-            // Date
-            Text(formatDate(session.date))
-                .font(AppStyles.captionStyle)
-                .foregroundColor(.secondary)
-                .padding(.top, 2)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-    }
-    
-    // Helper to format the date
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
-    }
-    
-    // Helper to get icon based on source type
-    private func iconForSource(_ source: SortSession.SortSource) -> String {
-        switch source {
-        case .album: return "square.stack"
-        case .artist: return "music.mic"
-        case .genre: return "music.note.list"
-        case .playlist: return "list.bullet"
-        }
-    }
-    
-    // Helper for source type string
-    private func sourceTypeString(_ source: SortSession.SortSource) -> String {
-        switch source {
-        case .album: return "Album"
-        case .artist: return "Artist"
-        case .genre: return "Genre"
-        case .playlist: return "Playlist"
-        }
     }
 }
 
