@@ -12,8 +12,7 @@ struct SortSessionView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @EnvironmentObject var sortSessionStore: SortSessionStore
     @State var session: SortSession
-    
-    // State for the sorting interface
+
     @State private var currentLeftIndex = 0
     @State private var currentRightIndex = 0
     @State private var totalBattles = 0
@@ -22,17 +21,15 @@ struct SortSessionView: View {
     @State private var isComparing = false
     @State private var showCancelAlert = false
     @State private var isCompleted = false
-    
-    // Load song data from persistent IDs
+
     private func loadSongs(from ids: [String]) -> [MPMediaItem] {
         let persistentIDs = ids.compactMap { UInt64($0) }
         return musicLibrary.songs.filter { persistentIDs.contains($0.persistentID) }
     }
-    
+
     var body: some View {
         VStack {
             if isCompleted {
-                // Redirect to results view when complete
                 SortResultsView(session: session)
             } else {
                 sortingView
@@ -70,115 +67,94 @@ struct SortSessionView: View {
             Text("What would you like to do with your current sorting progress?")
         }
     }
-    
+
     private var sortingView: some View {
         VStack(spacing: 0) {
-            // Top header section with padding
             VStack(alignment: .leading, spacing: 10) {
-                // Extra padding above battle header to match screenshot
                 Spacer().frame(height: 20)
-                
-                // Battle header with percentage right-aligned
                 HStack {
                     Text("Battle #\(session.currentBattleIndex + 1)")
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
-                    
+
                     Spacer()
-                    
-                    Text("\(Int((Double(session.currentBattleIndex) / Double(max(1, totalBattles))) * 100))% sorted")
+
+                    Text("\(Int((Double(session.sortedIDs.count) / Double(max(1, session.songIDs.count))) * 100))% sorted")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
-                
-                // Progress bar
+
                 ProgressView(value: Double(session.currentBattleIndex), total: Double(max(1, totalBattles)))
                     .progressViewStyle(LinearProgressViewStyle())
                     .tint(AppStyles.accentColor)
                     .padding(.top, 4)
             }
             .padding(.horizontal)
-            
-            // Main battle area with flexible spacing
+
+            Spacer(minLength: 0)
+
             if remainingSongs.count >= 2 {
-                Spacer(minLength: 80)
-                
-                // Song options in an HStack with equal alignment
                 HStack(alignment: .top, spacing: 30) {
-                    // Left song
-                    SongOptionView(
-                        song: remainingSongs[currentLeftIndex],
-                        action: { selectSong(isLeft: true) }
-                    )
-                    
-                    // Right song
-                    SongOptionView(
-                        song: remainingSongs[currentRightIndex],
-                        action: { selectSong(isLeft: false) }
-                    )
+                    SongOptionView(song: remainingSongs[currentLeftIndex], action: { selectSong(isLeft: true) })
+                    SongOptionView(song: remainingSongs[currentRightIndex], action: { selectSong(isLeft: false) })
                 }
+                .frame(maxHeight: .infinity)
                 .padding(.horizontal)
-                
-                Spacer(minLength: 80)
-                
-                // Buttons section
-                VStack(spacing: 12) {
-                    Button(action: { selectBoth() }) {
-                        Text("I Like Both")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
-                            .background(Color(UIColor.systemGray5))
-                            .cornerRadius(8)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Button(action: { skipComparison() }) {
-                        Text("No Opinion")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
-                            .background(Color(UIColor.systemGray5))
-                            .cornerRadius(8)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // Back button - always present but disabled as needed
-                    Button(action: { goBackToPreviousBattle() }) {
-                        HStack {
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 14))
-                            Text("Go Back")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(Color.red.opacity(0.15))
-                        .cornerRadius(8)
-                        .foregroundColor(.red)
-                    }
-                    .disabled(session.currentBattleIndex < 1 || session.battleHistory.isEmpty)
-                    .opacity(session.currentBattleIndex < 1 || session.battleHistory.isEmpty ? 0.5 : 1.0)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
             } else {
-                // Loading or completion state
-                Spacer()
-                
                 VStack(spacing: 16) {
                     ProgressView()
                         .scaleEffect(1.5)
                         .padding()
-                    
                     Text(remainingSongs.isEmpty ? "Finalizing results..." : "Preparing songs...")
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
-                
-                Spacer()
+                .frame(maxHeight: .infinity)
             }
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 12) {
+                Button(action: { selectBoth() }) {
+                    Text("I Like Both")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Color(UIColor.systemGray5))
+                        .cornerRadius(8)
+                        .foregroundColor(.primary)
+                }
+
+                Button(action: { skipComparison() }) {
+                    Text("No Opinion")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Color(UIColor.systemGray5))
+                        .cornerRadius(8)
+                        .foregroundColor(.primary)
+                }
+
+                Button(action: { goBackToPreviousBattle() }) {
+                    HStack {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 14))
+                        Text("Go Back")
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(Color.red.opacity(0.15))
+                    .cornerRadius(8)
+                    .foregroundColor(.red)
+                }
+                .disabled(session.currentBattleIndex < 1 || session.battleHistory.isEmpty)
+                .opacity(session.currentBattleIndex < 1 || session.battleHistory.isEmpty ? 0.5 : 1.0)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 20)
         }
+        .frame(maxHeight: .infinity)
         .disabled(isComparing)
     }
     
@@ -463,15 +439,12 @@ struct SortSessionView: View {
     }
 }
 
-// MARK: - Song Option View
-
 struct SongOptionView: View {
     let song: MPMediaItem
     let action: () -> Void
-    
+
     var body: some View {
-        VStack(alignment: .center, spacing: 12) {
-            // Artwork container with fixed position
+        VStack(spacing: 12) {
             ZStack {
                 if let artwork = song.artwork {
                     Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
@@ -483,25 +456,24 @@ struct SongOptionView: View {
                     ZStack {
                         Rectangle()
                             .fill(Color.black)
-                            .frame(width: 140, height: 140)
                             .cornerRadius(8)
-                        
                         Image(systemName: "music.note")
                             .font(.system(size: 40))
                             .foregroundColor(.white)
                     }
+                    .frame(width: 140, height: 140)
                 }
             }
-            
-            // Song title in separate container that allows expansion
+
             Text(song.title ?? "Unknown")
                 .font(.system(size: 16, weight: .medium))
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .frame(width: 140)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 140, alignment: .top)
         }
-        .frame(width: 140)
-        .contentShape(Rectangle()) // Make the whole area tappable
+        .frame(width: 140, height: 220, alignment: .top)
+        .contentShape(Rectangle())
         .onTapGesture {
             action()
         }
