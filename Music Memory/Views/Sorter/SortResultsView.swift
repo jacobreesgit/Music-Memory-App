@@ -14,7 +14,7 @@ struct SortResultsView: View {
     @EnvironmentObject var sortSessionStore: SortSessionStore
     let session: SortSession
     
-    @State private var sortedSongs = [MPMediaItem]()
+    @State private var sortedItems: [Any] = []
     @State private var isSharePresented = false
     @State private var showingDeleteAlert = false
     
@@ -25,8 +25,8 @@ struct SortResultsView: View {
                 DetailHeaderView(
                     title: session.title,
                     subtitle: "\(sourceTypeString(session.source)): \(session.sourceName)",
-                    plays: sortedSongs.reduce(0) { $0 + ($1.playCount ?? 0) },
-                    songCount: sortedSongs.count,
+                    plays: calculateTotalPlays(),
+                    songCount: sortedItems.count,
                     artwork: artworkFromData(session.artworkData),
                     isAlbum: false,
                     metadata: [],
@@ -39,7 +39,7 @@ struct SortResultsView: View {
             // Statistics section
             Section(header: Text("Statistics")
                 .padding(.leading, -15)) {
-                MetadataRow(icon: "music.note.list", title: "Ranked Songs", value: "\(sortedSongs.count)")
+                MetadataRow(icon: iconForContentType(), title: "Ranked Items", value: "\(sortedItems.count)")
                     .listRowSeparator(.hidden)
                 
                 MetadataRow(icon: "calendar", title: "Date Created", value: formatDate(session.date))
@@ -48,40 +48,32 @@ struct SortResultsView: View {
                 MetadataRow(icon: "arrow.up.arrow.down", title: "Source", value: "\(sourceTypeString(session.source)): \(session.sourceName)")
                     .listRowSeparator(.hidden)
                 
-                // Total play count across all songs
-                let totalPlays = sortedSongs.reduce(0) { $0 + ($1.playCount ?? 0) }
+                // Total play count across all items
+                let totalPlays = calculateTotalPlays()
                 MetadataRow(icon: "play.circle", title: "Total Plays", value: "\(totalPlays)")
                     .listRowSeparator(.hidden)
                 
-                // Total duration
-                let totalDuration = formatDuration(sortedSongs.reduce(0) { $0 + $1.playbackDuration })
-                MetadataRow(icon: "clock", title: "Total Duration", value: totalDuration)
-                    .listRowSeparator(.hidden)
+                // Total duration for songs
+                if session.contentType == .songs {
+                    let totalDuration = formatDuration(calculateTotalDuration())
+                    MetadataRow(icon: "clock", title: "Total Duration", value: totalDuration)
+                        .listRowSeparator(.hidden)
+                }
             }
             
-            // Results section - ranked songs (similar to songs sections in other detail views)
+            // Results section - ranked items
             Section(header: Text("Ranking")
                 .padding(.leading, -15)) {
-                if sortedSongs.isEmpty {
-                    Text("Loading songs...")
+                if sortedItems.isEmpty {
+                    Text("Loading items...")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding()
                         .listRowSeparator(.hidden)
                 } else {
-                    ForEach(Array(sortedSongs.enumerated()), id: \.element.persistentID) { index, song in
-                        NavigationLink(destination: SongDetailView(song: song, rank: index + 1)) {
-                            HStack(spacing: 10) {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                                
-                                SongRow(song: song)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
+                    ForEach(Array(sortedItems.enumerated()), id: \.offset) { index, item in
+                        navigationLinkForItem(item, rank: index + 1)
                     }
                 }
             }
@@ -117,10 +109,10 @@ struct SortResultsView: View {
                 }
             }
         } message: {
-            Text("This will permanently delete this song ranking. This action cannot be undone.")
+            Text("This will permanently delete this ranking. This action cannot be undone.")
         }
         .onAppear {
-            loadSongs()
+            loadItems()
         }
     }
     
@@ -164,23 +156,230 @@ struct SortResultsView: View {
         }
     }
     
+    // Helper to get icon based on content type
+    private func iconForContentType() -> String {
+        switch session.contentType {
+        case .songs:
+            return "music.note"
+        case .albums:
+            return "square.stack"
+        case .artists:
+            return "music.mic"
+        case .genres:
+            return "music.note.list"
+        case .playlists:
+            return "list.bullet"
+        }
+    }
+    
+    // Load items from IDs
+    private func loadItems() {
+        switch session.contentType {
+        case .songs:
+            loadSongs()
+        case .albums:
+            loadAlbums()
+        case .artists:
+            loadArtists()
+        case .genres:
+            loadGenres()
+        case .playlists:
+            loadPlaylists()
+        }
+    }
+    
     // Load songs from persistent IDs
     private func loadSongs() {
         let songIDs = session.sortedIDs.compactMap { UInt64($0) }
         
         // Preserve the sorted order
-        sortedSongs = songIDs.compactMap { id in
+        sortedItems = songIDs.compactMap { id in
             musicLibrary.songs.first { $0.persistentID == id }
+        }
+    }
+    
+    // Load albums from IDs
+    private func loadAlbums() {
+        let albumIDs = session.sortedIDs
+        
+        // Preserve the sorted order
+        sortedItems = albumIDs.compactMap { id in
+            musicLibrary.albums.first { $0.id == id }
+        }
+    }
+    
+    // Load artists from IDs
+    private func loadArtists() {
+        let artistIDs = session.sortedIDs
+        
+        // Preserve the sorted order
+        sortedItems = artistIDs.compactMap { id in
+            musicLibrary.artists.first { $0.id == id }
+        }
+    }
+    
+    // Load genres from IDs
+    private func loadGenres() {
+        let genreIDs = session.sortedIDs
+        
+        // Preserve the sorted order
+        sortedItems = genreIDs.compactMap { id in
+            musicLibrary.genres.first { $0.id == id }
+        }
+    }
+    
+    // Load playlists from IDs
+    private func loadPlaylists() {
+        let playlistIDs = session.sortedIDs
+        
+        // Preserve the sorted order
+        sortedItems = playlistIDs.compactMap { id in
+            musicLibrary.playlists.first { $0.id == id }
+        }
+    }
+    
+    // Calculate total plays based on content type
+    private func calculateTotalPlays() -> Int {
+        switch session.contentType {
+        case .songs:
+            return sortedItems.reduce(0) { $0 + ((($1 as? MPMediaItem)?.playCount) ?? 0) }
+        case .albums:
+            return sortedItems.reduce(0) { $0 + ((($1 as? AlbumData)?.totalPlayCount) ?? 0) }
+        case .artists:
+            return sortedItems.reduce(0) { $0 + ((($1 as? ArtistData)?.totalPlayCount) ?? 0) }
+        case .genres:
+            return sortedItems.reduce(0) { $0 + ((($1 as? GenreData)?.totalPlayCount) ?? 0) }
+        case .playlists:
+            return sortedItems.reduce(0) { $0 + ((($1 as? PlaylistData)?.totalPlayCount) ?? 0) }
+        }
+    }
+    
+    // Calculate total duration (only for songs)
+    private func calculateTotalDuration() -> TimeInterval {
+        if session.contentType == .songs {
+            return sortedItems.reduce(0) { $0 + ((($1 as? MPMediaItem)?.playbackDuration) ?? 0) }
+        }
+        return 0
+    }
+    
+    // Create the appropriate navigation link based on item type
+    @ViewBuilder
+    private func navigationLinkForItem(_ item: Any, rank: Int) -> some View {
+        switch session.contentType {
+        case .songs:
+            if let song = item as? MPMediaItem {
+                NavigationLink(destination: SongDetailView(song: song, rank: rank)) {
+                    HStack(spacing: 10) {
+                        Text("#\(rank)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 30, alignment: .leading)
+                        
+                        SongRow(song: song)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+        case .albums:
+            if let album = item as? AlbumData {
+                NavigationLink(destination: AlbumDetailView(album: album, rank: rank)) {
+                    HStack(spacing: 10) {
+                        Text("#\(rank)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 30, alignment: .leading)
+                        
+                        AlbumRow(album: album)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+        case .artists:
+            if let artist = item as? ArtistData {
+                NavigationLink(destination: ArtistDetailView(artist: artist, rank: rank)) {
+                    HStack(spacing: 10) {
+                        Text("#\(rank)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 30, alignment: .leading)
+                        
+                        ArtistRow(artist: artist)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+        case .genres:
+            if let genre = item as? GenreData {
+                NavigationLink(destination: GenreDetailView(genre: genre, rank: rank)) {
+                    HStack(spacing: 10) {
+                        Text("#\(rank)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 30, alignment: .leading)
+                        
+                        GenreRow(genre: genre)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+        case .playlists:
+            if let playlist = item as? PlaylistData {
+                NavigationLink(destination: PlaylistDetailView(playlist: playlist, rank: rank)) {
+                    HStack(spacing: 10) {
+                        Text("#\(rank)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 30, alignment: .leading)
+                        
+                        PlaylistRow(playlist: playlist)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
         }
     }
     
     // Generate text for sharing
     private func generateShareText() -> String {
-        var text = "🎵 My Top Songs from \(session.sourceName) 🎵\n\n"
+        var typeName = ""
+        switch session.contentType {
+        case .songs: typeName = "Songs"
+        case .albums: typeName = "Albums"
+        case .artists: typeName = "Artists"
+        case .genres: typeName = "Genres"
+        case .playlists: typeName = "Playlists"
+        }
         
-        // Add sorted songs
-        for (index, song) in sortedSongs.prefix(10).enumerated() {
-            text += "#\(index + 1): \(song.title ?? "Unknown") - \(song.artist ?? "Unknown")\n"
+        var text = "🎵 My Top \(typeName) from \(session.sourceName) 🎵\n\n"
+        
+        // Add sorted items
+        for (index, item) in sortedItems.prefix(10).enumerated() {
+            switch session.contentType {
+            case .songs:
+                if let song = item as? MPMediaItem {
+                    text += "#\(index + 1): \(song.title ?? "Unknown") - \(song.artist ?? "Unknown")\n"
+                }
+            case .albums:
+                if let album = item as? AlbumData {
+                    text += "#\(index + 1): \(album.title) - \(album.artist)\n"
+                }
+            case .artists:
+                if let artist = item as? ArtistData {
+                    text += "#\(index + 1): \(artist.name)\n"
+                }
+            case .genres:
+                if let genre = item as? GenreData {
+                    text += "#\(index + 1): \(genre.name)\n"
+                }
+            case .playlists:
+                if let playlist = item as? PlaylistData {
+                    text += "#\(index + 1): \(playlist.name)\n"
+                }
+            }
         }
         
         // Add footer

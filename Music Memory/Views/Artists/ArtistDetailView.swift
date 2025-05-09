@@ -20,16 +20,6 @@ struct ArtistDetailView: View {
     @State private var showAllGenres = false
     @State private var showAllPlaylists = false
     
-    // State for sorting navigation
-    @State private var isNavigatingToSortSession = false
-    @State private var navigatingSortSession = SortSession(
-        title: "",
-        songs: [],
-        source: .artist,
-        sourceID: "",
-        sourceName: ""
-    )
-    
     // Initialize with an optional rank parameter
     init(artist: ArtistData, rank: Int? = nil) {
         self.artist = artist
@@ -111,23 +101,9 @@ struct ArtistDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
-    // Create a sort session from artist songs
-    private func createSortSession() {
-        // Create a new sort session from this artist's songs
-        navigatingSortSession = SortSession(
-            title: "Sort: \(artist.name)",
-            songs: artist.songs,
-            source: .artist,
-            sourceID: artist.id,
-            sourceName: artist.name,
-            artwork: artist.artwork
-        )
-        
-        // Add to session store
-        sortSessionStore.addSession(navigatingSortSession)
-        
-        // Navigate to sorting interface
-        isNavigatingToSortSession = true
+    // Find all albums by this artist
+    private func artistAlbums() -> [AlbumData] {
+        return musicLibrary.albums.filter { $0.artist == artist.name }
     }
     
     // Simple struct to hold album info for display
@@ -157,42 +133,45 @@ struct ArtistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // MARK: - Sort Songs Button
-            Button(action: {
-                createSortSession()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 18))
+            // MARK: - Sort Buttons Section
+            let albums = artistAlbums()
+            let hasMultipleSongs = artist.songs.count > 1
+            let hasMultipleAlbums = albums.count > 1
+            
+            // Only show the sort buttons section if there are multiple items to sort
+            if hasMultipleSongs || hasMultipleAlbums {
+                VStack(spacing: 12) {
+                    // Sort Songs Button - only show if there are multiple songs
+                    if hasMultipleSongs {
+                        SortActionButton(
+                            title: "Sort Songs",
+                            items: artist.songs,
+                            source: .artist,
+                            sourceID: artist.id,
+                            sourceName: artist.name,
+                            contentType: .songs,
+                            artwork: artist.artwork
+                        )
+                    }
                     
-                    Text("Sort Songs")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
+                    // Sort Albums Button - only show if there are multiple albums
+                    if hasMultipleAlbums {
+                        SortActionButton(
+                            title: "Sort Albums",
+                            items: albums,
+                            source: .artist,
+                            sourceID: artist.id,
+                            sourceName: artist.name,
+                            contentType: .albums,
+                            artwork: artist.artwork
+                        )
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
-                .background(AppStyles.accentColor.gradient)
-                .cornerRadius(AppStyles.cornerRadius)
+                .padding(.vertical, 8)
+                .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+                .listRowInsets(EdgeInsets()) // Remove default insets
+                .listRowSeparator(.hidden)
             }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 0)
-            .background(
-                NavigationLink(
-                    destination: SortSessionView(session: navigatingSortSession),
-                    isActive: $isNavigatingToSortSession,
-                    label: { EmptyView() }
-                )
-                .opacity(0)
-            )
-            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
-            .listRowInsets(EdgeInsets()) // Remove default insets
-            .listRowSeparator(.hidden)
             
             // Artist Statistics section
             Section(header: Text("Artist Statistics")
@@ -228,6 +207,72 @@ struct ArtistDetailView: View {
                 MetadataRow(icon: "chart.line.uptrend.xyaxis", title: "In Collection",
                            value: "\(datesBetween(dateRange().first, dateRange().last)) days")
                     .listRowSeparator(.hidden)
+            }
+            
+            // MOVED: Songs section with ranking and Show More/Less - moved above albums
+            Section(header: HStack {
+                Text("Songs").padding(.leading, -15)
+                
+                Spacer()
+                
+                // Only show the Sort link if there are multiple songs
+                if artist.songs.count > 1 {
+                    NavigationLink(destination: SortActionView(
+                        title: "Sort Songs",
+                        items: artist.songs,
+                        source: .artist,
+                        sourceID: artist.id,
+                        sourceName: artist.name,
+                        contentType: .songs,
+                        artwork: artist.artwork
+                    )) {
+                        Text("Sort")
+                            .font(.caption)
+                            .foregroundColor(AppStyles.accentColor)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }) {
+                let sortedSongs = artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
+                let displayedSongs = showAllSongs ? sortedSongs : Array(sortedSongs.prefix(5))
+                
+                ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, song in
+                    NavigationLink(destination: SongDetailView(song: song)) {
+                        HStack(spacing: 10) {
+                            // Only show rank number if there's more than one song
+                            if displayedSongs.count > 1 {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                            }
+                            
+                            SongRow(song: song)
+                        }
+                    }
+                    .listRowSeparator(.hidden)
+                }
+                
+                // Show More/Less button for songs
+                if sortedSongs.count > 5 {
+                    Button(action: {
+                        showAllSongs.toggle()
+                    }) {
+                        HStack {
+                            Text(showAllSongs ? "Show Less" : "Show More")
+                                .font(.subheadline)
+                                .foregroundColor(AppStyles.accentColor)
+                            
+                            Image(systemName: showAllSongs ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .listRowSeparator(.hidden)
+                }
             }
             
             // Genres section with Show More/Less
@@ -277,9 +322,31 @@ struct ArtistDetailView: View {
             }
             
             // Albums section with ranking and Show More/Less
-            Section(header: Text("Albums").padding(.leading, -15)) {
-                let albums = albumData()
-                let displayedAlbums = showAllAlbums ? albums : Array(albums.prefix(5))
+            Section(header: HStack {
+                Text("Albums").padding(.leading, -15)
+                
+                Spacer()
+                
+                // Only show the Sort link if there are multiple albums
+                if albums.count > 1 {
+                    NavigationLink(destination: SortActionView(
+                        title: "Sort Albums",
+                        items: albums,
+                        source: .artist,
+                        sourceID: artist.id,
+                        sourceName: artist.name,
+                        contentType: .albums,
+                        artwork: artist.artwork
+                    )) {
+                        Text("Sort")
+                            .font(.caption)
+                            .foregroundColor(AppStyles.accentColor)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }) {
+                let albumInfoList = albumData()
+                let displayedAlbums = showAllAlbums ? albumInfoList : Array(albumInfoList.prefix(5))
                 
                 ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, album in
                     if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
@@ -314,7 +381,7 @@ struct ArtistDetailView: View {
                 }
                 
                 // Show More/Less button for albums
-                if albums.count > 5 {
+                if albumInfoList.count > 5 {
                     Button(action: {
                         showAllAlbums.toggle()
                     }) {
@@ -370,50 +437,6 @@ struct ArtistDetailView: View {
                     }
                 }
             }
-            
-            // Songs section with ranking and Show More/Less
-            Section(header: Text("Songs").padding(.leading, -15)) {
-                let sortedSongs = artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
-                let displayedSongs = showAllSongs ? sortedSongs : Array(sortedSongs.prefix(5))
-                
-                ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, song in
-                    NavigationLink(destination: SongDetailView(song: song)) {
-                        HStack(spacing: 10) {
-                            // Only show rank number if there's more than one song
-                            if displayedSongs.count > 1 {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                            }
-                            
-                            SongRow(song: song)
-                        }
-                    }
-                    .listRowSeparator(.hidden)
-                }
-                
-                // Show More/Less button for songs
-                if sortedSongs.count > 5 {
-                    Button(action: {
-                        showAllSongs.toggle()
-                    }) {
-                        HStack {
-                            Text(showAllSongs ? "Show Less" : "Show More")
-                                .font(.subheadline)
-                                .foregroundColor(AppStyles.accentColor)
-                            
-                            Image(systemName: showAllSongs ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundColor(AppStyles.accentColor)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .listRowSeparator(.hidden)
-                }
-            }
         }
         .listSectionSpacing(0) // Custom section spacing to reduce space between sections
         .navigationTitle(artist.name)
@@ -450,6 +473,130 @@ struct ArtistDetailView: View {
             Text("\(album.playCount) plays")
                 .font(AppStyles.playCountStyle)
                 .foregroundColor(AppStyles.accentColor)
+        }
+    }
+}
+
+// Helper view to initiate sort session
+struct SortActionView<T>: View {
+    @EnvironmentObject var sortSessionStore: SortSessionStore
+    let title: String
+    let items: [T]
+    let source: SortSession.SortSource
+    let sourceID: String
+    let sourceName: String
+    let contentType: SortSession.ContentType
+    let artwork: MPMediaItemArtwork?
+    
+    @State private var navigatingSortSession: SortSession?
+    
+    var body: some View {
+        VStack {
+            Text("Start sorting your \(contentTypeString) from \(sourceName)?")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .padding()
+            
+            Button("Start Sorting") {
+                createSortSession()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding()
+            
+            if let session = navigatingSortSession {
+                NavigationLink(
+                    destination: SortSessionView(session: session),
+                    isActive: .constant(true),
+                    label: { EmptyView() }
+                )
+                .hidden()
+            }
+        }
+        .navigationTitle(title)
+    }
+    
+    private var contentTypeString: String {
+        switch contentType {
+        case .songs: return "songs"
+        case .albums: return "albums"
+        case .artists: return "artists"
+        case .genres: return "genres"
+        case .playlists: return "playlists"
+        }
+    }
+    
+    // Create a sort session based on the content type
+    private func createSortSession() {
+        switch contentType {
+        case .songs:
+            if let songs = items as? [MPMediaItem] {
+                let session = SortSession(
+                    title: title,
+                    songs: songs,
+                    source: source,
+                    sourceID: sourceID,
+                    sourceName: sourceName,
+                    artwork: artwork
+                )
+                sortSessionStore.addSession(session)
+                navigatingSortSession = session
+            }
+            
+        case .albums:
+            if let albums = items as? [AlbumData] {
+                let session = SortSession(
+                    title: title,
+                    albums: albums,
+                    source: source,
+                    sourceID: sourceID,
+                    sourceName: sourceName,
+                    artwork: artwork
+                )
+                sortSessionStore.addSession(session)
+                navigatingSortSession = session
+            }
+            
+        case .artists:
+            if let artists = items as? [ArtistData] {
+                let session = SortSession(
+                    title: title,
+                    artists: artists,
+                    source: source,
+                    sourceID: sourceID,
+                    sourceName: sourceName,
+                    artwork: artwork
+                )
+                sortSessionStore.addSession(session)
+                navigatingSortSession = session
+            }
+            
+        case .genres:
+            if let genres = items as? [GenreData] {
+                let session = SortSession(
+                    title: title,
+                    genres: genres,
+                    source: source,
+                    sourceID: sourceID,
+                    sourceName: sourceName,
+                    artwork: artwork
+                )
+                sortSessionStore.addSession(session)
+                navigatingSortSession = session
+            }
+            
+        case .playlists:
+            if let playlists = items as? [PlaylistData] {
+                let session = SortSession(
+                    title: title,
+                    playlists: playlists,
+                    source: source,
+                    sourceID: sourceID,
+                    sourceName: sourceName,
+                    artwork: artwork
+                )
+                sortSessionStore.addSession(session)
+                navigatingSortSession = session
+            }
         }
     }
 }

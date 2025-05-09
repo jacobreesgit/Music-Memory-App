@@ -8,7 +8,7 @@
 import SwiftUI
 import MediaPlayer
 
-/// Model for tracking and storing song sorting sessions
+/// Model for tracking and storing sorting sessions for any type of music content
 struct SortSession: Identifiable, Codable {
     // MARK: - Properties
     var id = UUID()
@@ -17,7 +17,12 @@ struct SortSession: Identifiable, Codable {
     let sourceID: String
     let sourceName: String
     let date: Date
-    var songIDs: [String] // Persistent IDs stored as strings
+    
+    // The type of content being sorted
+    let contentType: ContentType
+    
+    // Item IDs stored as strings (could be songs, albums, artists, etc.)
+    var itemIDs: [String]
     var sortedIDs: [String] // The result of the sorting
     var isComplete: Bool
     var artworkData: Data? // Store artwork data
@@ -34,15 +39,24 @@ struct SortSession: Identifiable, Codable {
         case playlist
     }
     
+    // Type of content being sorted
+    enum ContentType: String, Codable {
+        case songs
+        case albums
+        case artists
+        case genres
+        case playlists
+    }
+    
     // Structure to record battle information
     struct BattleRecord: Codable, Equatable {
-        let leftSongID: String
-        let rightSongID: String
+        let leftItemID: String
+        let rightItemID: String
         let battleIndex: Int
         
         static func == (lhs: BattleRecord, rhs: BattleRecord) -> Bool {
-            return lhs.leftSongID == rhs.leftSongID &&
-                   lhs.rightSongID == rhs.rightSongID &&
+            return lhs.leftItemID == rhs.rightItemID &&
+                   lhs.rightItemID == rhs.rightItemID &&
                    lhs.battleIndex == rhs.battleIndex
         }
     }
@@ -56,7 +70,7 @@ struct SortSession: Identifiable, Codable {
     
     /// The number of total items being sorted
     var totalItems: Int {
-        songIDs.count
+        itemIDs.count
     }
     
     /// The progress of the sorting (0.0 - 1.0)
@@ -69,14 +83,15 @@ struct SortSession: Identifiable, Codable {
     
     // MARK: - Initialization
     
-    /// Initialize with a list of songs and source information
+    /// Initialize with a list of songs
     init(title: String, songs: [MPMediaItem], source: SortSource, sourceID: String, sourceName: String, artwork: MPMediaItemArtwork? = nil) {
         self.title = title
         self.source = source
         self.sourceID = sourceID
         self.sourceName = sourceName
         self.date = Date()
-        self.songIDs = songs.map { $0.persistentID.description }
+        self.contentType = .songs
+        self.itemIDs = songs.map { $0.persistentID.description }
         self.sortedIDs = []
         self.isComplete = false
         self.currentBattleIndex = 0
@@ -86,6 +101,115 @@ struct SortSession: Identifiable, Codable {
         if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
             self.artworkData = image.pngData()
         }
+    }
+    
+    /// Initialize with a list of albums
+    init(title: String, albums: [AlbumData], source: SortSource, sourceID: String, sourceName: String, artwork: MPMediaItemArtwork? = nil) {
+        self.title = title
+        self.source = source
+        self.sourceID = sourceID
+        self.sourceName = sourceName
+        self.date = Date()
+        self.contentType = .albums
+        self.itemIDs = albums.map { $0.id }
+        self.sortedIDs = []
+        self.isComplete = false
+        self.currentBattleIndex = 0
+        self.battleHistory = []
+        
+        // Convert artwork to data if available
+        if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
+            self.artworkData = image.pngData()
+        }
+    }
+    
+    /// Initialize with a list of artists
+    init(title: String, artists: [ArtistData], source: SortSource, sourceID: String, sourceName: String, artwork: MPMediaItemArtwork? = nil) {
+        self.title = title
+        self.source = source
+        self.sourceID = sourceID
+        self.sourceName = sourceName
+        self.date = Date()
+        self.contentType = .artists
+        self.itemIDs = artists.map { $0.id }
+        self.sortedIDs = []
+        self.isComplete = false
+        self.currentBattleIndex = 0
+        self.battleHistory = []
+        
+        // Convert artwork to data if available
+        if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
+            self.artworkData = image.pngData()
+        }
+    }
+    
+    /// Initialize with a list of genres
+    init(title: String, genres: [GenreData], source: SortSource, sourceID: String, sourceName: String, artwork: MPMediaItemArtwork? = nil) {
+        self.title = title
+        self.source = source
+        self.sourceID = sourceID
+        self.sourceName = sourceName
+        self.date = Date()
+        self.contentType = .genres
+        self.itemIDs = genres.map { $0.id }
+        self.sortedIDs = []
+        self.isComplete = false
+        self.currentBattleIndex = 0
+        self.battleHistory = []
+        
+        // Convert artwork to data if available
+        if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
+            self.artworkData = image.pngData()
+        }
+    }
+    
+    /// Initialize with a list of playlists
+    init(title: String, playlists: [PlaylistData], source: SortSource, sourceID: String, sourceName: String, artwork: MPMediaItemArtwork? = nil) {
+        self.title = title
+        self.source = source
+        self.sourceID = sourceID
+        self.sourceName = sourceName
+        self.date = Date()
+        self.contentType = .playlists
+        self.itemIDs = playlists.map { $0.id }
+        self.sortedIDs = []
+        self.isComplete = false
+        self.currentBattleIndex = 0
+        self.battleHistory = []
+        
+        // Convert artwork to data if available
+        if let artwork = artwork, let image = artwork.image(at: CGSize(width: 100, height: 100)) {
+            self.artworkData = image.pngData()
+        }
+    }
+    
+    // Backwards compatibility initializer
+    init(legacySession: SortSession) {
+        self.id = legacySession.id
+        self.title = legacySession.title
+        self.source = legacySession.source
+        self.sourceID = legacySession.sourceID
+        self.sourceName = legacySession.sourceName
+        self.date = legacySession.date
+        self.contentType = .songs // Assume legacy sessions are for songs
+        self.itemIDs = legacySession.itemIDs
+        self.sortedIDs = legacySession.sortedIDs
+        self.isComplete = legacySession.isComplete
+        self.artworkData = legacySession.artworkData
+        self.currentBattleIndex = legacySession.currentBattleIndex
+        self.battleHistory = legacySession.battleHistory.map {
+            BattleRecord(
+                leftItemID: $0.leftItemID,
+                rightItemID: $0.rightItemID,
+                battleIndex: $0.battleIndex
+            )
+        }
+    }
+    
+    // For backward compatibility
+    var songIDs: [String] {
+        get { return contentType == .songs ? itemIDs : [] }
+        set { if contentType == .songs { itemIDs = newValue } }
     }
 }
 
@@ -166,9 +290,9 @@ class SortSessionStore: ObservableObject {
 
 /// Contains sorting algorithm implementations
 enum SortAlgorithm {
-    /// Simple implementation of merge sort for determining song order
-    static func mergeSort(_ items: [MPMediaItem],
-                       comparator: @escaping (MPMediaItem, MPMediaItem) async -> Bool) async -> [MPMediaItem] {
+    /// Simple implementation of merge sort for determining item order
+    static func mergeSort<T>(_ items: [T],
+                       comparator: @escaping (T, T) async -> Bool) async -> [T] {
         
         guard items.count > 1 else { return items }
         
@@ -193,10 +317,10 @@ enum SortAlgorithm {
     }
     
     /// Merge two sorted arrays
-    private static func merge(_ left: [MPMediaItem], _ right: [MPMediaItem],
-                           comparator: @escaping (MPMediaItem, MPMediaItem) async -> Bool) async -> [MPMediaItem] {
+    private static func merge<T>(_ left: [T], _ right: [T],
+                           comparator: @escaping (T, T) async -> Bool) async -> [T] {
         
-        var result: [MPMediaItem] = []
+        var result: [T] = []
         var leftIndex = 0
         var rightIndex = 0
         

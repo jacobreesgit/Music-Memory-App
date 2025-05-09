@@ -16,15 +16,108 @@ struct SortSessionView: View {
     @State private var currentLeftIndex = 0
     @State private var currentRightIndex = 0
     @State private var totalBattles = 0
-    @State private var remainingSongs = [MPMediaItem]()
-    @State private var sortedSongs = [MPMediaItem]()
+    @State private var remainingItems: [Any] = []
+    @State private var sortedItems: [Any] = []
     @State private var isComparing = false
     @State private var showCancelAlert = false
     @State private var isCompleted = false
 
-    private func loadSongs(from ids: [String]) -> [MPMediaItem] {
-        let persistentIDs = ids.compactMap { UInt64($0) }
-        return musicLibrary.songs.filter { persistentIDs.contains($0.persistentID) }
+    // Helper properties for displaying items
+    @State private var leftItemTitle = ""
+    @State private var leftItemSubtitle = ""
+    @State private var leftItemArtwork: MPMediaItemArtwork?
+    @State private var rightItemTitle = ""
+    @State private var rightItemSubtitle = ""
+    @State private var rightItemArtwork: MPMediaItemArtwork?
+
+    private func loadItems() {
+        switch session.contentType {
+        case .songs:
+            loadSongs()
+        case .albums:
+            loadAlbums()
+        case .artists:
+            loadArtists()
+        case .genres:
+            loadGenres()
+        case .playlists:
+            loadPlaylists()
+        }
+    }
+    
+    private func loadSongs() {
+        let persistentIDs = session.itemIDs.compactMap { UInt64($0) }
+        let allSongs = musicLibrary.songs.filter { persistentIDs.contains($0.persistentID) }
+        
+        // If this is a continuing session, load the already sorted songs
+        let sortedIDs = session.sortedIDs.compactMap { UInt64($0) }
+        let sortedSongs = allSongs.filter { sortedIDs.contains($0.persistentID) }
+        
+        // Filter out already sorted songs for remaining pool
+        let remaining = allSongs.filter { !sortedIDs.contains($0.persistentID) }
+        
+        remainingItems = remaining
+        sortedItems = sortedSongs
+    }
+    
+    private func loadAlbums() {
+        let albumIDs = session.itemIDs
+        let allAlbums = musicLibrary.albums.filter { albumIDs.contains($0.id) }
+        
+        // If this is a continuing session, load the already sorted albums
+        let sortedIDs = session.sortedIDs
+        let sortedAlbums = allAlbums.filter { sortedIDs.contains($0.id) }
+        
+        // Filter out already sorted albums for remaining pool
+        let remaining = allAlbums.filter { !sortedIDs.contains($0.id) }
+        
+        remainingItems = remaining
+        sortedItems = sortedAlbums
+    }
+    
+    private func loadArtists() {
+        let artistIDs = session.itemIDs
+        let allArtists = musicLibrary.artists.filter { artistIDs.contains($0.id) }
+        
+        // If this is a continuing session, load the already sorted artists
+        let sortedIDs = session.sortedIDs
+        let sortedArtists = allArtists.filter { sortedIDs.contains($0.id) }
+        
+        // Filter out already sorted artists for remaining pool
+        let remaining = allArtists.filter { !sortedIDs.contains($0.id) }
+        
+        remainingItems = remaining
+        sortedItems = sortedArtists
+    }
+    
+    private func loadGenres() {
+        let genreIDs = session.itemIDs
+        let allGenres = musicLibrary.genres.filter { genreIDs.contains($0.id) }
+        
+        // If this is a continuing session, load the already sorted genres
+        let sortedIDs = session.sortedIDs
+        let sortedGenres = allGenres.filter { sortedIDs.contains($0.id) }
+        
+        // Filter out already sorted genres for remaining pool
+        let remaining = allGenres.filter { !sortedIDs.contains($0.id) }
+        
+        remainingItems = remaining
+        sortedItems = sortedGenres
+    }
+    
+    private func loadPlaylists() {
+        let playlistIDs = session.itemIDs
+        let allPlaylists = musicLibrary.playlists.filter { playlistIDs.contains($0.id) }
+        
+        // If this is a continuing session, load the already sorted playlists
+        let sortedIDs = session.sortedIDs
+        let sortedPlaylists = allPlaylists.filter { sortedIDs.contains($0.id) }
+        
+        // Filter out already sorted playlists for remaining pool
+        let remaining = allPlaylists.filter { !sortedIDs.contains($0.id) }
+        
+        remainingItems = remaining
+        sortedItems = sortedPlaylists
     }
 
     var body: some View {
@@ -79,7 +172,7 @@ struct SortSessionView: View {
 
                     Spacer()
 
-                    Text("\(Int((Double(session.sortedIDs.count) / Double(max(1, session.songIDs.count))) * 100))% sorted")
+                    Text("\(Int((Double(session.sortedIDs.count) / Double(max(1, session.itemIDs.count))) * 100))% sorted")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -93,10 +186,23 @@ struct SortSessionView: View {
 
             Spacer(minLength: 0)
 
-            if remainingSongs.count >= 2 {
+            if remainingItems.count >= 2 {
                 HStack(alignment: .top, spacing: 30) {
-                    SongOptionView(song: remainingSongs[currentLeftIndex], action: { selectSong(isLeft: true) })
-                    SongOptionView(song: remainingSongs[currentRightIndex], action: { selectSong(isLeft: false) })
+                    ItemOptionView(
+                        title: leftItemTitle,
+                        subtitle: leftItemSubtitle,
+                        artwork: leftItemArtwork,
+                        contentType: session.contentType,
+                        action: { selectItem(isLeft: true) }
+                    )
+                    
+                    ItemOptionView(
+                        title: rightItemTitle,
+                        subtitle: rightItemSubtitle,
+                        artwork: rightItemArtwork,
+                        contentType: session.contentType,
+                        action: { selectItem(isLeft: false) }
+                    )
                 }
                 .frame(maxHeight: .infinity)
                 .padding(.horizontal)
@@ -105,7 +211,7 @@ struct SortSessionView: View {
                     ProgressView()
                         .scaleEffect(1.5)
                         .padding()
-                    Text(remainingSongs.isEmpty ? "Finalizing results..." : "Preparing songs...")
+                    Text(remainingItems.isEmpty ? "Finalizing results..." : "Preparing items...")
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
@@ -160,32 +266,25 @@ struct SortSessionView: View {
     
     // Start the sorting session
     private func startSorting() {
-        // Load songs from persistent IDs
-        let allSongs = loadSongs(from: session.songIDs)
+        // Load items based on content type
+        loadItems()
         
-        // If this is a continuing session, load the already sorted songs
-        let sortedIDs = session.sortedIDs.compactMap { UInt64($0) }
-        sortedSongs = allSongs.filter { sortedIDs.contains($0.persistentID) }
-        
-        // Filter out already sorted songs for remaining pool
-        remainingSongs = allSongs.filter { !sortedIDs.contains($0.persistentID) }
-        
-        // Shuffle remaining songs for initial comparisons if this is a new session
+        // Shuffle remaining items for initial comparisons if this is a new session
         if session.battleHistory.isEmpty {
-            remainingSongs.shuffle()
+            remainingItems.shuffle()
         }
         
         // Set initial indices or restore from saved battle state
-        if remainingSongs.count >= 2 {
+        if remainingItems.count >= 2 {
             // If we have existing battle history, try to restore the current battle
             if !session.battleHistory.isEmpty, let lastBattle = session.battleHistory.last {
-                // Try to find the indices of the last battle songs in the remaining songs
-                if let leftIndex = findSongIndex(withID: lastBattle.leftSongID),
-                   let rightIndex = findSongIndex(withID: lastBattle.rightSongID) {
+                // Try to find the indices of the last battle items in the remaining items
+                if let leftIndex = findItemIndex(withID: lastBattle.leftItemID),
+                   let rightIndex = findItemIndex(withID: lastBattle.rightItemID) {
                     currentLeftIndex = leftIndex
                     currentRightIndex = rightIndex
                 } else {
-                    // If we can't find the exact songs, set up a new comparison
+                    // If we can't find the exact items, set up a new comparison
                     currentLeftIndex = 0
                     currentRightIndex = 1
                 }
@@ -194,44 +293,152 @@ struct SortSessionView: View {
                 currentLeftIndex = 0
                 currentRightIndex = 1
             }
+            
+            // Update the item details for the current comparison
+            updateItemDetails()
         }
         
         // Calculate total expected battles (n log n for sorting)
-        let n = Double(allSongs.count)
+        let n = Double(session.itemIDs.count)
         totalBattles = Int(n * log2(n))
     }
     
-    // Find the index of a song in remainingSongs by its ID
-    private func findSongIndex(withID idString: String) -> Int? {
-        guard let id = UInt64(idString) else { return nil }
-        return remainingSongs.firstIndex { $0.persistentID == id }
+    // Update the details of the currently compared items for display
+    private func updateItemDetails() {
+        guard remainingItems.count >= 2 else { return }
+        
+        let leftItem = remainingItems[currentLeftIndex]
+        let rightItem = remainingItems[currentRightIndex]
+        
+        switch session.contentType {
+        case .songs:
+            if let song = leftItem as? MPMediaItem {
+                leftItemTitle = song.title ?? "Unknown"
+                leftItemSubtitle = song.artist ?? "Unknown"
+                leftItemArtwork = song.artwork
+            }
+            
+            if let song = rightItem as? MPMediaItem {
+                rightItemTitle = song.title ?? "Unknown"
+                rightItemSubtitle = song.artist ?? "Unknown"
+                rightItemArtwork = song.artwork
+            }
+            
+        case .albums:
+            if let album = leftItem as? AlbumData {
+                leftItemTitle = album.title
+                leftItemSubtitle = album.artist
+                leftItemArtwork = album.artwork
+            }
+            
+            if let album = rightItem as? AlbumData {
+                rightItemTitle = album.title
+                rightItemSubtitle = album.artist
+                rightItemArtwork = album.artwork
+            }
+            
+        case .artists:
+            if let artist = leftItem as? ArtistData {
+                leftItemTitle = artist.name
+                leftItemSubtitle = "\(artist.songs.count) songs"
+                leftItemArtwork = artist.artwork
+            }
+            
+            if let artist = rightItem as? ArtistData {
+                rightItemTitle = artist.name
+                rightItemSubtitle = "\(artist.songs.count) songs"
+                rightItemArtwork = artist.artwork
+            }
+            
+        case .genres:
+            if let genre = leftItem as? GenreData {
+                leftItemTitle = genre.name
+                leftItemSubtitle = "\(genre.songs.count) songs"
+                leftItemArtwork = genre.artwork
+            }
+            
+            if let genre = rightItem as? GenreData {
+                rightItemTitle = genre.name
+                rightItemSubtitle = "\(genre.songs.count) songs"
+                rightItemArtwork = genre.artwork
+            }
+            
+        case .playlists:
+            if let playlist = leftItem as? PlaylistData {
+                leftItemTitle = playlist.name
+                leftItemSubtitle = "\(playlist.songs.count) songs"
+                leftItemArtwork = playlist.artwork
+            }
+            
+            if let playlist = rightItem as? PlaylistData {
+                rightItemTitle = playlist.name
+                rightItemSubtitle = "\(playlist.songs.count) songs"
+                rightItemArtwork = playlist.artwork
+            }
+        }
     }
     
-    // Handle song selection
-    private func selectSong(isLeft: Bool) {
-        guard remainingSongs.count >= 2 else { return }
+    // Get the ID for an item based on its type
+    private func getItemID(_ item: Any) -> String {
+        switch session.contentType {
+        case .songs:
+            if let song = item as? MPMediaItem {
+                return song.persistentID.description
+            }
+        case .albums:
+            if let album = item as? AlbumData {
+                return album.id
+            }
+        case .artists:
+            if let artist = item as? ArtistData {
+                return artist.id
+            }
+        case .genres:
+            if let genre = item as? GenreData {
+                return genre.id
+            }
+        case .playlists:
+            if let playlist = item as? PlaylistData {
+                return playlist.id
+            }
+        }
+        return ""
+    }
+    
+    // Find the index of an item in remainingItems by its ID
+    private func findItemIndex(withID id: String) -> Int? {
+        for (index, item) in remainingItems.enumerated() {
+            if getItemID(item) == id {
+                return index
+            }
+        }
+        return nil
+    }
+    
+    // Handle item selection
+    private func selectItem(isLeft: Bool) {
+        guard remainingItems.count >= 2 else { return }
         
         isComparing = true
         
         // Record the current battle before making changes
         recordCurrentBattle()
         
-        // Get the selected and unselected songs
+        // Get the selected and unselected items
         let selectedIndex = isLeft ? currentLeftIndex : currentRightIndex
-        let unselectedIndex = isLeft ? currentRightIndex : currentLeftIndex
         
-        let selected = remainingSongs[selectedIndex]
+        let selected = remainingItems[selectedIndex]
         
         // Add to sorted list
-        sortedSongs.append(selected)
+        sortedItems.append(selected)
         
         // Update session data
-        session.sortedIDs.append(selected.persistentID.description)
+        session.sortedIDs.append(getItemID(selected))
         session.currentBattleIndex += 1
         saveSession()
         
-        // Remove the selected song from the pool
-        remainingSongs.remove(at: selectedIndex)
+        // Remove the selected item from the pool
+        remainingItems.remove(at: selectedIndex)
         
         // Adjust indices if needed
         if selectedIndex <= currentLeftIndex {
@@ -242,17 +449,18 @@ struct SortSessionView: View {
         }
         
         // Check if we're done
-        if remainingSongs.count < 2 {
-            // Add any remaining song (should be at most 1)
-            if let lastSong = remainingSongs.first {
-                sortedSongs.append(lastSong)
-                session.sortedIDs.append(lastSong.persistentID.description)
+        if remainingItems.count < 2 {
+            // Add any remaining item (should be at most 1)
+            if let lastItem = remainingItems.first {
+                sortedItems.append(lastItem)
+                session.sortedIDs.append(getItemID(lastItem))
             }
             
             finishSorting()
         } else {
             // Set up next comparison
             setupNextComparison()
+            updateItemDetails()
         }
         
         isComparing = false
@@ -260,48 +468,49 @@ struct SortSessionView: View {
     
     // Handle "I Like Both" selection
     private func selectBoth() {
-        guard remainingSongs.count >= 2 else { return }
+        guard remainingItems.count >= 2 else { return }
         
         isComparing = true
         
         // Record the current battle before making changes
         recordCurrentBattle()
         
-        // Add both songs to sorted list
-        let left = remainingSongs[currentLeftIndex]
-        let right = remainingSongs[currentRightIndex]
+        // Add both items to sorted list
+        let left = remainingItems[currentLeftIndex]
+        let right = remainingItems[currentRightIndex]
         
         // Order matters, so we'll remove from higher index first to avoid index shifting issues
         if currentLeftIndex > currentRightIndex {
-            remainingSongs.remove(at: currentLeftIndex)
-            remainingSongs.remove(at: currentRightIndex)
+            remainingItems.remove(at: currentLeftIndex)
+            remainingItems.remove(at: currentRightIndex)
         } else {
-            remainingSongs.remove(at: currentRightIndex)
-            remainingSongs.remove(at: currentLeftIndex)
+            remainingItems.remove(at: currentRightIndex)
+            remainingItems.remove(at: currentLeftIndex)
         }
         
         // Add both to sorted list - in the order they appeared
-        sortedSongs.append(left)
-        sortedSongs.append(right)
+        sortedItems.append(left)
+        sortedItems.append(right)
         
         // Update session data
-        session.sortedIDs.append(left.persistentID.description)
-        session.sortedIDs.append(right.persistentID.description)
+        session.sortedIDs.append(getItemID(left))
+        session.sortedIDs.append(getItemID(right))
         session.currentBattleIndex += 1
         saveSession()
         
         // Check if we're done
-        if remainingSongs.count < 2 {
-            // Add any remaining song (should be at most 1)
-            if let lastSong = remainingSongs.first {
-                sortedSongs.append(lastSong)
-                session.sortedIDs.append(lastSong.persistentID.description)
+        if remainingItems.count < 2 {
+            // Add any remaining item (should be at most 1)
+            if let lastItem = remainingItems.first {
+                sortedItems.append(lastItem)
+                session.sortedIDs.append(getItemID(lastItem))
             }
             
             finishSorting()
         } else {
             // Set up next comparison
             setupNextComparison()
+            updateItemDetails()
         }
         
         isComparing = false
@@ -309,13 +518,14 @@ struct SortSessionView: View {
     
     // Skip the current comparison
     private func skipComparison() {
-        guard remainingSongs.count >= 2 else { return }
+        guard remainingItems.count >= 2 else { return }
         
         // Record the current battle before making changes
         recordCurrentBattle()
         
         // Just set up a new comparison
         setupNextComparison()
+        updateItemDetails()
         
         // Increment battle index
         session.currentBattleIndex += 1
@@ -325,12 +535,12 @@ struct SortSessionView: View {
     // Set up the next comparison
     private func setupNextComparison() {
         // Simple approach: just choose random indices
-        var leftIndex = Int.random(in: 0..<remainingSongs.count)
-        var rightIndex = Int.random(in: 0..<remainingSongs.count)
+        var leftIndex = Int.random(in: 0..<remainingItems.count)
+        var rightIndex = Int.random(in: 0..<remainingItems.count)
         
         // Make sure indices are different
         while leftIndex == rightIndex {
-            rightIndex = Int.random(in: 0..<remainingSongs.count)
+            rightIndex = Int.random(in: 0..<remainingItems.count)
         }
         
         currentLeftIndex = leftIndex
@@ -339,15 +549,15 @@ struct SortSessionView: View {
     
     // Record the current battle state for history
     private func recordCurrentBattle() {
-        guard remainingSongs.count >= 2 else { return }
+        guard remainingItems.count >= 2 else { return }
         
-        let leftSong = remainingSongs[currentLeftIndex]
-        let rightSong = remainingSongs[currentRightIndex]
+        let leftItem = remainingItems[currentLeftIndex]
+        let rightItem = remainingItems[currentRightIndex]
         
         // Add to history in the session model (for persistence)
         let battleRecord = SortSession.BattleRecord(
-            leftSongID: leftSong.persistentID.description,
-            rightSongID: rightSong.persistentID.description,
+            leftItemID: getItemID(leftItem),
+            rightItemID: getItemID(rightItem),
             battleIndex: session.currentBattleIndex
         )
         
@@ -364,59 +574,55 @@ struct SortSessionView: View {
         // Decrement battle index
         session.currentBattleIndex -= 1
         
-        // Check if we need to restore a sorted song
-        if !sortedSongs.isEmpty {
-            // Remove the last one or two songs from sorted songs
-            if sortedSongs.count >= 2 && session.sortedIDs.count >= 2 {
+        // Check if we need to restore a sorted item
+        if !sortedItems.isEmpty {
+            // Remove the last one or two items from sorted items
+            if sortedItems.count >= 2 && session.sortedIDs.count >= 2 {
                 // Check if the last action was "I Like Both" by comparing the last two IDs
                 let lastID = session.sortedIDs.last!
                 let secondLastID = session.sortedIDs[session.sortedIDs.count - 2]
                 
-                // Check if the last two sorted songs were from the same battle
-                if session.sortedIDs.count - sortedSongs.count <= 1 &&
-                   (UInt64(lastID) == UInt64(previousBattle.leftSongID) ||
-                    UInt64(lastID) == UInt64(previousBattle.rightSongID)) &&
-                   (UInt64(secondLastID) == UInt64(previousBattle.leftSongID) ||
-                    UInt64(secondLastID) == UInt64(previousBattle.rightSongID)) {
+                // Check if the last two sorted items were from the same battle
+                if session.sortedIDs.count - sortedItems.count <= 1 &&
+                   (lastID == previousBattle.leftItemID ||
+                    lastID == previousBattle.rightItemID) &&
+                   (secondLastID == previousBattle.leftItemID ||
+                    secondLastID == previousBattle.rightItemID) {
                     // This was likely an "I Like Both" action, remove both
-                    let lastSong = sortedSongs.removeLast()
-                    let secondLastSong = sortedSongs.removeLast()
+                    let lastItem = sortedItems.removeLast()
+                    let secondLastItem = sortedItems.removeLast()
                     
-                    // Add them back to the remaining songs
-                    remainingSongs.append(lastSong)
-                    remainingSongs.append(secondLastSong)
+                    // Add them back to the remaining items
+                    remainingItems.append(lastItem)
+                    remainingItems.append(secondLastItem)
                     
                     // Remove from session IDs
                     session.sortedIDs.removeLast()
                     session.sortedIDs.removeLast()
                 } else {
                     // Just remove the last one
-                    let lastSong = sortedSongs.removeLast()
-                    remainingSongs.append(lastSong)
+                    let lastItem = sortedItems.removeLast()
+                    remainingItems.append(lastItem)
                     session.sortedIDs.removeLast()
                 }
             } else {
                 // Just remove the last one
-                let lastSong = sortedSongs.removeLast()
-                remainingSongs.append(lastSong)
+                let lastItem = sortedItems.removeLast()
+                remainingItems.append(lastItem)
                 session.sortedIDs.removeLast()
             }
         }
         
-        // Find the indices of the previous battle songs in the remaining songs
-        if let leftSongID = UInt64(previousBattle.leftSongID),
-           let rightSongID = UInt64(previousBattle.rightSongID) {
-            if let leftIndex = remainingSongs.firstIndex(where: { $0.persistentID == leftSongID }),
-               let rightIndex = remainingSongs.firstIndex(where: { $0.persistentID == rightSongID }) {
-                currentLeftIndex = leftIndex
-                currentRightIndex = rightIndex
-            } else {
-                // If we can't find the exact songs, just set up a new comparison
-                setupNextComparison()
-            }
+        // Find the indices of the previous battle items in the remaining items
+        if let leftIndex = findItemIndex(withID: previousBattle.leftItemID),
+           let rightIndex = findItemIndex(withID: previousBattle.rightItemID) {
+            currentLeftIndex = leftIndex
+            currentRightIndex = rightIndex
+            updateItemDetails()
         } else {
-            // If we can't parse the IDs, just set up a new comparison
+            // If we can't find the exact items, just set up a new comparison
             setupNextComparison()
+            updateItemDetails()
         }
         
         // Save the updated session
@@ -439,15 +645,18 @@ struct SortSessionView: View {
     }
 }
 
-struct SongOptionView: View {
-    let song: MPMediaItem
+struct ItemOptionView: View {
+    let title: String
+    let subtitle: String
+    let artwork: MPMediaItemArtwork?
+    let contentType: SortSession.ContentType
     let action: () -> Void
 
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
-                if let artwork = song.artwork {
-                    Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: "music.note")!)
+                if let artwork = artwork {
+                    Image(uiImage: artwork.image(at: CGSize(width: 140, height: 140)) ?? UIImage(systemName: iconForContentType())!)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 140, height: 140)
@@ -457,7 +666,7 @@ struct SongOptionView: View {
                         Rectangle()
                             .fill(Color.black)
                             .cornerRadius(8)
-                        Image(systemName: "music.note")
+                        Image(systemName: iconForContentType())
                             .font(.system(size: 40))
                             .foregroundColor(.white)
                     }
@@ -465,17 +674,39 @@ struct SongOptionView: View {
                 }
             }
 
-            Text(song.title ?? "Unknown")
+            Text(title)
                 .font(.system(size: 16, weight: .medium))
                 .multilineTextAlignment(.center)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 140, alignment: .top)
+            
+            Text(subtitle)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
                 .frame(width: 140, alignment: .top)
         }
         .frame(width: 140, height: 220, alignment: .top)
         .contentShape(Rectangle())
         .onTapGesture {
             action()
+        }
+    }
+    
+    private func iconForContentType() -> String {
+        switch contentType {
+        case .songs:
+            return "music.note"
+        case .albums:
+            return "square.stack"
+        case .artists:
+            return "music.mic"
+        case .genres:
+            return "music.note.list"
+        case .playlists:
+            return "list.bullet"
         }
     }
 }
