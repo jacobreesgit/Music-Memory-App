@@ -151,41 +151,43 @@ struct AlbumDetailView: View {
             }
             
             // MARK: - Sort Songs Button
-            Button(action: {
-                createSortSession()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 18))
-                    
-                    Text("Sort Songs")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
+            if album.songs.count > 1 {
+                Button(action: {
+                    createSortSession()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.system(size: 18))
+                        
+                        Text("Sort Songs")
+                            .font(.headline)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(AppStyles.accentColor.gradient)
+                    .cornerRadius(AppStyles.cornerRadius)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
-                .background(AppStyles.accentColor.gradient)
-                .cornerRadius(AppStyles.cornerRadius)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 0)
-            .background(
-                NavigationLink(
-                    destination: SortSessionView(session: navigatingSortSession),
-                    isActive: $isNavigatingToSortSession,
-                    label: { EmptyView() }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 0)
+                .background(
+                    NavigationLink(
+                        destination: SortSessionView(session: navigatingSortSession),
+                        isActive: $isNavigatingToSortSession,
+                        label: { EmptyView() }
+                    )
+                    .opacity(0)
                 )
-                .opacity(0)
-            )
-            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match the system background
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
+                .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match the system background
+                .listRowInsets(EdgeInsets()) // Remove default insets
+                .listRowSeparator(.hidden)
+            }
             
             // Album Statistics section
             Section(header: Text("Album Statistics")

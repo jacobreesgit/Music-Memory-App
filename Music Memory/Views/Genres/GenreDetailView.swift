@@ -120,42 +120,61 @@ struct GenreDetailView: View {
                 // Empty section content for spacing
             }
             
-            // MARK: - Sort Songs Button
-            Button(action: {
-                createSortSession()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 18))
+            // MARK: - Sort Buttons Section
+            let artists = genreArtists()
+            let albums = genreAlbums()
+            
+            // Determine what can be sorted
+            let hasMultipleSongs = genre.songs.count > 1
+            let hasMultipleArtists = artists.count > 1
+            let hasMultipleAlbums = albums.count > 1
+            
+            if hasMultipleSongs || hasMultipleArtists || hasMultipleAlbums {
+                VStack(spacing: 12) {
+                    // Sort Songs Button - only show if there are multiple songs
+                    if hasMultipleSongs {
+                        SortActionButton(
+                            title: "Sort Songs",
+                            items: genre.songs,
+                            source: .genre,
+                            sourceID: genre.id,
+                            sourceName: genre.name,
+                            contentType: .songs,
+                            artwork: genre.artwork
+                        )
+                    }
                     
-                    Text("Sort Songs")
-                        .font(.headline)
+                    // Sort Artists Button - only show if there are multiple artists
+                    if hasMultipleArtists {
+                        SortActionButton(
+                            title: "Sort Artists",
+                            items: artists,
+                            source: .genre,
+                            sourceID: genre.id,
+                            sourceName: genre.name,
+                            contentType: .artists,
+                            artwork: genre.artwork
+                        )
+                    }
                     
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
+                    // Sort Albums Button - only show if there are multiple albums
+                    if hasMultipleAlbums {
+                        SortActionButton(
+                            title: "Sort Albums",
+                            items: albums,
+                            source: .genre,
+                            sourceID: genre.id,
+                            sourceName: genre.name,
+                            contentType: .albums,
+                            artwork: genre.artwork
+                        )
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
-                .background(AppStyles.accentColor.gradient)
-                .cornerRadius(AppStyles.cornerRadius)
+                .padding(.vertical, 8)
+                .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+                .listRowInsets(EdgeInsets()) // Remove default insets
+                .listRowSeparator(.hidden)
             }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 0)
-            .background(
-                NavigationLink(
-                    destination: SortSessionView(session: navigatingSortSession),
-                    isActive: $isNavigatingToSortSession,
-                    label: { EmptyView() }
-                )
-                .opacity(0)
-            )
-            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
-            .listRowInsets(EdgeInsets()) // Remove default insets
-            .listRowSeparator(.hidden)
             
             // Genre Statistics section
             Section(header: Text("Genre Statistics")
@@ -173,7 +192,6 @@ struct GenreDetailView: View {
             }
             
             // Artists section with Show More/Less
-            let artists = genreArtists()
             if !artists.isEmpty {
                 Section(header: Text("Artists").padding(.leading, -15)) {
                     let displayedArtists = showAllArtists ? artists : Array(artists.prefix(5))
@@ -219,7 +237,6 @@ struct GenreDetailView: View {
             }
             
             // Albums section with Show More/Less
-            let albums = genreAlbums()
             if !albums.isEmpty {
                 Section(header: Text("Albums").padding(.leading, -15)) {
                     let displayedAlbums = showAllAlbums ? albums : Array(albums.prefix(5))

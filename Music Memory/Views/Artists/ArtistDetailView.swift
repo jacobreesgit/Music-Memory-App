@@ -20,6 +20,16 @@ struct ArtistDetailView: View {
     @State private var showAllGenres = false
     @State private var showAllPlaylists = false
     
+    // State for sorting navigation
+    @State private var isNavigatingToSortSession = false
+    @State private var navigatingSortSession = SortSession(
+        title: "",
+        songs: [],
+        source: .album,
+        sourceID: "",
+        sourceName: ""
+    )
+    
     // Initialize with an optional rank parameter
     init(artist: ArtistData, rank: Int? = nil) {
         self.artist = artist
@@ -210,29 +220,7 @@ struct ArtistDetailView: View {
             }
             
             // MOVED: Songs section with ranking and Show More/Less - moved above albums
-            Section(header: HStack {
-                Text("Songs").padding(.leading, -15)
-                
-                Spacer()
-                
-                // Only show the Sort link if there are multiple songs
-                if artist.songs.count > 1 {
-                    NavigationLink(destination: SortActionView(
-                        title: "Sort Songs",
-                        items: artist.songs,
-                        source: .artist,
-                        sourceID: artist.id,
-                        sourceName: artist.name,
-                        contentType: .songs,
-                        artwork: artist.artwork
-                    )) {
-                        Text("Sort")
-                            .font(.caption)
-                            .foregroundColor(AppStyles.accentColor)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }) {
+            Section(header: Text("Songs").padding(.leading, -15)) {
                 let sortedSongs = artist.songs.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
                 let displayedSongs = showAllSongs ? sortedSongs : Array(sortedSongs.prefix(5))
                 
@@ -322,29 +310,7 @@ struct ArtistDetailView: View {
             }
             
             // Albums section with ranking and Show More/Less
-            Section(header: HStack {
-                Text("Albums").padding(.leading, -15)
-                
-                Spacer()
-                
-                // Only show the Sort link if there are multiple albums
-                if albums.count > 1 {
-                    NavigationLink(destination: SortActionView(
-                        title: "Sort Albums",
-                        items: albums,
-                        source: .artist,
-                        sourceID: artist.id,
-                        sourceName: artist.name,
-                        contentType: .albums,
-                        artwork: artist.artwork
-                    )) {
-                        Text("Sort")
-                            .font(.caption)
-                            .foregroundColor(AppStyles.accentColor)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }) {
+            Section(header: Text("Albums").padding(.leading, -15)) {
                 let albumInfoList = albumData()
                 let displayedAlbums = showAllAlbums ? albumInfoList : Array(albumInfoList.prefix(5))
                 

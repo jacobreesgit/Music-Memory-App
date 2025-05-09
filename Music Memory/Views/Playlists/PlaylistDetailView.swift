@@ -93,6 +93,17 @@ struct PlaylistDetailView: View {
         return genres.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
+    // Find top artists in playlist
+    private func playlistArtists() -> [ArtistData] {
+        let artistNames = Set(playlist.songs.compactMap { $0.artist })
+        
+        let artists = artistNames.compactMap { name -> ArtistData? in
+            musicLibrary.artists.first { $0.name == name }
+        }
+        
+        return artists.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    }
+    
     // Create a sort session from playlist songs
     private func createSortSession() {
         // Create a new sort session from this playlist's songs
@@ -130,42 +141,76 @@ struct PlaylistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // MARK: - Sort Songs Button
-            Button(action: {
-                createSortSession()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 18))
+            // MARK: - Sort Buttons Section
+            let artists = playlistArtists()
+            let albums = playlistAlbums()
+            let genres = playlistGenres()
+            
+            // Determine what can be sorted
+            let hasMultipleSongs = playlist.songs.count > 1
+            let hasMultipleArtists = artists.count > 1
+            let hasMultipleAlbums = albums.count > 1
+            let hasMultipleGenres = genres.count > 1
+            
+            if hasMultipleSongs || hasMultipleArtists || hasMultipleAlbums || hasMultipleGenres {
+                VStack(spacing: 12) {
+                    // Sort Songs Button - only show if there are multiple songs
+                    if hasMultipleSongs {
+                        SortActionButton(
+                            title: "Sort Songs",
+                            items: playlist.songs,
+                            source: .playlist,
+                            sourceID: playlist.id,
+                            sourceName: playlist.name,
+                            contentType: .songs,
+                            artwork: playlist.artwork
+                        )
+                    }
                     
-                    Text("Sort Songs")
-                        .font(.headline)
+                    // Sort Artists Button - only show if there are multiple artists
+                    if hasMultipleArtists {
+                        SortActionButton(
+                            title: "Sort Artists",
+                            items: artists,
+                            source: .playlist,
+                            sourceID: playlist.id,
+                            sourceName: playlist.name,
+                            contentType: .artists,
+                            artwork: playlist.artwork
+                        )
+                    }
                     
-                    Spacer()
+                    // Sort Albums Button - only show if there are multiple albums
+                    if hasMultipleAlbums {
+                        SortActionButton(
+                            title: "Sort Albums",
+                            items: albums,
+                            source: .playlist,
+                            sourceID: playlist.id,
+                            sourceName: playlist.name,
+                            contentType: .albums,
+                            artwork: playlist.artwork
+                        )
+                    }
                     
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
+                    // Sort Genres Button - only show if there are multiple genres
+                    if hasMultipleGenres {
+                        SortActionButton(
+                            title: "Sort Genres",
+                            items: genres,
+                            source: .playlist,
+                            sourceID: playlist.id,
+                            sourceName: playlist.name,
+                            contentType: .genres,
+                            artwork: playlist.artwork
+                        )
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
-                .background(AppStyles.accentColor.gradient)
-                .cornerRadius(AppStyles.cornerRadius)
+                .padding(.vertical, 8)
+                .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
+                .listRowInsets(EdgeInsets()) // Remove default insets
+                .listRowSeparator(.hidden)
             }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 0)
-            .background(
-                NavigationLink(
-                    destination: SortSessionView(session: navigatingSortSession),
-                    isActive: $isNavigatingToSortSession,
-                    label: { EmptyView() }
-                )
-                .opacity(0)
-            )
-            .listRowBackground(Color(UIColor.systemGroupedBackground)) // Match system background
-            .listRowInsets(EdgeInsets()) // Remove default insets
-            .listRowSeparator(.hidden)
             
             // Playlist Statistics section
             Section(header: Text("Playlist Statistics")
@@ -192,79 +237,27 @@ struct PlaylistDetailView: View {
             
             // Artists section - top artists in the playlist with Show More/Less
             Section(header: Text("Artists").padding(.leading, -15)) {
-                let artistList = playlist.topArtists(limit: showAllArtists ? Int.max : 5)
+                let displayedArtists = showAllArtists ? artists : Array(artists.prefix(5))
                 
-                ForEach(Array(artistList.enumerated()), id: \.element.name) { index, artistInfo in
-                    let (artist, songCount, playCount) = artistInfo
-                    
-                    if let artistData = musicLibrary.artists.first(where: { $0.name == artist }) {
-                        NavigationLink(destination: ArtistDetailView(artist: artistData)) {
-                            HStack(spacing: 10) {
-                                // Only show rank number if there's more than one artist
-                                if artistList.count > 1 {
-                                    Text("#\(index + 1)")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(AppStyles.accentColor)
-                                        .frame(width: 30, alignment: .leading)
-                                }
-                                
-                                ArtistRow(artist: artistData)
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing) {
-                                    Text("\(playCount) plays")
-                                        .font(AppStyles.playCountStyle)
-                                        .foregroundColor(AppStyles.accentColor)
-                                    
-                                    Text("\(songCount) songs")
-                                        .font(AppStyles.captionStyle)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    } else {
+                ForEach(Array(displayedArtists.enumerated()), id: \.element.id) { index, artist in
+                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
                         HStack(spacing: 10) {
                             // Only show rank number if there's more than one artist
-                            if artistList.count > 1 {
+                            if displayedArtists.count > 1 {
                                 Text("#\(index + 1)")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(AppStyles.accentColor)
                                     .frame(width: 30, alignment: .leading)
                             }
                             
-                            ZStack {
-                                Circle()
-                                    .fill(AppStyles.secondaryColor)
-                                    .frame(width: 50, height: 50)
-                                
-                                Image(systemName: "music.mic")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                            }
-                            
-                            VStack(alignment: .leading) {
-                                Text(artist)
-                                    .font(AppStyles.bodyStyle)
-                                
-                                Text("\(songCount) songs in playlist")
-                                    .font(AppStyles.captionStyle)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Text("\(playCount) plays")
-                                .font(AppStyles.playCountStyle)
-                                .foregroundColor(AppStyles.accentColor)
+                            ArtistRow(artist: artist)
                         }
-                        .listRowSeparator(.hidden)
                     }
+                    .listRowSeparator(.hidden)
                 }
                 
                 // Show More/Less button for artists
-                if playlist.topArtists().count > 5 {
+                if artists.count > 5 {
                     Button(action: {
                         showAllArtists.toggle()
                     }) {
@@ -286,7 +279,6 @@ struct PlaylistDetailView: View {
             }
             
             // Albums section with Show More/Less
-            let albums = playlistAlbums()
             if !albums.isEmpty {
                 Section(header: Text("Albums").padding(.leading, -15)) {
                     let displayedAlbums = showAllAlbums ? albums : Array(albums.prefix(5))
@@ -332,7 +324,6 @@ struct PlaylistDetailView: View {
             }
             
             // Genres section with Show More/Less
-            let genres = playlistGenres()
             if !genres.isEmpty {
                 Section(header: Text("Genres").padding(.leading, -15)) {
                     let displayedGenres = showAllGenres ? genres : Array(genres.prefix(5))

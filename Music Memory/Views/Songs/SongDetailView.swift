@@ -15,7 +15,6 @@ struct SongDetailView: View {
     
     // State variables for expanded sections
     @State private var showAllPlaylists = false
-    @State private var showAllRelatedSongs = false
     
     // Initialize with an optional rank parameter
     init(song: MPMediaItem, rank: Int? = nil) {
@@ -44,17 +43,6 @@ struct SongDetailView: View {
         return musicLibrary.playlists.filter { playlist in
             playlist.songs.contains { $0.persistentID == song.persistentID }
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
-    }
-    
-    // Helper function to find related songs (same artist or album)
-    private func findRelatedSongs() -> [MPMediaItem] {
-        // Exclude the current song
-        return musicLibrary.songs.filter { relatedSong in
-            relatedSong.persistentID != song.persistentID && (
-                relatedSong.artist == song.artist ||
-                relatedSong.albumTitle == song.albumTitle
-            )
-        }.sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
     }
     
     // Helper function to find genre for this song
@@ -203,52 +191,6 @@ struct SongDetailView: View {
                         GenreRow(genre: genre)
                     }
                     .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Related songs section with Show More/Less
-            let relatedSongs = findRelatedSongs()
-            if !relatedSongs.isEmpty {
-                Section(header: Text("Related Songs").padding(.leading, -15)) {
-                    let displayedSongs = showAllRelatedSongs ? relatedSongs : Array(relatedSongs.prefix(5))
-                    
-                    ForEach(Array(displayedSongs.enumerated()), id: \.element.persistentID) { index, relatedSong in
-                        NavigationLink(destination: SongDetailView(song: relatedSong)) {
-                            HStack(spacing: 10) {
-                                // Only show rank number if there's more than one related song
-                                if displayedSongs.count > 1 {
-                                    Text("#\(index + 1)")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(AppStyles.accentColor)
-                                        .frame(width: 30, alignment: .leading)
-                                }
-                                
-                                SongRow(song: relatedSong)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                    
-                    // Show More/Less button for related songs
-                    if relatedSongs.count > 5 {
-                        Button(action: {
-                            showAllRelatedSongs.toggle()
-                        }) {
-                            HStack {
-                                Text(showAllRelatedSongs ? "Show Less" : "Show More")
-                                    .font(.subheadline)
-                                    .foregroundColor(AppStyles.accentColor)
-                                
-                                Image(systemName: showAllRelatedSongs ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(AppStyles.accentColor)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .listRowSeparator(.hidden)
-                    }
                 }
             }
             
