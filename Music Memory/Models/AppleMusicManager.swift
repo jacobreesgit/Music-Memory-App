@@ -79,17 +79,19 @@ class AppleMusicManager: ObservableObject {
             print("Key file not found in bundle")
             return nil
         }
+        
+        print("Key path found: \(keyPath)")
         return FileManager.default.contents(atPath: keyPath)
     }
     
     // Extract the private key from the .p8 file data
     private func extractPrivateKey(from data: Data) throws -> P256.Signing.PrivateKey {
-        // Convert the data to a string and remove PEM headers if present
+        // Convert the data to a string
         guard let pemString = String(data: data, encoding: .utf8) else {
             throw NSError(domain: "AppleMusicAuth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid key data"])
         }
         
-        // Remove headers and newlines if present
+        // Extract just the base64 content between the header and footer
         let keyString = pemString
             .replacingOccurrences(of: "-----BEGIN PRIVATE KEY-----", with: "")
             .replacingOccurrences(of: "-----END PRIVATE KEY-----", with: "")
@@ -98,11 +100,11 @@ class AppleMusicManager: ObservableObject {
         
         // Decode base64
         guard let keyData = Data(base64Encoded: keyString) else {
-            throw NSError(domain: "AppleMusicAuth", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid key format"])
+            throw NSError(domain: "AppleMusicAuth", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid base64 data"])
         }
         
-        // Create the private key
-        return try P256.Signing.PrivateKey(x963Representation: keyData)
+        // Create the private key using PKCS8 format
+        return try P256.Signing.PrivateKey(pkcs8Representation: keyData)
     }
     
     // Generate JWT token
