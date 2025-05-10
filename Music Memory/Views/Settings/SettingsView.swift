@@ -82,8 +82,88 @@ struct SettingsView: View {
                         }
                     }
                     .padding(.vertical, 6)
+                }
+                
+                // APPLE MUSIC SECTION
+                Section(header:
+                    Text("APPLE MUSIC")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 15)
+                        .padding(.bottom, 5)
+                ) {
+                    // Status row - shows current authorization and subscription status
+                    HStack {
+                        Image(systemName: "music.note")
+                            .foregroundColor(.blue)
+                            .frame(width: 20)
+                        
+                        Text("Apple Music Status")
+                        
+                        Spacer()
+                        
+                        if AppleMusicManager.shared.isAuthorized {
+                            if AppleMusicManager.shared.isSubscribed {
+                                Text("Connected")
+                                    .foregroundColor(.green)
+                            } else {
+                                Text("No Subscription")
+                                    .foregroundColor(.orange)
+                            }
+                        } else {
+                            Text("Not Authorized")
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding(.vertical, 2)
                     
-                    // Analytics toggle completely removed
+                    // Re-authorize button
+                    Button(action: {
+                        Task {
+                            await AppleMusicManager.shared.requestAuthorization()
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            
+                            Text("Re-authorize Apple Music")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                    
+                    // Clear all saved replacements
+                    Button(action: {
+                        // Add confirmation alert here
+                        let songVersionModel = SongVersionModel()
+                        songVersionModel.clearReplacementMap()
+                    }) {
+                        HStack {
+                            Image(systemName: "xmark.bin")
+                                .foregroundColor(.red)
+                                .frame(width: 20)
+                            
+                            Text("Clear Saved Replacements")
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                    
+                    // Include remix toggle for default behavior
+                    Toggle(isOn: UserDefaults.standard.bind(for: \.includeRemixesByDefault, default: false)) {
+                        HStack {
+                            Image(systemName: "music.note.list")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            
+                            Text("Include Remixes by Default")
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
                 
                 // APP INFORMATION SECTION
@@ -372,5 +452,20 @@ struct PrivacyPolicyView: View {
             .padding()
         }
         .navigationTitle("Privacy Policy")
+    }
+}
+
+// Extension for UserDefaults binding
+extension UserDefaults {
+    func bind<T>(for keyPath: ReferenceWritableKeyPath<UserDefaults, T?>, default defaultValue: T) -> Binding<T> {
+        return Binding<T>(
+            get: { self[keyPath: keyPath] ?? defaultValue },
+            set: { self[keyPath: keyPath] = $0 }
+        )
+    }
+    
+    var includeRemixesByDefault: Bool? {
+        get { return bool(forKey: "includeRemixesByDefault") }
+        set { set(newValue, forKey: "includeRemixesByDefault") }
     }
 }

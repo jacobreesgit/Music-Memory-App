@@ -19,6 +19,18 @@ struct MusicMemoryApp: App {
                 .onAppear {
                     // Request permission and load data when app opens
                     musicLibrary.requestPermissionAndLoadLibrary()
+                    
+                    // Request Apple Music authorization simultaneously
+                    Task {
+                        let status = await AppleMusicManager.shared.requestAuthorization()
+                        
+                        // If authorized, check subscription status
+                        if status == .authorized {
+                            await MainActor.run {
+                                AppleMusicManager.shared.checkSubscriptionStatus()
+                            }
+                        }
+                    }
                 }
         }
     }

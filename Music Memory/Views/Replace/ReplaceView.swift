@@ -50,7 +50,6 @@ struct ReplaceView: View {
             Text("This feature requires a valid Apple Music subscription to access the full song catalog.")
         }
         .onAppear {
-            AppleMusicManager.shared.checkAuthorizationStatus()
             // Use the library items from the music library model
             if libraryItems.isEmpty {
                 libraryItems = musicLibrary.songs
@@ -80,27 +79,19 @@ struct ReplaceView: View {
                 .foregroundColor(AppStyles.accentColor)
                 .padding(.top, 50)
             
-            Text("Apple Music Access Required")
+            Text("Apple Music Subscription Required")
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text("This feature needs access to Apple Music to find and suggest improved versions of your songs.")
+            Text("This feature requires an active Apple Music subscription to find and suggest improved versions of your songs.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
-            Button("Authorize Apple Music") {
-                Task {
-                    let status = await AppleMusicManager.shared.requestAuthorization()
-                    
-                    if status != .authorized {
-                        // If not authorized, show alert
-                        showingAuthorizationAlert = true
-                    } else if !AppleMusicManager.shared.isSubscribed {
-                        // If authorized but not subscribed, show alert
-                        showingAuthorizationAlert = true
-                    }
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
                 }
             }
             .buttonStyle(.bordered)
