@@ -55,7 +55,7 @@ class AppleMusicManager: ObservableObject {
                 "iss": teamID,
                 "iat": Int(now.timeIntervalSince1970),
                 "exp": Int(expirationDate.timeIntervalSince1970),
-                "sub": "com.jacobrees.Music-Memory" // Your app's bundle identifier
+                "sub": "media.music-memory.jacobrees.com"
             ]
             
             // Create the JWT header
