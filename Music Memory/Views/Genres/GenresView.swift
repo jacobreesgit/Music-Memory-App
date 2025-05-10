@@ -85,6 +85,7 @@ struct GenresView: View {
                 sortAscending: $sortAscending,
                 placeholder: "Search genres"
             )
+            .padding(.top) // Added top padding to match other tabs
             .onChange(of: searchText) { _ in
                 // Reset batch loading when search text changes
                 if searchText.isEmpty {

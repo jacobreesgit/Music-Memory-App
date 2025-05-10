@@ -12,12 +12,12 @@ import MusicKit
 struct SongVersionsView: View {
     let librarySong: MPMediaItem
     @ObservedObject var songVersionModel: SongVersionModel
-    let includeRemixes: Bool
     
     @State private var catalogVersions: [Song] = []
     @State private var isLoading = false
     @State private var error: Error?
     @State private var selectedVersion: Song?
+    @State private var includeRemixes = false // Added local state for remix toggle
     
     var body: some View {
         VStack {
@@ -40,10 +40,23 @@ struct SongVersionsView: View {
             
             // Available versions section
             VStack(alignment: .leading, spacing: 8) {
-                Text("Available Versions")
-                    .font(.headline)
-                    .foregroundColor(AppStyles.accentColor)
-                    .padding(.horizontal)
+                // Modified with remix toggle
+                HStack {
+                    Text("Available Versions")
+                        .font(.headline)
+                        .foregroundColor(AppStyles.accentColor)
+                    
+                    Spacer()
+                    
+                    // Added remix toggle here where it's contextually relevant
+                    Toggle("Include Remixes", isOn: $includeRemixes)
+                        .font(.caption)
+                        .onChange(of: includeRemixes) { _ in
+                            // Reload versions when toggle changes
+                            loadVersions()
+                        }
+                }
+                .padding(.horizontal)
                 
                 if isLoading {
                     HStack {
@@ -105,6 +118,7 @@ struct SongVersionsView: View {
         
         Task {
             do {
+                // Now uses the local includeRemixes state
                 let versions = await AppleMusicManager.shared.findVersionsForSong(librarySong, includeRemixes: includeRemixes)
                 
                 await MainActor.run {

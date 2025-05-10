@@ -90,6 +90,7 @@ struct PlaylistsView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search playlists"
                 )
+                .padding(.top) // Added top padding to match other tabs
                 .onChange(of: searchText) { _ in
                     // Reset batch loading when search text changes
                     if searchText.isEmpty {

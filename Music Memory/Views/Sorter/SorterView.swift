@@ -67,7 +67,7 @@ struct SorterView: View {
         } else if !musicLibrary.hasAccess {
             LibraryAccessView()
         } else {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) { // Changed to spacing: 0 to match Library tab
                 // Search and Sort Bar
                 SearchSortBar(
                     searchText: $searchText,
@@ -75,6 +75,9 @@ struct SorterView: View {
                     sortAscending: $sortAscending,
                     placeholder: "Search sort sessions"
                 )
+                .padding(.top) // Added top padding to match other tabs
+                
+                // Removed divider to match Library tab layout
                 
                 if sortSessionStore.sessions.isEmpty {
                     // Empty state view

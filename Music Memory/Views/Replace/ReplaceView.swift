@@ -16,20 +16,10 @@ struct ReplaceView: View {
     @State private var isSearchingLibrary = false
     @State private var searchText = ""
     @State private var showOnlyMatchedSongs = false
-    @State private var includeRemixes = false
     @State private var showingPlaylistCreation = false
-    @State private var selectedAnalysisMode: AnalysisMode = .manual
-    @State private var batchProcessProgress: Double = 0
     @State private var libraryItems: [MPMediaItem] = []
     @State private var filteredItems: [MPMediaItem] = []
     @State private var showingAuthorizationAlert = false
-    
-    enum AnalysisMode: String, CaseIterable, Identifiable {
-        case manual = "Manual"
-        case automatic = "Automatic"
-        
-        var id: String { self.rawValue }
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -129,96 +119,19 @@ struct ReplaceView: View {
                 .background(AppStyles.secondaryColor)
                 .cornerRadius(10)
                 .padding(.horizontal)
+                .padding(.top) // Added top padding to match Sorter tab
                 
-                // Filter and mode selection
-                HStack {
-                    // Analysis mode picker
-                    Picker("Mode", selection: $selectedAnalysisMode) {
-                        ForEach(AnalysisMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    
-                    Spacer()
-                    
-                    // Only show matched songs toggle
-                    Toggle(isOn: $showOnlyMatchedSongs) {
-                        Text("Matched Only")
-                            .font(.caption)
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: AppStyles.accentColor))
-                    .onChange(of: showOnlyMatchedSongs) { _ in
-                        filterLibraryItems()
-                    }
+                // Only show matched songs toggle
+                Toggle(isOn: $showOnlyMatchedSongs) {
+                    Text("Matched Only")
+                        .font(.caption)
+                }
+                .toggleStyle(SwitchToggleStyle(tint: AppStyles.accentColor))
+                .onChange(of: showOnlyMatchedSongs) { _ in
+                    filterLibraryItems()
                 }
                 .padding(.horizontal)
-                
-                // Action buttons
-                HStack {
-                    // Create Playlist button - enabled if we have replacements
-                    Button(action: {
-                        showingPlaylistCreation = true
-                    }) {
-                        Label("Create Playlist", systemImage: "music.note.list")
-                            .font(.system(size: 14, weight: .medium))
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 10)
-                            .background(AppStyles.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                    .disabled(songVersionModel.replacementMap.isEmpty)
-                    .opacity(songVersionModel.replacementMap.isEmpty ? 0.5 : 1.0)
-                    
-                    Spacer()
-                    
-                    // Analyze button - only in automatic mode
-                    if selectedAnalysisMode == .automatic {
-                        Button(action: {
-                            Task {
-                                await songVersionModel.processSongs(libraryItems, includeRemixes: includeRemixes)
-                                filterLibraryItems()
-                            }
-                        }) {
-                            Label("Analyze Library", systemImage: "chart.bar.doc.horizontal")
-                                .font(.system(size: 14, weight: .medium))
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 10)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                        .disabled(songVersionModel.isProcessing)
-                    }
-                    
-                    // Include remixes toggle
-                    Toggle(isOn: $includeRemixes) {
-                        Text("Include Remixes")
-                            .font(.caption)
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: AppStyles.accentColor))
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-                
-                // Progress bar for batch processing
-                if songVersionModel.isProcessing {
-                    VStack(spacing: 4) {
-                        ProgressView(value: Double(songVersionModel.processedItems), total: Double(songVersionModel.totalItems))
-                            .progressViewStyle(LinearProgressViewStyle())
-                            .tint(AppStyles.accentColor)
-                        
-                        Text("Analyzing \(songVersionModel.processedItems) of \(songVersionModel.totalItems) songs...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                }
             }
-            
-            Divider()
             
             // Songs list
             if filteredItems.isEmpty {
@@ -237,7 +150,7 @@ struct ReplaceView: View {
             } else {
                 List {
                     ForEach(filteredItems, id: \.persistentID) { song in
-                        NavigationLink(destination: SongVersionsView(librarySong: song, songVersionModel: songVersionModel, includeRemixes: includeRemixes)) {
+                        NavigationLink(destination: SongVersionsView(librarySong: song, songVersionModel: songVersionModel)) {
                             HStack {
                                 // Song row
                                 SongRow(song: song)
@@ -251,6 +164,30 @@ struct ReplaceView: View {
                             }
                         }
                         .listRowSeparator(.hidden)
+                    }
+                    
+                    // Create Playlist button moved here to appear at the bottom when replacements exist
+                    if !songVersionModel.replacementMap.isEmpty {
+                        VStack {
+                            Divider()
+                            
+                            Button(action: {
+                                showingPlaylistCreation = true
+                            }) {
+                                HStack {
+                                    Text("Create Playlist")
+                                        .font(.headline)
+                                    Image(systemName: "music.note.list")
+                                        .font(.system(size: 14))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppStyles.accentColor)
+                                .foregroundColor(.white)
+                                .cornerRadius(AppStyles.cornerRadius)
+                            }
+                            .padding()
+                        }
                     }
                 }
                 .listStyle(PlainListStyle())

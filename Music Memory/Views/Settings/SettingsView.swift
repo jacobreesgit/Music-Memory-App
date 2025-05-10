@@ -15,7 +15,6 @@ struct SettingsView: View {
     @State private var isRefreshing = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
-    // Analytics toggle completely removed
     
     var body: some View {
         VStack(spacing: 0) {
@@ -152,18 +151,6 @@ struct SettingsView: View {
                         }
                     }
                     .padding(.vertical, 6)
-                    
-                    // Include remix toggle for default behavior
-                    Toggle(isOn: UserDefaults.standard.bind(for: \.includeRemixesByDefault, default: false)) {
-                        HStack {
-                            Image(systemName: "music.note.list")
-                                .foregroundColor(.blue)
-                                .frame(width: 20)
-                            
-                            Text("Include Remixes by Default")
-                        }
-                    }
-                    .padding(.vertical, 2)
                 }
                 
                 // APP INFORMATION SECTION
@@ -462,10 +449,5 @@ extension UserDefaults {
             get: { self[keyPath: keyPath] ?? defaultValue },
             set: { self[keyPath: keyPath] = $0 }
         )
-    }
-    
-    var includeRemixesByDefault: Bool? {
-        get { return bool(forKey: "includeRemixesByDefault") }
-        set { set(newValue, forKey: "includeRemixesByDefault") }
     }
 }
