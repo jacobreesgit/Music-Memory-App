@@ -59,77 +59,21 @@ struct DashboardView: View {
                                 // Summary Section
                                 DashboardSummaryView()
                                 
-                                // Top Songs - only show if there are songs
-                                if !musicLibrary.filteredSongs.isEmpty {
-                                    Text("Top Songs")
-                                        .sectionHeaderStyle()
-                                    
-                                    TopItemsView(
-                                        title: "",
-                                        items: Array(musicLibrary.filteredSongs.prefix(5)),
-                                        artwork: { $0.artwork },
-                                        itemTitle: { $0.title ?? "Unknown" },
-                                        itemSubtitle: { $0.artist ?? "Unknown" },
-                                        itemPlays: { $0.playCount },  // Removed ?? 0
-                                        iconName: { _ in "music.note" },
-                                        destination: { song, rank in SongDetailView(song: song, rank: rank) }
-                                    )
-                                }
+                                // All analytics sections
+                                LibraryOverviewSection()
+                                GenreAnalysisSection()
+                                TimeAndDurationSection()
+                                ListeningPatternsSection()
                                 
-                                // Top Albums - only show if there are albums
-                                if !musicLibrary.filteredAlbums.isEmpty {
-                                    Text("Top Albums")
-                                        .sectionHeaderStyle()
-                                    
-                                    TopItemsView(
-                                        title: "",
-                                        items: Array(musicLibrary.filteredAlbums.prefix(5)),
-                                        artwork: { $0.artwork },
-                                        itemTitle: { $0.title },
-                                        itemSubtitle: { $0.artist },
-                                        itemPlays: { $0.totalPlayCount },  // No ?? needed
-                                        iconName: { _ in "square.stack" },
-                                        destination: { album, rank in AlbumDetailView(album: album, rank: rank) }
-                                    )
-                                }
-                                
-                                // Top Artists - only show if there are artists
-                                if !musicLibrary.filteredArtists.isEmpty {
-                                    Text("Top Artists")
-                                        .sectionHeaderStyle()
-                                    
-                                    TopItemsView(
-                                        title: "",
-                                        items: Array(musicLibrary.filteredArtists.prefix(5)),
-                                        artwork: { $0.artwork },
-                                        itemTitle: { $0.name },
-                                        itemSubtitle: { "\($0.songs.count) songs" },
-                                        itemPlays: { $0.totalPlayCount },  // No ?? needed
-                                        iconName: { _ in "music.mic" },
-                                        destination: { artist, rank in ArtistDetailView(artist: artist, rank: rank) }
-                                    )
-                                }
-                                
-                                // Top Playlist - only show if there are playlists
-                                if !musicLibrary.filteredPlaylists.isEmpty {
-                                    Text("Top Playlists")
-                                        .sectionHeaderStyle()
-                                    
-                                    TopItemsView(
-                                        title: "",
-                                        items: Array(musicLibrary.filteredPlaylists.prefix(5)),
-                                        artwork: { $0.artwork },
-                                        itemTitle: { $0.name },
-                                        itemSubtitle: { "\($0.songs.count) songs" },
-                                        itemPlays: { $0.totalPlayCount },  // No ?? needed
-                                        iconName: { _ in "music.note.list" },
-                                        destination: { playlist, rank in PlaylistDetailView(playlist: playlist, rank: rank) }
-                                    )
-                                }
+                                // Top content sections
+                                topSongsSection
+                                topAlbumsSection
+                                topArtistsSection
+                                topPlaylistsSection
                             }
                             .padding(.bottom, 20)
                         }
-                        .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
+                        .scrollDismissesKeyboard(.immediately)
                         .id(refreshID)
                     }
                 }
@@ -137,6 +81,84 @@ struct DashboardView: View {
                     proxy.scrollTo("top", anchor: .top)
                 }
             }
+        }
+    }
+    
+    // MARK: - Top Content Sections
+    
+    @ViewBuilder
+    private var topSongsSection: some View {
+        if !musicLibrary.filteredSongs.isEmpty {
+            Text("Top Songs")
+                .sectionHeaderStyle()
+            
+            TopItemsView(
+                title: "",
+                items: Array(musicLibrary.filteredSongs.prefix(5)),
+                artwork: { $0.artwork },
+                itemTitle: { $0.title ?? "Unknown" },
+                itemSubtitle: { $0.artist ?? "Unknown" },
+                itemPlays: { $0.playCount },
+                iconName: { _ in "music.note" },
+                destination: { song, rank in SongDetailView(song: song, rank: rank) }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var topAlbumsSection: some View {
+        if !musicLibrary.filteredAlbums.isEmpty {
+            Text("Top Albums")
+                .sectionHeaderStyle()
+            
+            TopItemsView(
+                title: "",
+                items: Array(musicLibrary.filteredAlbums.prefix(5)),
+                artwork: { $0.artwork },
+                itemTitle: { $0.title },
+                itemSubtitle: { $0.artist },
+                itemPlays: { $0.totalPlayCount },
+                iconName: { _ in "square.stack" },
+                destination: { album, rank in AlbumDetailView(album: album, rank: rank) }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var topArtistsSection: some View {
+        if !musicLibrary.filteredArtists.isEmpty {
+            Text("Top Artists")
+                .sectionHeaderStyle()
+            
+            TopItemsView(
+                title: "",
+                items: Array(musicLibrary.filteredArtists.prefix(5)),
+                artwork: { $0.artwork },
+                itemTitle: { $0.name },
+                itemSubtitle: { "\($0.songs.count) songs" },
+                itemPlays: { $0.totalPlayCount },
+                iconName: { _ in "music.mic" },
+                destination: { artist, rank in ArtistDetailView(artist: artist, rank: rank) }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var topPlaylistsSection: some View {
+        if !musicLibrary.filteredPlaylists.isEmpty {
+            Text("Top Playlists")
+                .sectionHeaderStyle()
+            
+            TopItemsView(
+                title: "",
+                items: Array(musicLibrary.filteredPlaylists.prefix(5)),
+                artwork: { $0.artwork },
+                itemTitle: { $0.name },
+                itemSubtitle: { "\($0.songs.count) songs" },
+                itemPlays: { $0.totalPlayCount },
+                iconName: { _ in "music.note.list" },
+                destination: { playlist, rank in PlaylistDetailView(playlist: playlist, rank: rank) }
+            )
         }
     }
 }

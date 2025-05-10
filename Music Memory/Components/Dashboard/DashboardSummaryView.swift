@@ -54,60 +54,6 @@ struct DashboardSummaryView: View {
                 .padding(.horizontal)
             }
             
-            // Navigation Buttons with fixed width to match other elements
-            VStack(spacing: 12) {
-                // Analytics button
-                NavigationLink(destination: ListeningAnalyticsView()) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Analytics")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            
-                            Text("Deep dive into your listening habits")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chart.bar.xaxis")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(AppStyles.accentColor.gradient)
-                    .cornerRadius(AppStyles.cornerRadius)
-                }
-                .frame(maxWidth: .infinity)
-                
-                // Timeline button
-                NavigationLink(destination: ListeningTimelineView()) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Timeline")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            
-                            Text("See your listening history")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(AppStyles.accentColor.gradient)
-                    .cornerRadius(AppStyles.cornerRadius)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal)
-            
             // Genre distribution
             if !topGenres.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -204,7 +150,7 @@ struct DashboardSummaryView: View {
                     Divider()
                         .padding(.leading, 44)
                     
-                    // Most active day
+                    // Most recently played (with caution note as this may be unreliable)
                     InsightRow(
                         icon: "calendar",
                         color: .blue,
@@ -342,7 +288,7 @@ struct DashboardSummaryView: View {
         return Int((Double(unplayedSongs) / Double(musicLibrary.songs.count) * 100).rounded())
     }
     
-    // Most recent activity based on last played date
+    // Most recent activity based on last played date (note: this may be unreliable)
     private var mostRecentActivity: String {
         if let lastPlayed = musicLibrary.songs.compactMap({ $0.lastPlayedDate }).max() {
             let formatter = DateFormatter()
@@ -350,7 +296,7 @@ struct DashboardSummaryView: View {
             return formatter.string(from: lastPlayed)
         }
         
-        return "No recent activity"
+        return "No recent activity data"
     }
     
     // Favorite era based on song release years

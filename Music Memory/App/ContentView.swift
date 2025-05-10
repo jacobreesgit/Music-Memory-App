@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var navigationState = [0: false, 1: false, 2: false, 3: false, 4: false]
     @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID(), 4: UUID()]
     @State private var isKeyboardVisible = false
+    @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
     
     // Added to track the currently selected library tab
     @State private var currentLibraryTab = 0
@@ -96,6 +97,14 @@ struct ContentView: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .padding(.bottom, isKeyboardVisible ? 0 : 56)
             .environmentObject(sortSessionStore)
+            // Add haptic feedback for swipe gestures between main tabs
+            .onChange(of: selectedTab) { newValue in
+                // Only trigger haptic if the tab actually changed (not just programmatic update)
+                if newValue != lastSelectedTab {
+                    feedbackGenerator.impactOccurred()
+                    lastSelectedTab = newValue
+                }
+            }
             
             // Custom footer - only show when keyboard is not visible
             if !isKeyboardVisible {
@@ -105,7 +114,7 @@ struct ContentView: View {
                     HStack(spacing: 0) {
                         ForEach(0..<5) { index in
                             Button(action: {
-                                // Haptic feedback
+                                // Haptic feedback for tap
                                 feedbackGenerator.impactOccurred()
                                 
                                 if selectedTab == index {
@@ -167,6 +176,10 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
+        }
+        .onAppear {
+            // Initialize lastSelectedTab on appear
+            lastSelectedTab = selectedTab
         }
     }
     

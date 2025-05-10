@@ -11,6 +11,10 @@ import MediaPlayer
 struct LibraryView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @Binding var selectedTab: Int
+    @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
+    
+    // Feedback generator for haptic feedback
+    private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
     
     // Initialize with a default value for previews and a binding for real usage
     init(selectedTab: Binding<Int>? = nil) {
@@ -29,6 +33,8 @@ struct LibraryView: View {
                     ForEach(0..<5) { index in
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                // Haptic feedback for tap
+                                feedbackGenerator.impactOccurred()
                                 selectedTab = index
                             }
                         }) {
@@ -82,6 +88,18 @@ struct LibraryView: View {
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 .animation(.spring(response: 0.35, dampingFraction: 0.86, blendDuration: 0), value: selectedTab)
+                // Add haptic feedback for swipe gestures between library tabs
+                .onChange(of: selectedTab) { newValue in
+                    // Only trigger haptic if the tab actually changed (not just programmatic update)
+                    if newValue != lastSelectedTab {
+                        feedbackGenerator.impactOccurred()
+                        lastSelectedTab = newValue
+                    }
+                }
+                .onAppear {
+                    // Initialize lastSelectedTab on appear
+                    lastSelectedTab = selectedTab
+                }
             }
         }
     }
