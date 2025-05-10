@@ -209,6 +209,9 @@
 			);
 			mainGroup = 0707E9B92DBE57A600BE138D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0708F1242DCFA50000E7EE94 /* XCRemoteSwiftPackageReference "jwt-kit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0707E9C32DBE57A600BE138D /* Products */;
 			projectDirPath = "";
@@ -581,6 +584,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0708F1242DCFA50000E7EE94 /* XCRemoteSwiftPackageReference "jwt-kit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/vapor/jwt-kit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = 0707E9BA2DBE57A600BE138D /* Project object */;
 }

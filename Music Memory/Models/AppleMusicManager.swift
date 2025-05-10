@@ -9,6 +9,8 @@ import Foundation
 import MusicKit
 import MediaPlayer
 import Combine
+import CryptoKit
+import Security
 
 class AppleMusicManager: ObservableObject {
     static let shared = AppleMusicManager()
@@ -20,11 +22,123 @@ class AppleMusicManager: ObservableObject {
     @Published var searchResults: MusicItemCollection<Song> = MusicItemCollection<Song>([])
     @Published var error: Error?
     
+    // Add developer token property
+    private var developerToken: String?
+    
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
+        // Generate developer token on initialization
+        developerToken = generateDeveloperToken()
         checkAuthorizationStatus()
     }
+    
+    // MARK: - Developer Token Generation
+    
+    // Your credentials
+    private let teamID = "5RP4WRQ9V2"
+    private let keyID = "7BWZNSH39T"
+    
+    func generateDeveloperToken() -> String? {
+        do {
+            // Load the private key from the app bundle
+            guard let keyData = loadPrivateKeyFromBundle() else {
+                print("Failed to load private key file from bundle")
+                return nil
+            }
+            
+            // Create the JWT payload
+            let now = Date()
+            let expirationDate = now.addingTimeInterval(15777000) // ~6 months in seconds
+            
+            let payload: [String: Any] = [
+                "iss": teamID,
+                "iat": Int(now.timeIntervalSince1970),
+                "exp": Int(expirationDate.timeIntervalSince1970),
+                "sub": "com.jacobrees.Music-Memory" // Your app's bundle identifier
+            ]
+            
+            // Create the JWT header
+            let header: [String: Any] = [
+                "alg": "ES256",
+                "kid": keyID
+            ]
+            
+            // Generate the token
+            return try generateJWT(header: header, payload: payload, keyData: keyData)
+            
+        } catch {
+            print("Error generating developer token: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    // Load the private key from the app bundle
+    private func loadPrivateKeyFromBundle() -> Data? {
+        guard let keyPath = Bundle.main.path(forResource: "Music_Memory_MusicKit_Key", ofType: "p8") else {
+            print("Key file not found in bundle")
+            return nil
+        }
+        return FileManager.default.contents(atPath: keyPath)
+    }
+    
+    // Extract the private key from the .p8 file data
+    private func extractPrivateKey(from data: Data) throws -> P256.Signing.PrivateKey {
+        // Convert the data to a string and remove PEM headers if present
+        guard let pemString = String(data: data, encoding: .utf8) else {
+            throw NSError(domain: "AppleMusicAuth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid key data"])
+        }
+        
+        // Remove headers and newlines if present
+        let keyString = pemString
+            .replacingOccurrences(of: "-----BEGIN PRIVATE KEY-----", with: "")
+            .replacingOccurrences(of: "-----END PRIVATE KEY-----", with: "")
+            .replacingOccurrences(of: "\n", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Decode base64
+        guard let keyData = Data(base64Encoded: keyString) else {
+            throw NSError(domain: "AppleMusicAuth", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid key format"])
+        }
+        
+        // Create the private key
+        return try P256.Signing.PrivateKey(x963Representation: keyData)
+    }
+    
+    // Generate JWT token
+    private func generateJWT(header: [String: Any], payload: [String: Any], keyData: Data) throws -> String {
+        // Encode header and payload as base64
+        let headerData = try JSONSerialization.data(withJSONObject: header)
+        let headerBase64 = headerData.base64EncodedString()
+            .replacingOccurrences(of: "=", with: "")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+        
+        let payloadData = try JSONSerialization.data(withJSONObject: payload)
+        let payloadBase64 = payloadData.base64EncodedString()
+            .replacingOccurrences(of: "=", with: "")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+        
+        // Create the content to sign
+        let signingInput = "\(headerBase64).\(payloadBase64)"
+        guard let signingData = signingInput.data(using: .utf8) else {
+            throw NSError(domain: "AppleMusicAuth", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to create signing data"])
+        }
+        
+        // Extract private key and sign the content
+        let privateKey = try extractPrivateKey(from: keyData)
+        let signature = try privateKey.signature(for: signingData)
+        let signatureBase64 = signature.rawRepresentation.base64EncodedString()
+            .replacingOccurrences(of: "=", with: "")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+        
+        // Combine to create JWT
+        return "\(signingInput).\(signatureBase64)"
+    }
+    
+    // MARK: - Authentication and Authorization
     
     func checkAuthorizationStatus() {
         Task { @MainActor in
@@ -41,6 +155,11 @@ class AppleMusicManager: ObservableObject {
     }
     
     func requestAuthorization() async -> MusicAuthorization.Status {
+        // Ensure we have a developer token
+        if developerToken == nil {
+            developerToken = generateDeveloperToken()
+        }
+        
         let status = await MusicAuthorization.request()
         
         await MainActor.run {
@@ -74,11 +193,23 @@ class AppleMusicManager: ObservableObject {
         }
     }
     
+    // MARK: - Search and Version Finding
+    
     func searchAppleMusic(for query: String, limit: Int = 25) async {
         // Don't search if query is empty or too short
         guard !query.isEmpty && query.count >= 2 else {
             await MainActor.run {
                 self.searchResults = MusicItemCollection<Song>([])
+                self.isSearching = false
+            }
+            return
+        }
+        
+        // Check for developer token
+        guard developerToken != nil else {
+            await MainActor.run {
+                self.error = NSError(domain: "AppleMusicManager", code: 1,
+                                    userInfo: [NSLocalizedDescriptionKey: "Developer token not available"])
                 self.isSearching = false
             }
             return
@@ -110,6 +241,16 @@ class AppleMusicManager: ObservableObject {
     }
     
     func findVersionsForSong(_ librarySong: MPMediaItem, includeRemixes: Bool = false) async -> [Song] {
+        // Check for developer token
+        guard developerToken != nil else {
+            await MainActor.run {
+                self.error = NSError(domain: "AppleMusicManager", code: 1,
+                                   userInfo: [NSLocalizedDescriptionKey: "Developer token not available"])
+                self.isSearching = false
+            }
+            return []
+        }
+        
         await MainActor.run {
             self.isSearching = true
             self.error = nil
@@ -197,7 +338,7 @@ class AppleMusicManager: ObservableObject {
         }
     }
     
-    // MARK: - Actual Implementation for Creating Playlists and Adding Songs
+    // MARK: - Playlist and Library Management
     
     func createPlaylist(name: String, description: String?, songs: [Song]) async -> Bool {
         do {
