@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MediaPlayer
+import MusicKit
 
 struct SettingsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
@@ -15,6 +16,7 @@ struct SettingsView: View {
     @State private var isRefreshing = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @State private var showingMusicKitDebug = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -83,70 +85,24 @@ struct SettingsView: View {
                     .padding(.vertical, 6)
                 }
                 
-                // APPLE MUSIC SECTION
+                // DEBUGGING SECTION
                 Section(header:
-                    Text("APPLE MUSIC")
+                    Text("DEBUGGING")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.top, 15)
                         .padding(.bottom, 5)
                 ) {
-                    // Status row - shows current authorization and subscription status
-                    HStack {
-                        Image(systemName: "music.note")
-                            .foregroundColor(.blue)
-                            .frame(width: 20)
-                        
-                        Text("Apple Music Status")
-                        
-                        Spacer()
-                        
-                        if AppleMusicManager.shared.isAuthorized {
-                            if AppleMusicManager.shared.isSubscribed {
-                                Text("Connected")
-                                    .foregroundColor(.green)
-                            } else {
-                                Text("No Subscription")
-                                    .foregroundColor(.orange)
-                            }
-                        } else {
-                            Text("Not Authorized")
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                    
-                    // Re-authorize button
                     Button(action: {
-                        Task {
-                            await AppleMusicManager.shared.requestAuthorization()
-                        }
+                        showingMusicKitDebug = true
                     }) {
                         HStack {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Image(systemName: "waveform.badge.magnifyingglass")
                                 .foregroundColor(.blue)
                                 .frame(width: 20)
                             
-                            Text("Re-authorize Apple Music")
+                            Text("Test MusicKit Integration")
                                 .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .padding(.vertical, 6)
-                    
-                    // Clear all saved replacements
-                    Button(action: {
-                        // Add confirmation alert here
-                        let songVersionModel = SongVersionModel()
-                        songVersionModel.clearReplacementMap()
-                    }) {
-                        HStack {
-                            Image(systemName: "xmark.bin")
-                                .foregroundColor(.red)
-                                .frame(width: 20)
-                            
-                            Text("Clear Saved Replacements")
-                                .foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -237,6 +193,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingAbout) {
             AboutView()
+        }
+        .sheet(isPresented: $showingMusicKitDebug) {
+            MusicKitDebugView()
         }
     }
     
