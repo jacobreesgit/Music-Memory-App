@@ -56,10 +56,18 @@ struct DashboardView: View {
                     } else {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 20) {
-                                // Summary Section
-                                DashboardSummaryView()
+                                // Summary Section (previously in DashboardSummaryView)
+                                SummaryStatsSection()
                                 
-                                // All analytics sections
+                                // Top Genres Section (previously in DashboardSummaryView)
+                                if !musicLibrary.genres.isEmpty {
+                                    TopGenresSection()
+                                }
+                                
+                                // Library Insights Section (previously in DashboardSummaryView)
+                                LibraryInsightsSection()
+                                
+                                // All existing analytics sections
                                 LibraryOverviewSection()
                                 GenreAnalysisSection()
                                 TimeAndDurationSection()
