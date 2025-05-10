@@ -9,6 +9,14 @@ import SwiftUI
 import MusicKit
 import MediaPlayer
 
+// Move TestStatus enum definition to the top level before it's used
+enum TestStatus {
+    case unknown
+    case success
+    case failed
+    case running
+}
+
 struct MusicKitDebugView: View {
     @StateObject private var viewModel = MusicKitDebugViewModel()
     @Environment(\.dismiss) private var dismiss
@@ -244,13 +252,6 @@ struct MusicKitDebugView: View {
 
 // MARK: - View Model
 class MusicKitDebugViewModel: ObservableObject {
-    enum TestStatus {
-        case unknown
-        case success
-        case failed
-        case running
-    }
-    
     @Published var authorizationStatus: TestStatus = .unknown
     @Published var subscriptionStatus: TestStatus = .unknown
     @Published var tokenStatus: TestStatus = .unknown
@@ -353,7 +354,7 @@ class MusicKitDebugViewModel: ObservableObject {
             log("Verifying JWT token...")
         }
         
-        let token = AppleMusicManager.shared.developerToken
+        let token = AppleMusicManager.shared.debugDeveloperToken
         
         if let token = token {
             // Check JWT format (header.payload.signature)
@@ -478,7 +479,8 @@ class MusicKitDebugViewModel: ObservableObject {
 
 // MARK: - AppleMusicManager Extension
 extension AppleMusicManager {
-    var developerToken: String? {
+    // Changed property name to avoid conflict
+    var debugDeveloperToken: String? {
         return generateDeveloperToken()
     }
 }
