@@ -84,16 +84,18 @@ struct DetailHeaderView: View {
             // Title
             Text(title)
                 .font(AppStyles.subtitleStyle)
-                .lineLimit(1)
+                .lineLimit(nil)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             
             // Subtitle (artist or "")
             if !subtitle.isEmpty {
                 Text(subtitle)
                     .font(AppStyles.headlineStyle)
                     .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(nil)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             // Play count
