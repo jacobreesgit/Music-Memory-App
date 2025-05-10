@@ -13,8 +13,8 @@ struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @StateObject var sortSessionStore = SortSessionStore()
     @State private var selectedTab = 0
-    @State private var navigationState = [0: false, 1: false, 2: false, 3: false]
-    @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID()]
+    @State private var navigationState = [0: false, 1: false, 2: false, 3: false, 4: false]
+    @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID(), 4: UUID()]
     @State private var isKeyboardVisible = false
     
     // Added to track the currently selected library tab
@@ -80,11 +80,18 @@ struct ContentView: View {
                 .tag(2)
                 
                 NavigationViewWithState(
-                    rootView: SettingsView().id(scrollIDs[3]),
+                    rootView: ReplaceView().id(scrollIDs[3]),
                     inDetailView: bindingFor(key: 3),
                     scrollToTopAction: { scrollIDs[3] = UUID() }
                 )
                 .tag(3)
+                
+                NavigationViewWithState(
+                    rootView: SettingsView().id(scrollIDs[4]),
+                    inDetailView: bindingFor(key: 4),
+                    scrollToTopAction: { scrollIDs[4] = UUID() }
+                )
+                .tag(4)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .padding(.bottom, isKeyboardVisible ? 0 : 56)
@@ -96,7 +103,7 @@ struct ContentView: View {
                     Divider()
                     
                     HStack(spacing: 0) {
-                        ForEach(0..<4) { index in
+                        ForEach(0..<5) { index in
                             Button(action: {
                                 // Haptic feedback
                                 feedbackGenerator.impactOccurred()
@@ -168,7 +175,8 @@ struct ContentView: View {
         case 0: return "chart.bar.fill"
         case 1: return "music.note"
         case 2: return "arrow.up.arrow.down"
-        case 3: return "gearshape.fill"
+        case 3: return "arrow.2.squarepath"
+        case 4: return "gearshape.fill"
         default: return ""
         }
     }
@@ -178,7 +186,8 @@ struct ContentView: View {
         case 0: return "Dashboard"
         case 1: return "Library"
         case 2: return "Sorter"
-        case 3: return "Settings"
+        case 3: return "Replace"
+        case 4: return "Settings"
         default: return ""
         }
     }

@@ -26,7 +26,11 @@
     
     <!-- Required Permissions -->
     <key>NSAppleMusicUsageDescription</key>
-    <string>Music Memory needs access to your music library to analyze your listening habits and display play count statistics.</string>
+    <string>Music Memory needs access to your music library to analyze your listening habits and display play count statistics. The Replace feature needs to access Apple Music to find updated versions of your songs.</string>
+    
+    <!-- MusicKit Capability -->
+    <key>com.apple.developer.musickit</key>
+    <true/>
     
     <!-- Background Modes -->
     <key>UIBackgroundModes</key>
