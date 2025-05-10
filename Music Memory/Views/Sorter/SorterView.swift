@@ -68,14 +68,14 @@ struct SorterView: View {
             LibraryAccessView()
         } else {
             VStack(alignment: .leading, spacing: 0) { // Changed to spacing: 0 to match Library tab
-                // Search and Sort Bar
+                // Search and Sort Bar - removed .padding(.top)
                 SearchSortBar(
                     searchText: $searchText,
                     sortOption: $sortOption,
                     sortAscending: $sortAscending,
                     placeholder: "Search sort sessions"
                 )
-                .padding(.top) // Added top padding to match other tabs
+                // Removed the .padding(.top) that was here
                 
                 // Removed divider to match Library tab layout
                 

@@ -91,35 +91,32 @@ struct ReplaceView: View {
     }
     
     private var mainReplaceView: some View {
-        VStack(spacing: 0) {
-            // Search Header
-            VStack(spacing: 8) {
-                // Search bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Search your library", text: $searchText)
-                        .onChange(of: searchText) { _ in
-                            filterLibraryItems()
-                        }
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                            filterLibraryItems()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                        }
+        VStack(alignment: .leading, spacing: 0) {
+            // Search Header - Simplified to match SorterView structure
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                
+                TextField("Search your library", text: $searchText)
+                    .onChange(of: searchText) { _ in
+                        filterLibraryItems()
+                    }
+                
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                        filterLibraryItems()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
                     }
                 }
-                .padding(10)
-                .background(AppStyles.secondaryColor)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .padding(.top) // Added top padding to match Sorter tab
             }
+            .padding(10)
+            .background(AppStyles.secondaryColor)
+            .cornerRadius(10)
+            .padding(.horizontal)
+            .padding(.top) // Added top padding to match Sorter tab
             
             // Songs list
             if filteredItems.isEmpty {
