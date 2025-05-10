@@ -8,7 +8,7 @@
 import Foundation
 import MediaPlayer
 import MusicKit
-import SwiftUI 
+import SwiftUI
 
 class SongVersionModel: ObservableObject {
     @Published var replacementMap: [MPMediaItem: Song] = [:]
@@ -98,10 +98,10 @@ class SongVersionModel: ObservableObject {
             }
             
             // Higher quality audio is better
-            if catalogSong.audioVariants.contains(.lossless) {
+            if catalogSong.audioVariants?.contains(.lossless) == true {
                 score += 8
             }
-            if catalogSong.audioVariants.contains(.dolbyAtmos) {
+            if catalogSong.audioVariants?.contains(.dolbyAtmos) == true {
                 score += 5
             }
             
@@ -154,11 +154,11 @@ class SongVersionModel: ObservableObject {
         }
         
         // Check for high resolution audio
-        if catalogItem.audioVariants.contains(.lossless) {
+        if catalogItem.audioVariants?.contains(.lossless) == true {
             differences.append(.lossless)
         }
         
-        if catalogItem.audioVariants.contains(.dolbyAtmos) {
+        if catalogItem.audioVariants?.contains(.dolbyAtmos) == true {
             differences.append(.dolbyAtmos)
         }
         

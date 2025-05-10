@@ -17,7 +17,7 @@ class AppleMusicManager: ObservableObject {
     @Published var isSubscribed = false
     @Published var authorizationStatus: MusicAuthorization.Status = .notDetermined
     @Published var isSearching = false
-    @Published var searchResults: [Song] = []
+    @Published var searchResults: MusicItemCollection<Song> = MusicItemCollection<Song>([])
     @Published var error: Error?
     
     private var cancellables = Set<AnyCancellable>()
@@ -27,17 +27,15 @@ class AppleMusicManager: ObservableObject {
     }
     
     func checkAuthorizationStatus() {
-        Task {
-            let status = await MusicAuthorization.currentStatus
+        Task { @MainActor in
+            let status = MusicAuthorization.currentStatus
             
-            DispatchQueue.main.async {
-                self.authorizationStatus = status
-                self.isAuthorized = status == .authorized
-                
-                // Check if the user has an Apple Music subscription
-                if status == .authorized {
-                    self.checkSubscriptionStatus()
-                }
+            self.authorizationStatus = status
+            self.isAuthorized = status == .authorized
+            
+            // Check if the user has an Apple Music subscription
+            if status == .authorized {
+                self.checkSubscriptionStatus()
             }
         }
     }
@@ -58,14 +56,13 @@ class AppleMusicManager: ObservableObject {
     }
     
     private func checkSubscriptionStatus() {
-        // Check if the user has an Apple Music subscription
-        // This is a simplified approach - in a real app, you'd verify capabilities more thoroughly
         Task {
             do {
-                let storefront = try await MusicDataRequest<Storefront>.currentStorefront()
+                // Use the correct subscription status check
+                let subscription = try await MusicSubscription.current
                 
                 await MainActor.run {
-                    self.isSubscribed = storefront != nil
+                    self.isSubscribed = subscription.subscriptionStatus == .active
                 }
             } catch {
                 print("Error checking subscription status: \(error.localizedDescription)")
@@ -81,7 +78,7 @@ class AppleMusicManager: ObservableObject {
         // Don't search if query is empty or too short
         guard !query.isEmpty && query.count >= 2 else {
             await MainActor.run {
-                self.searchResults = []
+                self.searchResults = MusicItemCollection<Song>([])
                 self.isSearching = false
             }
             return
@@ -105,7 +102,7 @@ class AppleMusicManager: ObservableObject {
         } catch {
             print("Error searching Apple Music: \(error.localizedDescription)")
             await MainActor.run {
-                self.searchResults = []
+                self.searchResults = MusicItemCollection<Song>([])
                 self.isSearching = false
                 self.error = error
             }
@@ -138,18 +135,22 @@ class AppleMusicManager: ObservableObject {
             request.limit = 20
             
             let response = try await request.response()
-            var results = response.songs
+            
+            // Convert MusicItemCollection to Array
+            let songsArray = response.songs.compactMap { $0 }
             
             // Filter to keep only likely versions of the same song
-            results = filterVersionsOfSong(librarySong: librarySong,
-                                          catalogSongs: results,
-                                          includeRemixes: includeRemixes)
+            let filteredResults = filterVersionsOfSong(
+                librarySong: librarySong,
+                catalogSongs: songsArray,
+                includeRemixes: includeRemixes
+            )
             
             await MainActor.run {
                 self.isSearching = false
             }
             
-            return results
+            return filteredResults
         } catch {
             print("Error finding versions: \(error.localizedDescription)")
             await MainActor.run {
@@ -182,9 +183,6 @@ class AppleMusicManager: ObservableObject {
             let isLiveVersion = song.title.lowercased().contains("live") ||
                               (song.albumTitle?.lowercased().contains("live") ?? false)
             
-            let isAcousticVersion = song.title.lowercased().contains("acoustic") ||
-                                  (song.albumTitle?.lowercased().contains("acoustic") ?? false)
-            
             let isRemixVersion = song.title.lowercased().contains("remix") ||
                                (song.albumTitle?.lowercased().contains("remix") ?? false)
             
@@ -199,16 +197,18 @@ class AppleMusicManager: ObservableObject {
         }
     }
     
+    // MARK: - Actual Implementation for Creating Playlists and Adding Songs
+    
     func createPlaylist(name: String, description: String?, songs: [Song]) async -> Bool {
         do {
-            // Create the playlist
-            let creationRequest = MusicLibraryPlaylistCreationRequest(
+            // Use underscore to ignore the returned playlist and suppress warning
+            _ = try await MusicLibrary.shared.createPlaylist(
                 name: name,
                 description: description ?? "Created by Music Memory",
-                items: songs.map { MusicItemProperty($0) }
+                items: songs
             )
             
-            _ = try await creationRequest.response()
+            print("Successfully created playlist: \(name) with \(songs.count) songs")
             return true
         } catch {
             print("Error creating playlist: \(error.localizedDescription)")
@@ -221,9 +221,9 @@ class AppleMusicManager: ObservableObject {
     
     func addSongToLibrary(_ song: Song) async -> Bool {
         do {
-            // Add song to library
-            let addRequest = MusicLibraryAddRequest(items: [song])
-            _ = try await addRequest.response()
+            // Pass the individual song directly, not as an array
+            try await MusicLibrary.shared.add(song)
+            print("Successfully added song to library: \(song.title)")
             return true
         } catch {
             print("Error adding song to library: \(error.localizedDescription)")

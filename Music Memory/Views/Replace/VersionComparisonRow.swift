@@ -75,7 +75,7 @@ struct VersionComparisonRow: View {
                 Spacer()
                 
                 // Version tags
-                if catalogSong.audioVariants.contains(.dolbyAtmos) {
+                if catalogSong.audioVariants?.contains(.dolbyAtmos) == true {
                     Image(systemName: "airpods.gen3")
                         .foregroundColor(.purple)
                         .font(.system(size: 16))
