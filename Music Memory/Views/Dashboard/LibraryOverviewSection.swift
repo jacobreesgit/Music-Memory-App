@@ -143,15 +143,13 @@ struct LibraryOverviewSection: View {
     
     private var libraryGrowthData: [LibraryGrowthData] {
         var growthData: [String: Int] = [:]
-        let calendar = Calendar.current
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM yyyy"
         
         for song in musicLibrary.songs {
-            if let dateAdded = song.dateAdded {
-                let monthKey = formatter.string(from: dateAdded)
-                growthData[monthKey, default: 0] += 1
-            }
+            let dateAdded = song.dateAdded
+            let monthKey = formatter.string(from: dateAdded)
+            growthData[monthKey, default: 0] += 1
         }
         
         // Convert to array and sort by date
@@ -179,14 +177,12 @@ struct LibraryOverviewSection: View {
     }
     
     private var recentlyAddedHighlyPlayed: [MPMediaItem] {
-        let calendar = Calendar.current
-        let threeMonthsAgo = calendar.date(byAdding: .month, value: -3, to: Date())!
+        let threeMonthsAgo = Calendar.current.date(byAdding: .month, value: -3, to: Date())!
         
         return musicLibrary.songs
             .filter { song in
-                guard let dateAdded = song.dateAdded,
-                      dateAdded > threeMonthsAgo,
-                      song.playCount > 5 else { return false }
+                let dateAdded = song.dateAdded
+                guard dateAdded > threeMonthsAgo, song.playCount > 5 else { return false }
                 return true
             }
             .sorted { playRateForSong($0) > playRateForSong($1) }
@@ -195,7 +191,7 @@ struct LibraryOverviewSection: View {
     }
     
     private func playRateForSong(_ song: MPMediaItem) -> Double {
-        guard let dateAdded = song.dateAdded else { return 0 }
+        let dateAdded = song.dateAdded
         let daysSinceAdded = Date().timeIntervalSince(dateAdded) / (60 * 60 * 24)
         return Double(song.playCount) / max(1, daysSinceAdded)
     }
