@@ -15,11 +15,10 @@ struct ReplaceView: View {
     
     @State private var isSearchingLibrary = false
     @State private var searchText = ""
-    @State private var showOnlyMatchedSongs = false
-    @State private var showingPlaylistCreation = false
     @State private var libraryItems: [MPMediaItem] = []
     @State private var filteredItems: [MPMediaItem] = []
     @State private var showingAuthorizationAlert = false
+    @State private var showingPlaylistCreation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -93,7 +92,7 @@ struct ReplaceView: View {
     
     private var mainReplaceView: some View {
         VStack(spacing: 0) {
-            // Search and Settings Header
+            // Search Header
             VStack(spacing: 8) {
                 // Search bar
                 HStack {
@@ -120,17 +119,6 @@ struct ReplaceView: View {
                 .cornerRadius(10)
                 .padding(.horizontal)
                 .padding(.top) // Added top padding to match Sorter tab
-                
-                // Only show matched songs toggle
-                Toggle(isOn: $showOnlyMatchedSongs) {
-                    Text("Matched Only")
-                        .font(.caption)
-                }
-                .toggleStyle(SwitchToggleStyle(tint: AppStyles.accentColor))
-                .onChange(of: showOnlyMatchedSongs) { _ in
-                    filterLibraryItems()
-                }
-                .padding(.horizontal)
             }
             
             // Songs list
@@ -207,10 +195,7 @@ struct ReplaceView: View {
             }
         }
         
-        // Filter to only show songs with matched replacements if enabled
-        if showOnlyMatchedSongs {
-            filtered = filtered.filter { songVersionModel.replacementMap[$0] != nil }
-        }
+        // No longer filter based on matched replacements since toggle is removed
         
         filteredItems = filtered
     }
