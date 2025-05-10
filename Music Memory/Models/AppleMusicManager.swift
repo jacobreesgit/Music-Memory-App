@@ -104,7 +104,7 @@ class AppleMusicManager: ObservableObject {
         }
         
         // Create the private key using PKCS8 format
-        return try P256.Signing.PrivateKey(pkcs8Representation: keyData)
+        return try P256.Signing.PrivateKey(derRepresentation: keyData)
     }
     
     // Generate JWT token

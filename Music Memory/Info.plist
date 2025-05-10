@@ -10,7 +10,7 @@
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
-    <string>com.jacobrees.Music-Memory</string>
+    <string>media.music-memory.jacobrees.com</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -51,8 +51,6 @@
                 <dict>
                     <key>UISceneConfigurationName</key>
                     <string>Default Configuration</string>
-                    <key>UISceneDelegateClassName</key>
-                    <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
                 </dict>
             </array>
         </dict>
