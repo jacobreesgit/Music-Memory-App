@@ -62,8 +62,7 @@ class AppleMusicManager: ObservableObject {
                 let subscription = try await MusicSubscription.current
                 
                 await MainActor.run {
-                    self.isSubscribed = subscription.subscriptionStatus == .active
-                }
+                    self.isSubscribed = subscription.canPlayCatalogContent                }
             } catch {
                 print("Error checking subscription status: \(error.localizedDescription)")
                 await MainActor.run {
