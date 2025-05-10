@@ -14,11 +14,11 @@ struct PlaylistDetailView: View {
     let playlist: PlaylistData
     let rank: Int?
     
-    // State variables for expanded sections
-    @State private var showAllArtists = false
-    @State private var showAllSongs = false
+    // State variables for expanded sections - sorted alphabetically
     @State private var showAllAlbums = false
+    @State private var showAllArtists = false
     @State private var showAllGenres = false
+    @State private var showAllSongs = false
     
     // State for sorting navigation
     @State private var isNavigatingToSortSession = false
@@ -141,28 +141,28 @@ struct PlaylistDetailView: View {
                 // Empty section content for spacing
             }
             
-            // MARK: - Sort Buttons Section
+            // MARK: - Sort Buttons Section (sorted alphabetically by media type)
             let artists = playlistArtists()
             let albums = playlistAlbums()
             let genres = playlistGenres()
             
             // Determine what can be sorted
             let hasMultipleSongs = playlist.songs.count > 1
-            let hasMultipleArtists = artists.count > 1
             let hasMultipleAlbums = albums.count > 1
+            let hasMultipleArtists = artists.count > 1
             let hasMultipleGenres = genres.count > 1
             
             if hasMultipleSongs || hasMultipleArtists || hasMultipleAlbums || hasMultipleGenres {
                 VStack(spacing: 12) {
-                    // Sort Songs Button - only show if there are multiple songs
-                    if hasMultipleSongs {
+                    // Sort Albums Button - only show if there are multiple albums
+                    if hasMultipleAlbums {
                         SortActionButton(
-                            title: "Sort Songs",
-                            items: playlist.songs,
+                            title: "Sort Albums",
+                            items: albums,
                             source: .playlist,
                             sourceID: playlist.id,
                             sourceName: playlist.name,
-                            contentType: .songs,
+                            contentType: .albums,
                             artwork: playlist.artwork
                         )
                     }
@@ -180,19 +180,6 @@ struct PlaylistDetailView: View {
                         )
                     }
                     
-                    // Sort Albums Button - only show if there are multiple albums
-                    if hasMultipleAlbums {
-                        SortActionButton(
-                            title: "Sort Albums",
-                            items: albums,
-                            source: .playlist,
-                            sourceID: playlist.id,
-                            sourceName: playlist.name,
-                            contentType: .albums,
-                            artwork: playlist.artwork
-                        )
-                    }
-                    
                     // Sort Genres Button - only show if there are multiple genres
                     if hasMultipleGenres {
                         SortActionButton(
@@ -202,6 +189,19 @@ struct PlaylistDetailView: View {
                             sourceID: playlist.id,
                             sourceName: playlist.name,
                             contentType: .genres,
+                            artwork: playlist.artwork
+                        )
+                    }
+                    
+                    // Sort Songs Button - only show if there are multiple songs
+                    if hasMultipleSongs {
+                        SortActionButton(
+                            title: "Sort Songs",
+                            items: playlist.songs,
+                            source: .playlist,
+                            sourceID: playlist.id,
+                            sourceName: playlist.name,
+                            contentType: .songs,
                             artwork: playlist.artwork
                         )
                     }
@@ -233,49 +233,6 @@ struct PlaylistDetailView: View {
                 // Average plays per song
                 MetadataRow(icon: "repeat", title: "Avg. Plays", value: "\(playlist.averagePlayCount) per song")
                     .listRowSeparator(.hidden)
-            }
-            
-            // Artists section - top artists in the playlist with Show More/Less
-            Section(header: Text("Artists").padding(.leading, -15)) {
-                let displayedArtists = showAllArtists ? artists : Array(artists.prefix(5))
-                
-                ForEach(Array(displayedArtists.enumerated()), id: \.element.id) { index, artist in
-                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                        HStack(spacing: 10) {
-                            // Only show rank number if there's more than one artist
-                            if displayedArtists.count > 1 {
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(AppStyles.accentColor)
-                                    .frame(width: 30, alignment: .leading)
-                            }
-                            
-                            ArtistRow(artist: artist)
-                        }
-                    }
-                    .listRowSeparator(.hidden)
-                }
-                
-                // Show More/Less button for artists
-                if artists.count > 5 {
-                    Button(action: {
-                        showAllArtists.toggle()
-                    }) {
-                        HStack {
-                            Text(showAllArtists ? "Show Less" : "Show More")
-                                .font(.subheadline)
-                                .foregroundColor(AppStyles.accentColor)
-                            
-                            Image(systemName: showAllArtists ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundColor(AppStyles.accentColor)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .listRowSeparator(.hidden)
-                }
             }
             
             // Albums section with Show More/Less
@@ -320,6 +277,49 @@ struct PlaylistDetailView: View {
                         .buttonStyle(PlainButtonStyle())
                         .listRowSeparator(.hidden)
                     }
+                }
+            }
+            
+            // Artists section with Show More/Less
+            Section(header: Text("Artists").padding(.leading, -15)) {
+                let displayedArtists = showAllArtists ? artists : Array(artists.prefix(5))
+                
+                ForEach(Array(displayedArtists.enumerated()), id: \.element.id) { index, artist in
+                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                        HStack(spacing: 10) {
+                            // Only show rank number if there's more than one artist
+                            if displayedArtists.count > 1 {
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(AppStyles.accentColor)
+                                    .frame(width: 30, alignment: .leading)
+                            }
+                            
+                            ArtistRow(artist: artist)
+                        }
+                    }
+                    .listRowSeparator(.hidden)
+                }
+                
+                // Show More/Less button for artists
+                if artists.count > 5 {
+                    Button(action: {
+                        showAllArtists.toggle()
+                    }) {
+                        HStack {
+                            Text(showAllArtists ? "Show Less" : "Show More")
+                                .font(.subheadline)
+                                .foregroundColor(AppStyles.accentColor)
+                            
+                            Image(systemName: showAllArtists ? "chevron.up" : "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(AppStyles.accentColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .listRowSeparator(.hidden)
                 }
             }
             

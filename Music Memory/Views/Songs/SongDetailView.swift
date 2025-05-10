@@ -196,26 +196,26 @@ struct SongDetailView: View {
             
             // Playlists section with Show More/Less
             let containingPlaylists = findPlaylists()
-                        if !containingPlaylists.isEmpty {
-                            Section(header: Text("In Playlists").padding(.leading, -15)) {
-                                let displayedPlaylists = showAllPlaylists ? containingPlaylists : Array(containingPlaylists.prefix(5))
-                                
-                                ForEach(Array(displayedPlaylists.enumerated()), id: \.element.id) { index, playlist in
-                                    NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                        HStack(spacing: 10) {
-                                            // Only show rank number if there's more than one playlist
-                                            if displayedPlaylists.count > 1 {
-                                                Text("#\(index + 1)")
-                                                    .font(.system(size: 16, weight: .bold))
-                                                    .foregroundColor(AppStyles.accentColor)
-                                                    .frame(width: 30, alignment: .leading)
-                                            }
-                                            
-                                            PlaylistRow(playlist: playlist)
-                                        }
-                                    }
-                                    .listRowSeparator(.hidden)
+            if !containingPlaylists.isEmpty {
+                Section(header: Text("In Playlists").padding(.leading, -15)) {
+                    let displayedPlaylists = showAllPlaylists ? containingPlaylists : Array(containingPlaylists.prefix(5))
+                    
+                    ForEach(Array(displayedPlaylists.enumerated()), id: \.element.id) { index, playlist in
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                            HStack(spacing: 10) {
+                                // Only show rank number if there's more than one playlist
+                                if displayedPlaylists.count > 1 {
+                                    Text("#\(index + 1)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 30, alignment: .leading)
                                 }
+                                
+                                PlaylistRow(playlist: playlist)
+                            }
+                        }
+                        .listRowSeparator(.hidden)
+                    }
                     
                     // Show More/Less button for playlists
                     if containingPlaylists.count > 5 {

@@ -14,10 +14,10 @@ struct AlbumDetailView: View {
     let album: AlbumData
     let rank: Int?
     
-    // State variables for expanded sections
-    @State private var showAllSongs = false
-    @State private var showAllPlaylists = false
+    // State variables for expanded sections - sorted alphabetically
     @State private var showAllGenres = false
+    @State private var showAllPlaylists = false
+    @State private var showAllSongs = false
     
     // State for sorting navigation
     @State private var isNavigatingToSortSession = false
@@ -152,30 +152,17 @@ struct AlbumDetailView: View {
             
             // MARK: - Sort Songs Button
             if album.songs.count > 1 {
-                Button(action: {
-                    createSortSession()
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .font(.system(size: 18))
-                        
-                        Text("Sort Songs")
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(AppStyles.accentColor.gradient)
-                    .cornerRadius(AppStyles.cornerRadius)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 0)
+                // Sort Songs Button - only show if there are multiple songs
+                SortActionButton(
+                    title: "Sort Songs",
+                    items: album.songs,
+                    source: .album,
+                    sourceID: album.id,
+                    sourceName: album.title,
+                    contentType: .songs,
+                    artwork: album.artwork
+                )
+                .padding(.vertical, 8)
                 .background(
                     NavigationLink(
                         destination: SortSessionView(session: navigatingSortSession),
