@@ -28,7 +28,7 @@ class SongVersionModel: ObservableObject {
         replacementMap.removeAll()
     }
     
-    func processSongs(_ songs: [MPMediaItem], includeRemixes: Bool = false) async {
+    func processSongs(_ songs: [MPMediaItem]) async {
         await MainActor.run {
             self.isProcessing = true
             self.processedItems = 0
@@ -37,12 +37,12 @@ class SongVersionModel: ObservableObject {
         
         for (index, song) in songs.enumerated() {
             // Find versions for this song
-            let versions = await AppleMusicManager.shared.findVersionsForSong(song, includeRemixes: includeRemixes)
+            let versions = await AppleMusicManager.shared.findVersionsForSong(song)
             
-            // If there are versions and we find a better one, add it to the replacement map
-            if let bestReplacement = findBestReplacement(for: song, from: versions) {
+            // If any versions found, use the first one as replacement
+            if let firstVersion = versions.first {
                 await MainActor.run {
-                    self.replacementMap[song] = bestReplacement
+                    self.replacementMap[song] = firstVersion
                     self.processedItems = index + 1
                 }
             } else {
@@ -55,88 +55,6 @@ class SongVersionModel: ObservableObject {
         await MainActor.run {
             self.isProcessing = false
         }
-    }
-    
-    private func findBestReplacement(for librarySong: MPMediaItem, from catalogSongs: [Song]) -> Song? {
-        guard !catalogSongs.isEmpty else { return nil }
-        
-        let songTitle = librarySong.title ?? ""
-        let artistName = librarySong.artist ?? ""
-        let albumTitle = librarySong.albumTitle ?? ""
-        let libraryIsExplicit = librarySong.isExplicitItem
-        
-        // Keywords that might indicate improved versions
-        let remasterKeywords = ["remaster", "anniversary", "deluxe", "special", "edition"]
-        
-        // Score each potential replacement
-        var scoredReplacements: [(song: Song, score: Int)] = []
-        
-        for catalogSong in catalogSongs {
-            var score = 0
-            
-            // Exact title match is good
-            if catalogSong.title.lowercased() == songTitle.lowercased() {
-                score += 20
-            }
-            
-            // Exact artist match is good
-            if catalogSong.artistName.lowercased() == artistName.lowercased() {
-                score += 15
-            }
-            
-            // If album titles match, that's a small bonus
-            if let catalogAlbum = catalogSong.albumTitle,
-               catalogAlbum.lowercased() == albumTitle.lowercased() {
-                score += 5
-            }
-            
-            // Matching explicit status is good
-            if catalogSong.contentRating == .explicit && libraryIsExplicit {
-                score += 10
-            } else if catalogSong.contentRating != .explicit && !libraryIsExplicit {
-                score += 10
-            }
-            
-            // Higher quality audio is better
-            if catalogSong.audioVariants?.contains(.lossless) == true {
-                score += 8
-            }
-            if catalogSong.audioVariants?.contains(.dolbyAtmos) == true {
-                score += 5
-            }
-            
-            // Newer release date is better
-            if let releaseDate = catalogSong.releaseDate,
-               let libraryReleaseDate = librarySong.releaseDate,
-               releaseDate > libraryReleaseDate {
-                score += 7
-            }
-            
-            // Check for remaster keywords
-            if remasterKeywords.contains(where: { keyword in
-                catalogSong.title.lowercased().contains(keyword) ||
-                (catalogSong.albumTitle?.lowercased().contains(keyword) ?? false)
-            }) {
-                score += 12
-            }
-            
-            // We prefer original albums over compilations
-            if catalogSong.albumTitle?.lowercased().contains("compilation") ?? false {
-                score -= 5
-            }
-            
-            scoredReplacements.append((catalogSong, score))
-        }
-        
-        // Sort by score and return the best match if it's significantly better
-        let sortedReplacements = scoredReplacements.sorted { $0.score > $1.score }
-        
-        // Must have a minimum score to be considered a good replacement
-        if let bestMatch = sortedReplacements.first, bestMatch.score > 25 {
-            return bestMatch.song
-        }
-        
-        return nil
     }
     
     func getVersionDifferences(libraryItem: MPMediaItem, catalogItem: Song) -> [VersionDifference] {

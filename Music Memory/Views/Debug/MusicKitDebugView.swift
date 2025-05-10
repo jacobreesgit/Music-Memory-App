@@ -206,7 +206,10 @@ struct MusicKitDebugView: View {
                 }
             }
             .onAppear {
-                viewModel.checkCurrentStatus()
+                // Run full diagnostics immediately when the view appears
+                Task {
+                    await viewModel.runFullDiagnostic()
+                }
             }
         }
     }

@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var isRefreshing = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @AppStorage("showDebugOptions") private var showDebugOptions = false
     @State private var showingMusicKitDebug = false
     
     var body: some View {
@@ -85,28 +86,30 @@ struct SettingsView: View {
                     .padding(.vertical, 6)
                 }
                 
-                // DEBUGGING SECTION
-                Section(header:
-                    Text("DEBUGGING")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 15)
-                        .padding(.bottom, 5)
-                ) {
-                    Button(action: {
-                        showingMusicKitDebug = true
-                    }) {
-                        HStack {
-                            Image(systemName: "waveform.badge.magnifyingglass")
-                                .foregroundColor(.blue)
-                                .frame(width: 20)
-                            
-                            Text("Test MusicKit Integration")
-                                .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                // DEBUGGING SECTION - hidden by default
+                if showDebugOptions {
+                    Section(header:
+                        Text("DEBUGGING")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 15)
+                            .padding(.bottom, 5)
+                    ) {
+                        Button(action: {
+                            showingMusicKitDebug = true
+                        }) {
+                            HStack {
+                                Image(systemName: "waveform.badge.magnifyingglass")
+                                    .foregroundColor(.blue)
+                                    .frame(width: 20)
+                                
+                                Text("Test MusicKit Integration")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
+                        .padding(.vertical, 6)
                     }
-                    .padding(.vertical, 6)
                 }
                 
                 // APP INFORMATION SECTION

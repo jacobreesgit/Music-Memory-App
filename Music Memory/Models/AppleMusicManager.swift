@@ -242,7 +242,7 @@ class AppleMusicManager: ObservableObject {
         }
     }
     
-    func findVersionsForSong(_ librarySong: MPMediaItem, includeRemixes: Bool = false) async -> [Song] {
+    func findVersionsForSong(_ librarySong: MPMediaItem) async -> [Song] {
         // Check for developer token
         guard developerToken != nil else {
             await MainActor.run {
@@ -258,20 +258,20 @@ class AppleMusicManager: ObservableObject {
             self.error = nil
         }
         
-        // Create a search query that's likely to find versions of the same song
+        // Create a search query using song title and artist
         let songTitle = librarySong.title ?? ""
         let artistName = librarySong.artist ?? ""
         
         // Skip if we don't have enough info
-        guard !songTitle.isEmpty, !artistName.isEmpty else {
+        guard !songTitle.isEmpty else {
             await MainActor.run {
                 self.isSearching = false
             }
             return []
         }
         
-        // Formulate a search that will likely find versions of the same track
-        let query = "\(songTitle) \(artistName)"
+        // Formulate a search that will find versions of the track
+        let query = "\(songTitle) \(artistName)".trimmingCharacters(in: .whitespacesAndNewlines)
         
         do {
             var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
@@ -282,18 +282,12 @@ class AppleMusicManager: ObservableObject {
             // Convert MusicItemCollection to Array
             let songsArray = response.songs.compactMap { $0 }
             
-            // Filter to keep only likely versions of the same song
-            let filteredResults = filterVersionsOfSong(
-                librarySong: librarySong,
-                catalogSongs: songsArray,
-                includeRemixes: includeRemixes
-            )
-            
             await MainActor.run {
                 self.isSearching = false
             }
             
-            return filteredResults
+            // Return results directly without complex filtering
+            return songsArray
         } catch {
             print("Error finding versions: \(error.localizedDescription)")
             await MainActor.run {
@@ -301,42 +295,6 @@ class AppleMusicManager: ObservableObject {
                 self.error = error
             }
             return []
-        }
-    }
-    
-    private func filterVersionsOfSong(librarySong: MPMediaItem, catalogSongs: [Song], includeRemixes: Bool) -> [Song] {
-        let songTitle = librarySong.title ?? ""
-        let artistName = librarySong.artist ?? ""
-        let songDuration = librarySong.playbackDuration
-        
-        // Filter based on song title and artist match
-        return catalogSongs.filter { song in
-            // Basic filtering criteria
-            let titleMatches = song.title.lowercased().contains(songTitle.lowercased()) ||
-                               songTitle.lowercased().contains(song.title.lowercased())
-            
-            let artistMatches = song.artistName.lowercased().contains(artistName.lowercased()) ||
-                                artistName.lowercased().contains(song.artistName.lowercased())
-            
-            // Duration similarity threshold (20 seconds)
-            let durationDifference = abs(song.duration ?? 0 - songDuration)
-            let durationSimilar = durationDifference < 20.0
-            
-            // Keywords that might indicate different versions
-            let isLiveVersion = song.title.lowercased().contains("live") ||
-                              (song.albumTitle?.lowercased().contains("live") ?? false)
-            
-            let isRemixVersion = song.title.lowercased().contains("remix") ||
-                               (song.albumTitle?.lowercased().contains("remix") ?? false)
-            
-            // Include or exclude remixes based on parameter
-            let remixCriteria = includeRemixes || !isRemixVersion
-            
-            // We want to include studio, remastered, and maybe acoustic versions,
-            // but generally exclude live versions unless specifically searching for them
-            let versionCriteria = !isLiveVersion || song.title.lowercased() == songTitle.lowercased()
-            
-            return titleMatches && artistMatches && (durationSimilar || isRemixVersion) && remixCriteria && versionCriteria
         }
     }
     
