@@ -11,8 +11,8 @@ import MediaPlayer
 struct SongsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var searchText = ""
-    @State private var sortOption = SortOption.playCount
-    @State private var sortAscending = false // Default to descending
+    @State private var sortOption: SortOption
+    @State private var sortAscending: Bool
     @State private var displayedSongCount = 50  // Start with 50 songs
     @State private var isLoadingMore = false
     
@@ -24,6 +24,12 @@ struct SongsView: View {
         case title = "Title"
         
         var id: String { self.rawValue }
+    }
+    
+    // Initialize with default or specified sort options
+    init(initialSortOption: SortOption = .playCount, initialSortAscending: Bool = false) {
+        _sortOption = State(initialValue: initialSortOption)
+        _sortAscending = State(initialValue: initialSortAscending)
     }
     
     var filteredSongs: [MPMediaItem] {

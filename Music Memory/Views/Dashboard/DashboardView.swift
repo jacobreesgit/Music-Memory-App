@@ -118,8 +118,8 @@ struct DashboardView: View {
                             // Your Listening Now Section
                             currentTrendsSection
                             
-                            // Compact Artist Grid
-                            compactArtistGridSection
+                            // Top Artists Section (using TopItemsView)
+                            topArtistsSection
                             
                             // Recently Added Section
                             recentlyAddedSection
@@ -277,76 +277,33 @@ struct DashboardView: View {
         }
     }
     
-    // MARK: - Compact Artist Grid
+    // MARK: - Top Artists Section (using TopItemsView)
     
-    private var compactArtistGridSection: some View {
+    private var topArtistsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Top Artists")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.primary)
-                .padding(.horizontal)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16)
-            ], spacing: 20) {
-                ForEach(Array(musicLibrary.filteredArtists.prefix(9).enumerated()), id: \.element.id) { index, artist in
-                    NavigationLink(destination: ArtistDetailView(artist: artist, rank: index + 1)) {
-                        VStack(spacing: 8) {
-                            // Rank badge
-                            ZStack(alignment: .topLeading) {
-                                // Artwork or placeholder
-                                if let artwork = artist.artwork {
-                                    Image(uiImage: artwork.image(at: CGSize(width: 80, height: 80)) ?? UIImage(systemName: "music.mic")!)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 80, height: 80)
-                                        .cornerRadius(AppStyles.cornerRadius)
-                                } else {
-                                    ZStack {
-                                        Circle()
-                                            .fill(AppStyles.secondaryColor)
-                                            .frame(width: 80, height: 80)
-                                        
-                                        Image(systemName: "music.mic")
-                                            .font(.system(size: 32))
-                                            .foregroundColor(.primary)
-                                    }
-                                }
-                                
-                                // Rank badge
-                                Text("#\(index + 1)")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(AppStyles.accentColor)
-                                    .cornerRadius(6)
-                                    .offset(x: -4, y: -4)
-                            }
-                            
-                            // Artist name
-                            Text(artist.name)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .foregroundColor(.primary)
-                            
-                            // Play count
-                            Text("\(artist.totalPlayCount) plays")
-                                .font(.caption2)
-                                .foregroundColor(AppStyles.accentColor)
-                        }
-                        .frame(width: 80)
-                    }
-                }
+            if !musicLibrary.filteredArtists.isEmpty {
+                Text("Top Artists")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal)
+                
+                TopItemsView(
+                    title: "",
+                    items: Array(musicLibrary.filteredArtists.prefix(5)),
+                    artwork: { $0.artwork },
+                    itemTitle: { $0.name },
+                    itemSubtitle: { "\($0.songs.count) songs" },
+                    itemPlays: { $0.totalPlayCount },
+                    iconName: { _ in "music.mic" },
+                    destination: { artist, rank in ArtistDetailView(artist: artist, rank: rank) },
+                    seeAllDestination: { LibraryView(selectedTab: .constant(1)) }
+                )
             }
-            .padding(.horizontal)
         }
     }
     
     // MARK: - Recently Added Section
-    
+        
     private var recentlyAddedSection: some View {
         let recentlyAdded = getRecentlyAddedSongs()
         
@@ -358,7 +315,8 @@ struct DashboardView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
-                    ForEach(Array(recentlyAdded.enumerated()), id: \.element.persistentID) { index, song in
+                    // Regular items
+                    ForEach(Array(recentlyAdded.prefix(5).enumerated()), id: \.element.persistentID) { index, song in
                         NavigationLink(destination: SongDetailView(song: song)) {
                             VStack(spacing: 8) {
                                 // Artwork or placeholder
@@ -399,6 +357,34 @@ struct DashboardView: View {
                             .frame(width: 100)
                         }
                     }
+                    
+                    // "See All" item
+                    NavigationLink(destination: RecentlyAddedSongsView()) {
+                        VStack {
+                            ZStack {
+                                Circle()
+                                    .fill(AppStyles.secondaryColor)
+                                    .frame(width: 100, height: 100)
+                                
+                                VStack(spacing: 8) {
+                                    Image(systemName: "arrow.right.circle")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(AppStyles.accentColor)
+                                    
+                                    Text("See All")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(AppStyles.accentColor)
+                                }
+                            }
+                            .frame(width: 100, height: 100)
+                            
+                            // Empty space to match layout of other items
+                            Spacer().frame(height: 18)
+                            Spacer().frame(height: 16)
+                            Spacer().frame(height: 14)
+                        }
+                        .frame(width: 100)
+                    }
                 }
                 .padding(.horizontal)
             }
@@ -423,7 +409,8 @@ struct DashboardView: View {
                     itemSubtitle: { $0.artist ?? "Unknown" },
                     itemPlays: { $0.playCount },
                     iconName: { _ in "music.note" },
-                    destination: { song, rank in SongDetailView(song: song, rank: rank) }
+                    destination: { song, rank in SongDetailView(song: song, rank: rank) },
+                    seeAllDestination: { LibraryView(selectedTab: .constant(0)) }
                 )
             }
         }
@@ -445,7 +432,8 @@ struct DashboardView: View {
                     itemSubtitle: { $0.artist },
                     itemPlays: { $0.totalPlayCount },
                     iconName: { _ in "square.stack" },
-                    destination: { album, rank in AlbumDetailView(album: album, rank: rank) }
+                    destination: { album, rank in AlbumDetailView(album: album, rank: rank) },
+                    seeAllDestination: { LibraryView(selectedTab: .constant(2)) }
                 )
             }
         }
@@ -467,7 +455,8 @@ struct DashboardView: View {
                     itemSubtitle: { "\($0.songs.count) songs" },
                     itemPlays: { $0.totalPlayCount },
                     iconName: { _ in "music.note.list" },
-                    destination: { playlist, rank in PlaylistDetailView(playlist: playlist, rank: rank) }
+                    destination: { playlist, rank in PlaylistDetailView(playlist: playlist, rank: rank) },
+                    seeAllDestination: { LibraryView(selectedTab: .constant(4)) }
                 )
             }
         }

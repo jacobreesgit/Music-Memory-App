@@ -16,7 +16,7 @@ struct TopItem {
 }
 
 /// A reusable horizontal carousel for displaying top items
-struct TopItemsView<T, DestinationView: View>: View {
+struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
     let title: String
     let items: [T]
     let artwork: (T) -> MPMediaItemArtwork?
@@ -25,6 +25,7 @@ struct TopItemsView<T, DestinationView: View>: View {
     let itemPlays: (T) -> Int
     let iconName: (T) -> String
     let destination: (T, Int) -> DestinationView
+    let seeAllDestination: () -> AllItemsView
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -36,7 +37,8 @@ struct TopItemsView<T, DestinationView: View>: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
-                    ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    // Regular items (limit to 5)
+                    ForEach(Array(items.prefix(5).enumerated()), id: \.offset) { index, item in
                         NavigationLink(destination: destination(item, index + 1)) {
                             VStack {
                                 // Rank badge
@@ -58,7 +60,7 @@ struct TopItemsView<T, DestinationView: View>: View {
                                             .cornerRadius(AppStyles.cornerRadius)
                                     }
                                     
-                                    // Rank badge - modified to ensure it's fully visible
+                                    // Rank badge
                                     Text("#\(index + 1)")
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(.white)
@@ -90,6 +92,34 @@ struct TopItemsView<T, DestinationView: View>: View {
                             }
                             .frame(width: 100)
                         }
+                    }
+                    
+                    // "See All" item
+                    NavigationLink(destination: seeAllDestination()) {
+                        VStack {
+                            ZStack {
+                                Circle()
+                                    .fill(AppStyles.secondaryColor)
+                                    .frame(width: 100, height: 100)
+                                
+                                VStack(spacing: 8) {
+                                    Image(systemName: "arrow.right.circle")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(AppStyles.accentColor)
+                                    
+                                    Text("See All")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(AppStyles.accentColor)
+                                }
+                            }
+                            .frame(width: 100, height: 100)
+                            
+                            // Empty space to match layout of other items
+                            Spacer().frame(height: 18)
+                            Spacer().frame(height: 16)
+                            Spacer().frame(height: 14)
+                        }
+                        .frame(width: 100)
                     }
                 }
                 .padding(.horizontal)
