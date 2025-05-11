@@ -20,7 +20,7 @@ struct ArtistsView: View {
         case playCount = "Play Count"
         case name = "Name"
         case songCount = "Song Count"
-        case dateAdded = "Recently Added"
+        case dateAdded = "Date Added"
         
         var id: String { self.rawValue }
     }
@@ -54,8 +54,8 @@ struct ArtistsView: View {
         case .dateAdded:
             return musicLibrary.filteredArtists.sorted {
                 // Get the most recent date added for each artist
-                let date0 = $0.songs.compactMap { $0.dateAdded }.max() ?? Date.distantPast
-                let date1 = $1.songs.compactMap { $1.dateAdded }.max() ?? Date.distantPast
+                let date0 = $0.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
+                let date1 = $1.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
                 return sortAscending ? date0 < date1 : date0 > date1
             }
         }
@@ -99,17 +99,17 @@ struct ArtistsView: View {
                     placeholder: "Search artists"
                 )
                 .padding(.top) // Added top padding to match other tabs
-                .onChange(of: searchText) { _ in
+                .onChange(of: searchText) { oldValue, newValue in
                     // Reset batch loading when search text changes
                     if searchText.isEmpty {
                         displayedArtistCount = min(75, sortedArtists.count)
                     }
                 }
-                .onChange(of: sortOption) { _ in
+                .onChange(of: sortOption) { oldValue, newValue in
                     // Reset batch loading when sort option changes
                     displayedArtistCount = min(75, sortedArtists.count)
                 }
-                .onChange(of: sortAscending) { _ in
+                .onChange(of: sortAscending) { oldValue, newValue in
                     // Reset batch loading when sort direction changes
                     displayedArtistCount = min(75, sortedArtists.count)
                 }

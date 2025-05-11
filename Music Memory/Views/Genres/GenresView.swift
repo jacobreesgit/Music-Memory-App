@@ -20,7 +20,7 @@ struct GenresView: View {
         case songCount = "Song Count"
         case name = "Name"
         case playCount = "Play Count"
-        case dateAdded = "Recently Added"
+        case dateAdded = "Date Added"
         
         var id: String { self.rawValue }
     }
@@ -54,8 +54,8 @@ struct GenresView: View {
         case .dateAdded:
             return musicLibrary.filteredGenres.sorted {
                 // Get the most recent date added for each genre
-                let date0 = $0.songs.compactMap { $0.dateAdded }.max() ?? Date.distantPast
-                let date1 = $1.songs.compactMap { $1.dateAdded }.max() ?? Date.distantPast
+                let date0 = $0.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
+                let date1 = $1.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
                 return sortAscending ? date0 < date1 : date0 > date1
             }
         }
@@ -94,17 +94,17 @@ struct GenresView: View {
                 placeholder: "Search genres"
             )
             .padding(.top) // Added top padding to match other tabs
-            .onChange(of: searchText) { _ in
+            .onChange(of: searchText) { oldValue, newValue in
                 // Reset batch loading when search text changes
                 if searchText.isEmpty {
                     displayedGenreCount = min(75, sortedGenres.count)
                 }
             }
-            .onChange(of: sortOption) { _ in
+            .onChange(of: sortOption) { oldValue, newValue in
                 // Reset batch loading when sort option changes
                 displayedGenreCount = min(75, sortedGenres.count)
             }
-            .onChange(of: sortAscending) { _ in
+            .onChange(of: sortAscending) { oldValue, newValue in
                 // Reset batch loading when sort direction changes
                 displayedGenreCount = min(75, sortedGenres.count)
             }

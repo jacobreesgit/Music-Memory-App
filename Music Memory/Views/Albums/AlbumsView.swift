@@ -21,7 +21,7 @@ struct AlbumsView: View {
         case title = "Title"
         case artist = "Artist"
         case songCount = "Song Count"
-        case dateAdded = "Recently Added"
+        case dateAdded = "Date Added"
         
         var id: String { self.rawValue }
     }
@@ -60,8 +60,8 @@ struct AlbumsView: View {
         case .dateAdded:
             return musicLibrary.filteredAlbums.sorted {
                 // Get the most recent date added for each album
-                let date0 = $0.songs.compactMap { $0.dateAdded }.max() ?? Date.distantPast
-                let date1 = $1.songs.compactMap { $1.dateAdded }.max() ?? Date.distantPast
+                let date0 = $0.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
+                let date1 = $1.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
                 return sortAscending ? date0 < date1 : date0 > date1
             }
         }
@@ -105,17 +105,17 @@ struct AlbumsView: View {
                     placeholder: "Search albums"
                 )
                 .padding(.top) // Added top padding to match other tabs
-                .onChange(of: searchText) { _ in
+                .onChange(of: searchText) { oldValue, newValue in
                     // Reset batch loading when search text changes
                     if searchText.isEmpty {
                         displayedAlbumCount = min(75, sortedAlbums.count)
                     }
                 }
-                .onChange(of: sortOption) { _ in
+                .onChange(of: sortOption) { oldValue, newValue in
                     // Reset batch loading when sort option changes
                     displayedAlbumCount = min(75, sortedAlbums.count)
                 }
-                .onChange(of: sortAscending) { _ in
+                .onChange(of: sortAscending) { oldValue, newValue in
                     // Reset batch loading when sort direction changes
                     displayedAlbumCount = min(75, sortedAlbums.count)
                 }
