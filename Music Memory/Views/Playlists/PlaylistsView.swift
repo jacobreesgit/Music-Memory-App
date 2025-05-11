@@ -20,6 +20,7 @@ struct PlaylistsView: View {
         case playCount = "Play Count"
         case name = "Name"
         case songCount = "Song Count"
+        case dateAdded = "Recently Added"
         
         var id: String { self.rawValue }
     }
@@ -49,6 +50,13 @@ struct PlaylistsView: View {
         case .songCount:
             return musicLibrary.filteredPlaylists.sorted {
                 sortAscending ? $0.songs.count < $1.songs.count : $0.songs.count > $1.songs.count
+            }
+        case .dateAdded:
+            return musicLibrary.filteredPlaylists.sorted {
+                // Get the most recent date added for each playlist
+                let date0 = $0.songs.compactMap { $0.dateAdded }.max() ?? Date.distantPast
+                let date1 = $1.songs.compactMap { $1.dateAdded }.max() ?? Date.distantPast
+                return sortAscending ? date0 < date1 : date0 > date1
             }
         }
     }
