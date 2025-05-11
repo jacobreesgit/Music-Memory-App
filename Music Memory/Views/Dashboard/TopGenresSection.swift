@@ -87,28 +87,6 @@ struct TopGenresSection: View {
             .background(AppStyles.secondaryColor.opacity(0.3))
             .cornerRadius(AppStyles.cornerRadius)
             .padding(.horizontal)
-            
-            // Top genres bar chart
-            if !topGenres.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Top Genres")
-                        .font(.subheadline)
-                        .foregroundColor(AppStyles.accentColor)
-                        .padding(.horizontal)
-                    
-                    Chart {
-                        ForEach(topGenres.prefix(5), id: \.name) { genre in
-                            BarMark(
-                                x: .value("Plays", genre.totalPlayCount),
-                                y: .value("Genre", genre.name)
-                            )
-                            .foregroundStyle(AppStyles.accentColor.gradient)
-                        }
-                    }
-                    .frame(height: 150)
-                    .padding(.horizontal)
-                }
-            }
         }
     }
     

@@ -1,17 +1,29 @@
-// Artist contribution visualization
-    private var artistContributionSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Artist Contribution")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text(getArtistVariety().label)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+//
+//  DashboardView.swift
+//  Music Memory
+//
+//  Created by Jacob Rees on 27/04/2025.
+//  Enhanced with auto-carousel and improved layout
+//
+
+import SwiftUI
+import MediaPlayer
+import Charts
+
+struct DashboardView: View {
+    @EnvironmentObject var musicLibrary: MusicLibraryModel
+    @State private var refreshID = UUID()
+    @State private var selectedStatCard = 0
+    @State private var carouselTimer: Timer?
+    
+    var hasNoData: Bool {
+        return musicLibrary.filteredSongs.isEmpty &&
+               musicLibrary.filteredAlbums.isEmpty &&
+               musicLibrary.filteredArtists.isEmpty &&
+               musicLibrary.filteredPlaylists.isEmpty
+    }
+    
+    // MARK: - Computed Properties (moved to struct level)
     
     // Artist contribution properties and methods
     private var artistContribution: [ArtistData] {
@@ -62,93 +74,6 @@
         }
         
         return (label: "Unknown", description: "Not enough data")
-    }
-            .padding(.horizontal)
-            
-            // Artist contribution visualization
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    ForEach(0..<artistContribution.prefix(5).count, id: \.self) { i in
-                        Rectangle()
-                            .fill(AppStyles.accentColor.opacity(1.0 - (Double(i) * 0.15)))
-                            .frame(width: getPercentageWidth(for: i, in: geo.size.width))
-                    }
-                    
-                    if otherArtistsPercentage > 0 {
-                        Rectangle()
-                            .fill(Color.gray)
-                            .frame(width: geo.size.width * otherArtistsPercentage / 100.0)
-                    }
-                }
-            }
-            .frame(height: 30)
-            .cornerRadius(AppStyles.cornerRadius)
-            .padding(.horizontal)
-            
-            // Legend
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(artistContribution.prefix(5).enumerated()), id: \.element.id) { index, artist in
-                    HStack {
-                        Rectangle()
-                            .fill(AppStyles.accentColor.opacity(1.0 - (Double(index) * 0.15)))
-                            .frame(width: 12, height: 12)
-                            .cornerRadius(2)
-                        
-                        Text(artist.name)
-                            .font(.caption)
-                            .lineLimit(1)
-                        
-                        Spacer()
-                        
-                        Text("\(getArtistPercentage(for: artist))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                if otherArtistsPercentage > 0 {
-                    HStack {
-                        Rectangle()
-                            .fill(Color.gray)
-                            .frame(width: 12, height: 12)
-                            .cornerRadius(2)
-                        
-                        Text("Other Artists")
-                            .font(.caption)
-                        
-                        Spacer()
-                        
-                        Text("\(Int(otherArtistsPercentage.rounded()))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal)
-        }
-    }//
-//  DashboardView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 27/04/2025.
-//  Enhanced with auto-carousel and improved layout
-//
-
-import SwiftUI
-import MediaPlayer
-import Charts
-
-struct DashboardView: View {
-    @EnvironmentObject var musicLibrary: MusicLibraryModel
-    @State private var refreshID = UUID()
-    @State private var selectedStatCard = 0
-    @State private var carouselTimer: Timer?
-    
-    var hasNoData: Bool {
-        return musicLibrary.filteredSongs.isEmpty &&
-               musicLibrary.filteredAlbums.isEmpty &&
-               musicLibrary.filteredArtists.isEmpty &&
-               musicLibrary.filteredPlaylists.isEmpty
     }
     
     var body: some View {
@@ -241,9 +166,9 @@ struct DashboardView: View {
                 .foregroundColor(.primary)
                 .padding(.horizontal)
             
-            // Carousel without built-in indicators
+            // Carousel with infinite scrolling
             TabView(selection: $selectedStatCard) {
-                ForEach(Array(statCards.enumerated()), id: \.offset) { index, card in
+                ForEach(Array(statCards.enumerated()), id: \.element.id) { index, card in
                     card
                         .tag(index)
                 }
@@ -251,6 +176,13 @@ struct DashboardView: View {
             .frame(height: 140)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .animation(.easeInOut(duration: 0.5), value: selectedStatCard)
+            .onChange(of: selectedStatCard) { newValue in
+                // Handle infinite scrolling using modulo
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    selectedStatCard = (newValue + statCards.count) % statCards.count
+                }
+                resetCarouselTimer()
+            }
             
             // Page indicator beneath the box
             HStack(spacing: 8) {
@@ -261,9 +193,6 @@ struct DashboardView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .onChange(of: selectedStatCard) {
-            resetCarouselTimer()
         }
     }
     
@@ -544,6 +473,86 @@ struct DashboardView: View {
         }
     }
     
+    // MARK: - Artist Contribution Section
+    
+    private var artistContributionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Artist Contribution")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Text(getArtistVariety().label)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal)
+            
+            // Artist contribution visualization
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    ForEach(0..<artistContribution.prefix(5).count, id: \.self) { i in
+                        Rectangle()
+                            .fill(AppStyles.accentColor.opacity(1.0 - (Double(i) * 0.15)))
+                            .frame(width: getPercentageWidth(for: i, in: geo.size.width))
+                    }
+                    
+                    if otherArtistsPercentage > 0 {
+                        Rectangle()
+                            .fill(Color.gray)
+                            .frame(width: geo.size.width * otherArtistsPercentage / 100.0)
+                    }
+                }
+            }
+            .frame(height: 30)
+            .cornerRadius(AppStyles.cornerRadius)
+            .padding(.horizontal)
+            
+            // Legend
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(artistContribution.prefix(5).enumerated()), id: \.element.id) { index, artist in
+                    HStack {
+                        Rectangle()
+                            .fill(AppStyles.accentColor.opacity(1.0 - (Double(index) * 0.15)))
+                            .frame(width: 12, height: 12)
+                            .cornerRadius(2)
+                        
+                        Text(artist.name)
+                            .font(.caption)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        Text("\(getArtistPercentage(for: artist))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if otherArtistsPercentage > 0 {
+                    HStack {
+                        Rectangle()
+                            .fill(Color.gray)
+                            .frame(width: 12, height: 12)
+                            .cornerRadius(2)
+                        
+                        Text("Other Artists")
+                            .font(.caption)
+                        
+                        Spacer()
+                        
+                        Text("\(Int(otherArtistsPercentage.rounded()))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+    
     // MARK: - Helper Methods
     
     // Stat Cards for Carousel
@@ -643,7 +652,7 @@ struct DashboardView: View {
     // Carousel timer management
     private func startCarouselTimer() {
         stopCarouselTimer()
-        carouselTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+        carouselTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [self] _ in
             withAnimation(.easeInOut(duration: 0.5)) {
                 selectedStatCard = (selectedStatCard + 1) % getStatCards().count
             }
