@@ -17,14 +17,15 @@ struct AlbumsView: View {
     @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
-        case playCount = "Play Count"
-        case title = "Title"
         case artist = "Artist"
-        case songCount = "Song Count"
         case dateAdded = "Date Added"
+        case playCount = "Play Count"
+        case songCount = "Song Count"
+        case title = "Title"
         
         var id: String { self.rawValue }
     }
+
     
     var filteredAlbums: [AlbumData] {
         if searchText.isEmpty {

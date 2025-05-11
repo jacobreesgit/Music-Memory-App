@@ -19,8 +19,8 @@ struct SorterView: View {
     
     enum SortOption: String, CaseIterable, Identifiable {
         case date = "Date"
-        case title = "Title"
         case source = "Source"
+        case title = "Title"
         
         var id: String { self.rawValue }
     }

@@ -17,10 +17,10 @@ struct PlaylistsView: View {
     @State private var isLoadingMore = false
     
     enum SortOption: String, CaseIterable, Identifiable {
-        case playCount = "Play Count"
-        case name = "Name"
-        case songCount = "Song Count"
         case dateAdded = "Date Added"
+        case name = "Name"
+        case playCount = "Play Count"
+        case songCount = "Song Count"
         
         var id: String { self.rawValue }
     }
