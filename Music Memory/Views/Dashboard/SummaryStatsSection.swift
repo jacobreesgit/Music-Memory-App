@@ -35,7 +35,7 @@ struct SummaryStatsSection: View {
                         icon: "play.circle.fill"
                     )
                     
-                    // Library diversity
+                    // Library size
                     SummaryStatCard(
                         title: "Library Size",
                         value: "\(musicLibrary.songs.count) songs",
@@ -47,6 +47,13 @@ struct SummaryStatsSection: View {
                         title: "Avg. Plays",
                         value: "\(averagePlaysPerSong)",
                         icon: "chart.bar.fill"
+                    )
+                    
+                    // Unplayed songs
+                    SummaryStatCard(
+                        title: "Unplayed",
+                        value: "\(unplayedCount) songs",
+                        icon: "play.slash"
                     )
                 }
                 .padding(.horizontal)
@@ -93,6 +100,11 @@ struct SummaryStatsSection: View {
         
         let average = Double(totalPlays) / Double(musicLibrary.songs.count)
         return String(format: "%.1f", average)
+    }
+    
+    // Count of unplayed songs
+    private var unplayedCount: Int {
+        musicLibrary.songs.filter { $0.playCount == 0 }.count
     }
 }
 
