@@ -1,9 +1,5 @@
-//
 //  SongVersionsView.swift
 //  Music Memory
-//
-//  Created by Jacob Rees on 10/05/2025.
-//
 
 import SwiftUI
 import MediaPlayer
@@ -21,19 +17,17 @@ struct SongVersionsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Original version header with LibraryRow in the same style as SongsView
+                // Original version header - now using VersionComparisonRow with special initializer
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Original Version")
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
+                        .padding(.horizontal)
                     
-                    // Use LibraryRow exactly as in SongsView, with a NavigationLink
-                    NavigationLink(destination: SongDetailView(song: librarySong)) {
-                        LibraryRow.song(librarySong)
-                    }
-                    .listRowSeparator(.hidden)
+                    // Use VersionComparisonRow's special initializer for original songs
+                    VersionComparisonRow(librarySong: librarySong, isOriginal: true)
+                        .padding(.horizontal)
                 }
-                .padding(.horizontal)
                 .padding(.top)
                 
                 Divider()
@@ -136,13 +130,5 @@ struct SongVersionsView: View {
             // Otherwise, select it
             songVersionModel.addToReplacementMap(librarySong, replacement: version)
         }
-    }
-}
-
-// Extension for DateFormatter to use functional programming style
-extension DateFormatter {
-    func then(_ configure: (DateFormatter) -> Void) -> DateFormatter {
-        configure(self)
-        return self
     }
 }
