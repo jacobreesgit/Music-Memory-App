@@ -150,7 +150,7 @@ struct AlbumsView: View {
                                         .foregroundColor(AppStyles.accentColor)
                                         .frame(width: 30, alignment: .leading)
                                     
-                                    AlbumRow(album: album)
+                                    LibraryRow.album(album)
                                 }
                             }
                             .listRowSeparator(.hidden)

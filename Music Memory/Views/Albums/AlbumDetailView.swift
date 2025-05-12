@@ -211,7 +211,7 @@ struct AlbumDetailView: View {
                 // Find the artist in the music library
                 if let artist = musicLibrary.artists.first(where: { $0.name == album.artist }) {
                     NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                        ArtistRow(artist: artist)
+                        LibraryRow.artist(artist)
                     }
                     .listRowSeparator(.hidden)
                 } else {
@@ -252,7 +252,7 @@ struct AlbumDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                GenreRow(genre: genre)
+                                LibraryRow.genre(genre)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -298,7 +298,7 @@ struct AlbumDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                PlaylistRow(playlist: playlist)
+                                LibraryRow.playlist(playlist)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -343,7 +343,7 @@ struct AlbumDetailView: View {
                                     .frame(width: 30, alignment: .leading)
                             }
                             
-                            SongRow(song: song)
+                            LibraryRow.song(song)
                         }
                     }
                     .listRowSeparator(.hidden)

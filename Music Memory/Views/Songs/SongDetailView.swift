@@ -116,38 +116,18 @@ struct SongDetailView: View {
                         ($0.artist == song.artist || $0.artist == song.albumArtist)
                     }) {
                         NavigationLink(destination: AlbumDetailView(album: album)) {
-                            AlbumRow(album: album)
+                            LibraryRow.album(album)
                         }
                         .listRowSeparator(.hidden)
                     } else {
                         // Fallback if album is not found
-                        HStack(spacing: AppStyles.smallPadding) {
-                            if let artwork = song.artwork {
-                                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "square.stack")!)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 50, height: 50)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                            } else {
-                                Image(systemName: "square.stack")
-                                    .frame(width: 50, height: 50)
-                                    .background(AppStyles.secondaryColor)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(albumTitle)
-                                    .font(AppStyles.bodyStyle)
-                                    .lineLimit(1)
-                                
-                                if let artist = song.artist {
-                                    Text(artist)
-                                        .font(AppStyles.captionStyle)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
+                        LibraryRow(
+                            title: albumTitle,
+                            subtitle: song.artist ?? "Unknown",
+                            playCount: 0,
+                            artwork: song.artwork,
+                            iconName: "square.stack"
+                        )
                         .listRowSeparator(.hidden)
                     }
                 }
@@ -159,26 +139,19 @@ struct SongDetailView: View {
                     // Find the artist in the music library
                     if let artist = musicLibrary.artists.first(where: { $0.name == artistName }) {
                         NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                            ArtistRow(artist: artist)
+                            LibraryRow.artist(artist)
                         }
                         .listRowSeparator(.hidden)
                     } else {
                         // Fallback if artist is not found
-                        HStack(spacing: AppStyles.smallPadding) {
-                            ZStack {
-                                Circle()
-                                    .fill(AppStyles.secondaryColor)
-                                    .frame(width: 50, height: 50)
-                                
-                                Image(systemName: "music.mic")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                            }
-                            
-                            Text(artistName)
-                                .font(AppStyles.bodyStyle)
-                                .lineLimit(1)
-                        }
+                        LibraryRow(
+                            title: artistName,
+                            subtitle: "",
+                            playCount: 0,
+                            artwork: nil,
+                            iconName: "music.mic",
+                            useCircularPlaceholder: true
+                        )
                         .listRowSeparator(.hidden)
                     }
                 }
@@ -188,7 +161,7 @@ struct SongDetailView: View {
             if let genre = findGenre() {
                 Section(header: Text("Genre").padding(.leading, -15)) {
                     NavigationLink(destination: GenreDetailView(genre: genre)) {
-                        GenreRow(genre: genre)
+                        LibraryRow.genre(genre)
                     }
                     .listRowSeparator(.hidden)
                 }
@@ -211,7 +184,7 @@ struct SongDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                PlaylistRow(playlist: playlist)
+                                LibraryRow.playlist(playlist)
                             }
                         }
                         .listRowSeparator(.hidden)

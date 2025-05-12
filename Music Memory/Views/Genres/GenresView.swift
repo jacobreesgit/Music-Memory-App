@@ -138,7 +138,7 @@ struct GenresView: View {
                                     .foregroundColor(AppStyles.accentColor)
                                     .frame(width: 30, alignment: .leading)
                                 
-                                GenreRow(genre: genre)
+                                LibraryRow.genre(genre)
                             }
                         }
                         .listRowSeparator(.hidden)

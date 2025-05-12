@@ -143,7 +143,7 @@ struct PlaylistsView: View {
                                         .foregroundColor(AppStyles.accentColor)
                                         .frame(width: 30, alignment: .leading)
                                     
-                                    PlaylistRow(playlist: playlist)
+                                    LibraryRow.playlist(playlist)
                                 }
                             }
                             .listRowSeparator(.hidden)

@@ -144,7 +144,7 @@ struct ArtistsView: View {
                                         .foregroundColor(AppStyles.accentColor)
                                         .frame(width: 30, alignment: .leading)
                                     
-                                    ArtistRow(artist: artist)
+                                    LibraryRow.artist(artist)
                                 }
                             }
                             .listRowSeparator(.hidden)

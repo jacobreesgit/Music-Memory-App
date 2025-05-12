@@ -224,8 +224,8 @@ struct ArtistDetailView: View {
                 let albumInfoList = albumData()
                 let displayedAlbums = showAllAlbums ? albumInfoList : Array(albumInfoList.prefix(5))
                 
-                ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, album in
-                    if let foundAlbum = musicLibrary.albums.first(where: { $0.title == album.title && $0.artist == artist.name }) {
+                ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, albumInfo in
+                    if let foundAlbum = musicLibrary.albums.first(where: { $0.title == albumInfo.title && $0.artist == artist.name }) {
                         NavigationLink(destination: AlbumDetailView(album: foundAlbum)) {
                             HStack(spacing: 10) {
                                 // Only show rank number if there's more than one album
@@ -236,7 +236,13 @@ struct ArtistDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                albumRow(album: album)
+                                LibraryRow(
+                                    title: albumInfo.title,
+                                    subtitle: "\(albumInfo.songCount) songs",
+                                    playCount: albumInfo.playCount,
+                                    artwork: albumInfo.artwork,
+                                    iconName: "square.stack"
+                                )
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -250,7 +256,13 @@ struct ArtistDetailView: View {
                                     .frame(width: 30, alignment: .leading)
                             }
                             
-                            albumRow(album: album)
+                            LibraryRow(
+                                title: albumInfo.title,
+                                subtitle: "\(albumInfo.songCount) songs",
+                                playCount: albumInfo.playCount,
+                                artwork: albumInfo.artwork,
+                                iconName: "square.stack"
+                            )
                         }
                         .listRowSeparator(.hidden)
                     }
@@ -295,7 +307,7 @@ struct ArtistDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                GenreRow(genre: genre)
+                                LibraryRow.genre(genre)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -341,7 +353,7 @@ struct ArtistDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                PlaylistRow(playlist: playlist)
+                                LibraryRow.playlist(playlist)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -386,7 +398,7 @@ struct ArtistDetailView: View {
                                     .frame(width: 30, alignment: .leading)
                             }
                             
-                            SongRow(song: song)
+                            LibraryRow.song(song)
                         }
                     }
                     .listRowSeparator(.hidden)
@@ -417,39 +429,6 @@ struct ArtistDetailView: View {
         .listSectionSpacing(0) // Custom section spacing to reduce space between sections
         .navigationTitle(artist.name)
         .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    // Row for an album in the albums list
-    private func albumRow(album: AlbumInfo) -> some View {
-        HStack {
-            if let artwork = album.artwork {
-                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: "square.stack")!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(AppStyles.cornerRadius)
-            } else {
-                Image(systemName: "square.stack")
-                    .frame(width: 50, height: 50)
-                    .background(AppStyles.secondaryColor)
-                    .cornerRadius(AppStyles.cornerRadius)
-            }
-            
-            VStack(alignment: .leading) {
-                Text(album.title)
-                    .font(AppStyles.bodyStyle)
-                
-                Text("\(album.songCount) songs")
-                    .font(AppStyles.captionStyle)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            Text("\(album.playCount) plays")
-                .font(AppStyles.playCountStyle)
-                .foregroundColor(AppStyles.accentColor)
-        }
     }
 }
 

@@ -207,7 +207,7 @@ struct GenreDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                AlbumRow(album: album)
+                                LibraryRow.album(album)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -252,7 +252,7 @@ struct GenreDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                ArtistRow(artist: artist)
+                                LibraryRow.artist(artist)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -298,7 +298,7 @@ struct GenreDetailView: View {
                                         .frame(width: 30, alignment: .leading)
                                 }
                                 
-                                PlaylistRow(playlist: playlist)
+                                LibraryRow.playlist(playlist)
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -343,7 +343,7 @@ struct GenreDetailView: View {
                                     .frame(width: 30, alignment: .leading)
                             }
                             
-                            SongRow(song: song)
+                            LibraryRow.song(song)
                         }
                     }
                     .listRowSeparator(.hidden)
