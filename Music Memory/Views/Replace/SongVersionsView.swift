@@ -21,26 +21,17 @@ struct SongVersionsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Original version header with enhanced display
+                // Original version header with LibraryRow in the same style as SongsView
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Original Version")
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
                     
-                    // Using LibraryRow for original song
-                    VStack(alignment: .leading, spacing: 8) {
-                        // Song title
-                        Text(librarySong.title ?? "Unknown")
-                            .font(.headline)
-                            .lineLimit(1)
-                        
-                        // Use LibraryRow for consistent display
+                    // Use LibraryRow exactly as in SongsView, with a NavigationLink
+                    NavigationLink(destination: SongDetailView(song: librarySong)) {
                         LibraryRow.song(librarySong)
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 4)
-                    .background(AppStyles.secondaryColor.opacity(0.3))
-                    .cornerRadius(AppStyles.cornerRadius)
+                    .listRowSeparator(.hidden)
                 }
                 .padding(.horizontal)
                 .padding(.top)

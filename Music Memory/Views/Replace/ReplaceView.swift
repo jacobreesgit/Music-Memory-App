@@ -93,7 +93,7 @@ struct ReplaceView: View {
     
     private var mainReplaceView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search Header - Simplified to match SorterView structure
+            // Search Header
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
@@ -117,7 +117,7 @@ struct ReplaceView: View {
             .background(AppStyles.secondaryColor)
             .cornerRadius(10)
             .padding(.horizontal)
-            .padding(.top) // Added top padding to match Sorter tab
+            .padding(.top)
             
             // Songs list
             if filteredItems.isEmpty {
@@ -138,7 +138,7 @@ struct ReplaceView: View {
                     ForEach(filteredItems, id: \.persistentID) { song in
                         NavigationLink(destination: SongVersionsView(librarySong: song, songVersionModel: songVersionModel)) {
                             HStack {
-                                // Use LibraryRow instead of SongRow
+                                // Use LibraryRow component exactly as in SongsView
                                 LibraryRow.song(song)
                                 
                                 // Replacement badge if we have one
@@ -192,8 +192,6 @@ struct ReplaceView: View {
                 (song.albumTitle?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
-        
-        // No longer filter based on matched replacements since toggle is removed
         
         filteredItems = filtered
     }
