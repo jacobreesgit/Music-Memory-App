@@ -17,18 +17,18 @@ struct SongVersionsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Original version header - now using VersionComparisonRow with special initializer
+                // Original version header
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Original Version")
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
                         .padding(.horizontal)
                     
-                    // Use VersionComparisonRow's special initializer for original songs
+                    // Original song row
                     VersionComparisonRow(librarySong: librarySong, isOriginal: true)
+                        .contentShape(Rectangle())
                         .padding(.horizontal)
                 }
-                .padding(.top)
                 
                 Divider()
                     .padding(.vertical, 8)
@@ -75,27 +75,23 @@ struct SongVersionsView: View {
                         }
                         .frame(height: 200) // Fixed height for proper vertical centering
                     } else {
-                        // Results list
-                        VStack(spacing: 12) {
-                            ForEach(catalogVersions, id: \.id) { version in
-                                VersionComparisonRow(
-                                    librarySong: librarySong,
-                                    catalogSong: version,
-                                    isSelected: songVersionModel.replacementMap[librarySong]?.id == version.id,
-                                    differences: songVersionModel.getVersionDifferences(
-                                        libraryItem: librarySong,
-                                        catalogItem: version
-                                    )
+                        // Results list - individual items without nested VStack for consistency
+                        ForEach(catalogVersions, id: \.id) { version in
+                            VersionComparisonRow(
+                                librarySong: librarySong,
+                                catalogSong: version,
+                                isSelected: songVersionModel.replacementMap[librarySong]?.id == version.id,
+                                differences: songVersionModel.getVersionDifferences(
+                                    libraryItem: librarySong,
+                                    catalogItem: version
                                 )
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    toggleSelection(for: version)
-                                }
-                                .padding(.horizontal)
-                                .padding(.bottom, 4)
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                toggleSelection(for: version)
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.vertical, 8)
                     }
                 }
             }
@@ -112,11 +108,20 @@ struct SongVersionsView: View {
         error = nil
         
         Task {
+            // Get the original song title
+            let originalTitle = librarySong.title?.lowercased() ?? ""
+            
             // Simple search using the song title and artist
             let versions = await AppleMusicManager.shared.findVersionsForSong(librarySong)
             
+            // Filter the versions to only include songs with titles containing the original title
+            let filteredVersions = versions.filter { song in
+                let songTitle = song.title.lowercased()
+                return songTitle.contains(originalTitle)
+            }
+            
             await MainActor.run {
-                self.catalogVersions = versions
+                self.catalogVersions = filteredVersions
                 self.isLoading = false
             }
         }

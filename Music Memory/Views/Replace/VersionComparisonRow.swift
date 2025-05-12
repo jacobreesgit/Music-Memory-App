@@ -44,15 +44,6 @@ struct VersionComparisonRow: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppStyles.accentColor)
                         .font(.system(size: 18))
-                } else if isOriginal {
-                    // Show original version indicator
-                    Text("Current")
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.secondary)
-                        .cornerRadius(8)
                 }
             }
             
@@ -114,16 +105,17 @@ struct VersionComparisonRow: View {
                 
                 Spacer()
                 
-                // Version tags
+                // Audio features indicators
                 if isOriginal {
-                    // Play count for original
-                    HStack(spacing: 4) {
-                        Text("\(librarySong.playCount)")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("plays")
-                            .font(.system(size: 12))
+                    // For original version, show audio features if available (like explicit content)
+                    if librarySong.isExplicitItem {
+                        Text("E")
+                            .font(.system(size: 12, weight: .bold))
+                            .padding(4)
+                            .background(Color.red.opacity(0.2))
+                            .foregroundColor(.red)
+                            .cornerRadius(4)
                     }
-                    .foregroundColor(AppStyles.accentColor)
                 } else {
                     // Special audio features for catalog version
                     if catalogSong?.audioVariants?.contains(.dolbyAtmos) == true {
@@ -135,7 +127,7 @@ struct VersionComparisonRow: View {
                     if catalogSong?.contentRating == .explicit {
                         Text("E")
                             .font(.system(size: 12, weight: .bold))
-                            .padding(4)
+                            
                             .background(Color.red.opacity(0.2))
                             .foregroundColor(.red)
                             .cornerRadius(4)
@@ -143,8 +135,28 @@ struct VersionComparisonRow: View {
                 }
             }
             
-            // Version differences - only for alternatives with differences
-            if !isOriginal && !differences.isEmpty {
+            // Version differences tags - now shown for both original and catalog versions
+            if isOriginal {
+                // Show "Current" tag for original version with same styling as VersionDifferenceTag
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 10))
+                            
+                            Text("Current")
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .foregroundColor(.gray)
+                        .cornerRadius(12)
+                    }
+                }
+            } else if !differences.isEmpty {
+                // Show differences tags for catalog versions
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(differences) { difference in
@@ -153,18 +165,15 @@ struct VersionComparisonRow: View {
                     }
                 }
             }
-            // Removed the "Original version • X plays" text for original versions
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
-        .background(isSelected ? AppStyles.secondaryColor.opacity(0.5) : Color.clear) // Removed blue background for original
+        .padding(.horizontal, 4) // Keep minimal horizontal padding for aesthetics
+        .background(isSelected ? AppStyles.secondaryColor.opacity(0.3) : Color.clear) // Only background for selected state
         .cornerRadius(AppStyles.cornerRadius)
     }
     
     // Helper methods remain the same
     @ViewBuilder
     private func catalogArtworkView(_ artwork: Artwork, width: CGFloat) -> some View {
-        // Implementation remains the same
         ZStack {
             Rectangle()
                 .fill(AppStyles.secondaryColor)
