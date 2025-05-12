@@ -1,9 +1,5 @@
-//
 //  SongDetailView.swift
 //  Music Memory
-//
-//  Created by Jacob Rees on 28/04/2025.
-//
 
 import SwiftUI
 import MediaPlayer
@@ -13,208 +9,100 @@ struct SongDetailView: View {
     let song: MPMediaItem
     let rank: Int?
     
-    // State variables for expanded sections
-    @State private var showAllPlaylists = false
-    
-    // Initialize with an optional rank parameter
     init(song: MPMediaItem, rank: Int? = nil) {
         self.song = song
         self.rank = rank
     }
     
-    // Helper function to format date
-    private func formatDate(_ date: Date?) -> String {
-        guard let date = date else { return "Unknown" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
+    var body: some View {
+        MediaDetailView(item: song, rank: rank) { song in
+            Group {
+                // Album section
+                if let albumTitle = song.albumTitle {
+                    Section(header: Text("Album").padding(.leading, -15)) {
+                        if let album = findAlbum(for: song) {
+                            NavigationLink(destination: AlbumDetailView(album: album)) {
+                                LibraryRow.album(album)
+                            }
+                            .listRowSeparator(.hidden)
+                        } else {
+                            // Fallback if album not found
+                            LibraryRow(
+                                title: albumTitle,
+                                subtitle: song.artist ?? "Unknown",
+                                playCount: 0,
+                                artwork: song.artwork,
+                                iconName: "square.stack"
+                            )
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                }
+                
+                // Artist section
+                if let artistName = song.artist {
+                    Section(header: Text("Artist").padding(.leading, -15)) {
+                        if let artist = findArtist(for: song) {
+                            NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                                LibraryRow.artist(artist)
+                            }
+                            .listRowSeparator(.hidden)
+                        } else {
+                            // Fallback if artist not found
+                            LibraryRow(
+                                title: artistName,
+                                subtitle: "",
+                                playCount: 0,
+                                artwork: nil,
+                                iconName: "music.mic",
+                                useCircularPlaceholder: true
+                            )
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                }
+                
+                // Genre section
+                if let genre = findGenre(for: song) {
+                    Section(header: Text("Genre").padding(.leading, -15)) {
+                        NavigationLink(destination: GenreDetailView(genre: genre)) {
+                            LibraryRow.genre(genre)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                }
+                
+                // Playlists section
+                let containingPlaylists = findPlaylists(for: song)
+                if !containingPlaylists.isEmpty {
+                    PlaylistsSection(playlists: containingPlaylists)
+                }
+            }
+        }
     }
     
-    // Helper function to format time duration
-    private func formatDuration(_ timeInSeconds: TimeInterval) -> String {
-        let minutes = Int(timeInSeconds / 60)
-        let seconds = Int(timeInSeconds.truncatingRemainder(dividingBy: 60))
-        return String(format: "%d:%02d", minutes, seconds)
+    // Helper methods to find related items
+    private func findAlbum(for song: MPMediaItem) -> AlbumData? {
+        guard let albumTitle = song.albumTitle else { return nil }
+        return musicLibrary.albums.first {
+            $0.title == albumTitle &&
+            ($0.artist == song.artist || $0.artist == song.albumArtist)
+        }
     }
     
-    // Helper function to find playlists containing this song
-    private func findPlaylists() -> [PlaylistData] {
-        return musicLibrary.playlists.filter { playlist in
-            playlist.songs.contains { $0.persistentID == song.persistentID }
-        }.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    private func findArtist(for song: MPMediaItem) -> ArtistData? {
+        guard let artistName = song.artist else { return nil }
+        return musicLibrary.artists.first { $0.name == artistName }
     }
     
-    // Helper function to find genre for this song
-    private func findGenre() -> GenreData? {
+    private func findGenre(for song: MPMediaItem) -> GenreData? {
         guard let genreName = song.genre else { return nil }
         return musicLibrary.genres.first { $0.name == genreName }
     }
     
-    var body: some View {
-        List {
-            // Song header section with optional rank
-            Section(header: VStack(alignment: .center, spacing: 4) {
-                DetailHeaderView(
-                    title: song.title ?? "Unknown",
-                    subtitle: song.artist ?? "Unknown",
-                    plays: song.playCount ?? 0,
-                    songCount: 1,
-                    artwork: song.artwork,
-                    isAlbum: false,
-                    metadata: [],
-                    rank: rank
-                )
-            }) {
-                // Empty section content
-            }
-            
-            // Song Statistics section
-            Section(header: Text("Song Statistics")
-                .padding(.leading, -15)) {
-                MetadataRow(icon: "music.note.list", title: "Genre", value: song.genre ?? "Unknown")
-                    .listRowSeparator(.hidden)
-                MetadataRow(icon: "clock", title: "Duration", value: formatDuration(song.playbackDuration))
-                    .listRowSeparator(.hidden)
-                MetadataRow(icon: "calendar", title: "Release Date", value: formatDate(song.releaseDate))
-                    .listRowSeparator(.hidden)
-                MetadataRow(icon: "play.circle", title: "Last Played", value: formatDate(song.lastPlayedDate))
-                    .listRowSeparator(.hidden)
-                MetadataRow(icon: "plus.circle", title: "Date Added", value: formatDate(song.dateAdded))
-                    .listRowSeparator(.hidden)
-                
-                if let composer = song.composer, !composer.isEmpty {
-                    MetadataRow(icon: "music.quarternote.3", title: "Composer", value: composer)
-                        .listRowSeparator(.hidden)
-                }
-                
-                let trackNumber = song.albumTrackNumber
-                if trackNumber > 0 {
-                    MetadataRow(icon: "number", title: "Track", value: "\(trackNumber)")
-                        .listRowSeparator(.hidden)
-                }
-                
-                let discNumber = song.discNumber
-                if discNumber > 0 {
-                    MetadataRow(icon: "opticaldisc", title: "Disc", value: "\(discNumber)")
-                        .listRowSeparator(.hidden)
-                }
-                
-                let bpm = song.beatsPerMinute
-                if bpm > 0 {
-                    MetadataRow(icon: "metronome", title: "BPM", value: "\(bpm)")
-                        .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Album section
-            if let albumTitle = song.albumTitle {
-                Section(header: Text("Album").padding(.leading, -15)) {
-                    // Find the album in the music library
-                    if let album = musicLibrary.albums.first(where: {
-                        $0.title == albumTitle &&
-                        ($0.artist == song.artist || $0.artist == song.albumArtist)
-                    }) {
-                        NavigationLink(destination: AlbumDetailView(album: album)) {
-                            LibraryRow.album(album)
-                        }
-                        .listRowSeparator(.hidden)
-                    } else {
-                        // Fallback if album is not found
-                        LibraryRow(
-                            title: albumTitle,
-                            subtitle: song.artist ?? "Unknown",
-                            playCount: 0,
-                            artwork: song.artwork,
-                            iconName: "square.stack"
-                        )
-                        .listRowSeparator(.hidden)
-                    }
-                }
-            }
-            
-            // Artist section
-            if let artistName = song.artist {
-                Section(header: Text("Artist").padding(.leading, -15)) {
-                    // Find the artist in the music library
-                    if let artist = musicLibrary.artists.first(where: { $0.name == artistName }) {
-                        NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                            LibraryRow.artist(artist)
-                        }
-                        .listRowSeparator(.hidden)
-                    } else {
-                        // Fallback if artist is not found
-                        LibraryRow(
-                            title: artistName,
-                            subtitle: "",
-                            playCount: 0,
-                            artwork: nil,
-                            iconName: "music.mic",
-                            useCircularPlaceholder: true
-                        )
-                        .listRowSeparator(.hidden)
-                    }
-                }
-            }
-            
-            // Genre section
-            if let genre = findGenre() {
-                Section(header: Text("Genre").padding(.leading, -15)) {
-                    NavigationLink(destination: GenreDetailView(genre: genre)) {
-                        LibraryRow.genre(genre)
-                    }
-                    .listRowSeparator(.hidden)
-                }
-            }
-            
-            // Playlists section with Show More/Less
-            let containingPlaylists = findPlaylists()
-            if !containingPlaylists.isEmpty {
-                Section(header: Text("In Playlists").padding(.leading, -15)) {
-                    let displayedPlaylists = showAllPlaylists ? containingPlaylists : Array(containingPlaylists.prefix(5))
-                    
-                    ForEach(Array(displayedPlaylists.enumerated()), id: \.element.id) { index, playlist in
-                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                            HStack(spacing: 10) {
-                                // Only show rank number if there's more than one playlist
-                                if displayedPlaylists.count > 1 {
-                                    Text("#\(index + 1)")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(AppStyles.accentColor)
-                                        .frame(width: 30, alignment: .leading)
-                                }
-                                
-                                LibraryRow.playlist(playlist)
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                    
-                    // Show More/Less button for playlists
-                    if containingPlaylists.count > 5 {
-                        Button(action: {
-                            showAllPlaylists.toggle()
-                        }) {
-                            HStack {
-                                Text(showAllPlaylists ? "Show Less" : "Show More")
-                                    .font(.subheadline)
-                                    .foregroundColor(AppStyles.accentColor)
-                                
-                                Image(systemName: showAllPlaylists ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(AppStyles.accentColor)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .listRowSeparator(.hidden)
-                    }
-                }
-            }
-        }
-        .listSectionSpacing(0)
-        .navigationTitle(song.title ?? "Unknown")
-        .navigationBarTitleDisplayMode(.inline)
+    private func findPlaylists(for song: MPMediaItem) -> [PlaylistData] {
+        return musicLibrary.playlists.filter { playlist in
+            playlist.songs.contains { $0.persistentID == song.persistentID }
+        }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
 }
