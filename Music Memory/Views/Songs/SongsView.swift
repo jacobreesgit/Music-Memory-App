@@ -52,7 +52,7 @@ struct SongsView: View {
         switch sortOption {
         case .playCount:
             sorted = musicLibrary.filteredSongs.sorted {
-                sortAscending ? ($0.playCount ?? 0) < ($1.playCount ?? 0) : ($0.playCount ?? 0) > ($1.playCount ?? 0)
+                sortAscending ? $0.playCount < $1.playCount : $0.playCount > $1.playCount
             }
         case .title:
             sorted = musicLibrary.filteredSongs.sorted {
@@ -64,8 +64,8 @@ struct SongsView: View {
             }
         case .dateAdded:
             sorted = musicLibrary.filteredSongs.sorted {
-                let date0 = $0.dateAdded ?? Date.distantPast
-                let date1 = $1.dateAdded ?? Date.distantPast
+                let date0 = $0.dateAdded
+                let date1 = $1.dateAdded
                 return sortAscending ? date0 < date1 : date0 > date1
             }
         case .duration:
@@ -101,119 +101,175 @@ struct SongsView: View {
         }
     }
     
+    // MARK: - View Components
+    
+    // Loading state view
+    @ViewBuilder
+    private func loadingView() -> some View {
+        LoadingView(message: "Loading songs...")
+    }
+    
+    // Access required view
+    @ViewBuilder
+    private func accessRequiredView() -> some View {
+        LibraryAccessView()
+    }
+    
+    // Empty state view
+    @ViewBuilder
+    private func emptyStateView() -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "music.note")
+                .font(.system(size: 50))
+                .foregroundColor(.secondary)
+                .padding(.top, 50)
+            
+            Text("No songs found in your library")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            Text("Songs with play count information will appear here")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    // Song row item
+    @ViewBuilder
+    private func songRowItem(song: MPMediaItem, rank: Int) -> some View {
+        NavigationLink(destination: SongDetailView(song: song, rank: rank)) {
+            HStack(spacing: 10) {
+                Text("#\(rank)")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(AppStyles.accentColor)
+                    .frame(width: 30, alignment: .leading)
+                
+                // Use the unified LibraryRow component
+                LibraryRow.song(song)
+            }
+        }
+        .listRowSeparator(.hidden)
+        .onAppear {
+            loadMoreSongsIfNeeded(currentItem: song)
+        }
+    }
+    
+    // Loading more indicator
+    @ViewBuilder
+    private func loadingMoreIndicator() -> some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .padding()
+            Spacer()
+        }
+        .listRowSeparator(.hidden)
+    }
+    
+    // Load more button
+    @ViewBuilder
+    private func loadMoreButton() -> some View {
+        Button(action: {
+            isLoadingMore = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                displayedSongCount = min(displayedSongCount + 50, sortedSongs.count)
+                isLoadingMore = false
+            }
+        }) {
+            Text("Load More Songs")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(AppStyles.secondaryColor)
+                .cornerRadius(AppStyles.cornerRadius)
+                .foregroundColor(.primary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .listRowSeparator(.hidden)
+    }
+    
+    // No results message
+    @ViewBuilder
+    private func noResultsMessage() -> some View {
+        Text("No songs found matching '\(searchText)'")
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding()
+            .listRowSeparator(.hidden)
+    }
+    
+    // Main content list
+    @ViewBuilder
+    private func mainContentList() -> some View {
+        List {
+            ForEach(filteredSongs, id: \.persistentID) { song in
+                songRowItem(song: song, rank: originalRanks[song.persistentID] ?? 0)
+            }
+            
+            // Loading indicator when fetching more songs
+            if isLoadingMore {
+                loadingMoreIndicator()
+            }
+            
+            // "Load More" button when there are more songs and not searching
+            if displayedSongCount < sortedSongs.count && !isLoadingMore && searchText.isEmpty {
+                loadMoreButton()
+            }
+            
+            // No results message when searching
+            if filteredSongs.isEmpty && !searchText.isEmpty {
+                noResultsMessage()
+            }
+        }
+        .listStyle(PlainListStyle())
+        .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
+    }
+    
+    // Search and Sort Controls
+    @ViewBuilder
+    private func searchAndSortControls() -> some View {
+        SearchSortBar(
+            searchText: $searchText,
+            sortOption: $sortOption,
+            sortAscending: $sortAscending,
+            placeholder: "Search songs"
+        )
+        .padding(.top) // Added top padding to match other tabs
+        .onChange(of: searchText) { _, _ in
+            // Reset batch loading when search text changes
+            if searchText.isEmpty {
+                displayedSongCount = min(50, sortedSongs.count)
+            }
+        }
+        .onChange(of: sortOption) { _, _ in
+            // Reset batch loading when sort option changes
+            displayedSongCount = min(50, sortedSongs.count)
+        }
+        .onChange(of: sortAscending) { _, _ in
+            // Reset batch loading when sort direction changes
+            displayedSongCount = min(50, sortedSongs.count)
+        }
+    }
+    
+    // Main body
     var body: some View {
         if musicLibrary.isLoading {
-            LoadingView(message: "Loading songs...")
+            loadingView()
         } else if !musicLibrary.hasAccess {
-            LibraryAccessView()
+            accessRequiredView()
         } else {
             VStack(alignment: .leading, spacing: 0) {
-                // Updated Search and Sort Bar with sort direction
-                SearchSortBar(
-                    searchText: $searchText,
-                    sortOption: $sortOption,
-                    sortAscending: $sortAscending,
-                    placeholder: "Search songs"
-                )
-                .padding(.top) // Added top padding to match other tabs
-                .onChange(of: searchText) { _ in
-                    // Reset batch loading when search text changes
-                    if searchText.isEmpty {
-                        displayedSongCount = min(50, sortedSongs.count)
-                    }
-                }
-                .onChange(of: sortOption) { _ in
-                    // Reset batch loading when sort option changes
-                    displayedSongCount = min(50, sortedSongs.count)
-                }
-                .onChange(of: sortAscending) { _ in
-                    // Reset batch loading when sort direction changes
-                    displayedSongCount = min(50, sortedSongs.count)
-                }
+                // Search and Sort Controls
+                searchAndSortControls()
 
-                // List with content
+                // Main Content
                 if musicLibrary.filteredSongs.isEmpty {
-                    // Show message when there are no songs in the library
-                    VStack(spacing: 20) {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 50))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 50)
-                        
-                        Text("No songs found in your library")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Songs with play count information will appear here")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    emptyStateView()
                 } else {
-                    List {
-                        ForEach(Array(filteredSongs.enumerated()), id: \.element.persistentID) { index, song in
-                            NavigationLink(destination: SongDetailView(song: song, rank: originalRanks[song.persistentID])) {
-                                HStack(spacing: 10) {
-                                    Text("#\(originalRanks[song.persistentID] ?? 0)")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(AppStyles.accentColor)
-                                        .frame(width: 30, alignment: .leading)
-                                    
-                                    SongRow(song: song)
-                                }
-                            }
-                            .listRowSeparator(.hidden)
-                            .onAppear {
-                                // Trigger loading more songs when reaching the end
-                                loadMoreSongsIfNeeded(currentItem: song)
-                            }
-                        }
-                        
-                        // Loading indicator when fetching more songs
-                        if isLoadingMore {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding()
-                                Spacer()
-                            }
-                            .listRowSeparator(.hidden)
-                        }
-                        
-                        // "Load More" button when there are more songs and not searching
-                        if displayedSongCount < sortedSongs.count && !isLoadingMore && searchText.isEmpty {
-                            Button(action: {
-                                isLoadingMore = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    displayedSongCount = min(displayedSongCount + 50, sortedSongs.count)
-                                    isLoadingMore = false
-                                }
-                            }) {
-                                Text("Load More Songs")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(AppStyles.secondaryColor)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .listRowSeparator(.hidden)
-                        }
-                        
-                        // No results message when searching
-                        if filteredSongs.isEmpty && !searchText.isEmpty {
-                            Text("No songs found matching '\(searchText)'")
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding()
-                                .listRowSeparator(.hidden)
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                    .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
+                    mainContentList()
                 }
             }
         }
