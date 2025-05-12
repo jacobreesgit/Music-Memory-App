@@ -275,7 +275,7 @@ struct SortResultsView: View {
                             .foregroundColor(AppStyles.accentColor)
                             .frame(width: 30, alignment: .leading)
                         
-                        SongRow(song: song)
+                        LibraryRow.song(song)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -290,7 +290,7 @@ struct SortResultsView: View {
                             .foregroundColor(AppStyles.accentColor)
                             .frame(width: 30, alignment: .leading)
                         
-                        AlbumRow(album: album)
+                        LibraryRow.album(album)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -305,7 +305,7 @@ struct SortResultsView: View {
                             .foregroundColor(AppStyles.accentColor)
                             .frame(width: 30, alignment: .leading)
                         
-                        ArtistRow(artist: artist)
+                        LibraryRow.artist(artist)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -320,7 +320,7 @@ struct SortResultsView: View {
                             .foregroundColor(AppStyles.accentColor)
                             .frame(width: 30, alignment: .leading)
                         
-                        GenreRow(genre: genre)
+                        LibraryRow.genre(genre)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -335,7 +335,7 @@ struct SortResultsView: View {
                             .foregroundColor(AppStyles.accentColor)
                             .frame(width: 30, alignment: .leading)
                         
-                        PlaylistRow(playlist: playlist)
+                        LibraryRow.playlist(playlist)
                     }
                 }
                 .listRowSeparator(.hidden)

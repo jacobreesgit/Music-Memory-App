@@ -115,8 +115,8 @@ struct DashboardView: View {
                             // Stats Carousel Section (includes impressive stats)
                             statsCarouselSection
                             
-                            // Your Listening Now Section
-                            currentTrendsSection
+                            // Recently Played Section (renamed from "Your Listening Now")
+                            recentlyPlayedSection
                             
                             // Top Artists Section (using TopItemsView)
                             topArtistsSection
@@ -196,83 +196,27 @@ struct DashboardView: View {
         }
     }
     
-    // MARK: - Your Listening Now Section
+    // MARK: - Recently Played Section (renamed from "Your Listening Now")
     
-    private var currentTrendsSection: some View {
+    private var recentlyPlayedSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Your Listening Now")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.primary)
-                .padding(.horizontal)
-            
-            VStack(spacing: 16) {
-                // Recently played songs
-                if let recentlyPlayed = getRecentlyPlayedSongs() {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recently Played")
-                            .font(.headline)
-                            .foregroundColor(AppStyles.accentColor)
-                            .padding(.horizontal)
-                        
-                        ForEach(Array(recentlyPlayed.enumerated()), id: \.element.persistentID) { index, song in
-                            NavigationLink(destination: SongDetailView(song: song)) {
-                                HStack {
-                                    SongRow(song: song)
-                                    
-                                    VStack(alignment: .trailing) {
-                                        Text(lastPlayedTimeAgo(song.lastPlayedDate))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            if index < recentlyPlayed.count - 1 {
-                                Divider()
-                                    .padding(.leading, 70)
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(AppStyles.secondaryColor.opacity(0.3))
-                    .cornerRadius(AppStyles.cornerRadius)
+            if let recentlyPlayed = getRecentlyPlayedSongs(), !recentlyPlayed.isEmpty {
+                Text("Recently Played")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
                     .padding(.horizontal)
-                }
                 
-                // Current month's favorites
-                if let monthFavorites = getCurrentMonthFavorites() {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("This Month's Favorites")
-                            .font(.headline)
-                            .foregroundColor(AppStyles.accentColor)
-                            .padding(.horizontal)
-                        
-                        ForEach(Array(monthFavorites.enumerated()), id: \.element.persistentID) { index, song in
-                            NavigationLink(destination: SongDetailView(song: song)) {
-                                HStack {
-                                    SongRow(song: song)
-                                    
-                                    VStack(alignment: .trailing) {
-                                        Text("\(song.playCount) plays")
-                                            .font(.caption.bold())
-                                            .foregroundColor(AppStyles.accentColor)
-                                    }
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            if index < monthFavorites.count - 1 {
-                                Divider()
-                                    .padding(.leading, 70)
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(AppStyles.secondaryColor.opacity(0.3))
-                    .cornerRadius(AppStyles.cornerRadius)
-                    .padding(.horizontal)
-                }
+                TopItemsView(
+                    title: "",
+                    items: recentlyPlayed,
+                    artwork: { $0.artwork },
+                    itemTitle: { $0.title ?? "Unknown" },
+                    itemSubtitle: { $0.artist ?? "Unknown" },
+                    itemPlays: { $0.playCount },
+                    iconName: { _ in "music.note" },
+                    destination: { song, _ in SongDetailView(song: song) },
+                    seeAllDestination: { LibraryView(selectedTab: .constant(0)) }
+                )
             }
         }
     }
@@ -696,28 +640,7 @@ struct DashboardView: View {
             .sorted { $0.lastPlayedDate! > $1.lastPlayedDate! }
         
         guard !songsWithLastPlayed.isEmpty else { return nil }
-        return Array(songsWithLastPlayed.prefix(3))
-    }
-    
-    // Current month favorites
-    private func getCurrentMonthFavorites() -> [MPMediaItem]? {
-        // This is an approximation since we can't get actual monthly play data
-        // We'll show songs that have high play counts and were recently added or played
-        let monthThreshold = Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
-        
-        let candidates = musicLibrary.songs.filter { song in
-            if let lastPlayed = song.lastPlayedDate, lastPlayed > monthThreshold {
-                return true
-            }
-            if song.dateAdded > monthThreshold {
-                return true
-            }
-            return false
-        }
-        .sorted { $0.playCount > $1.playCount }
-        
-        guard !candidates.isEmpty else { return nil }
-        return Array(candidates.prefix(3))
+        return Array(songsWithLastPlayed.prefix(5))
     }
     
     // Recently added songs
