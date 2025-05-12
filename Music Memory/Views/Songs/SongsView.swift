@@ -278,7 +278,9 @@ struct SongsView: View {
                 } else {
                     mainContentList()
                 }
-            }.navigationTitle("Songs") 
+            }
+            .navigationTitle("Songs")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

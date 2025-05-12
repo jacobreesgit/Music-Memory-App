@@ -213,6 +213,7 @@ struct AlbumsView: View {
                 }
             }
             .navigationTitle("Albums")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

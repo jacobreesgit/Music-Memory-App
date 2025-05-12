@@ -206,6 +206,7 @@ struct PlaylistsView: View {
                 }
             }
             .navigationTitle("Playlists")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

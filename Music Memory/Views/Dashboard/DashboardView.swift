@@ -151,7 +151,8 @@ struct DashboardView: View {
                 .onDisappear {
                     stopCarouselTimer()
                 }
-                .navigationTitle("Dashboard") 
+                .navigationTitle("Dashboard")
+                .navigationBarTitleDisplayMode(.inline)
             }
         }
     }

@@ -201,5 +201,6 @@ struct GenresView: View {
             }
         }
         .navigationTitle("Genres")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

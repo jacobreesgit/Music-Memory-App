@@ -198,6 +198,7 @@ struct MusicKitDebugView: View {
                 }
             }
             .navigationTitle("MusicKit Debug")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {

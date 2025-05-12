@@ -163,6 +163,7 @@ struct SorterView: View {
                 }
             }
             .navigationTitle("Sorter")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

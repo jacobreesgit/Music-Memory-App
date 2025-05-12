@@ -33,6 +33,7 @@ struct ReplaceView: View {
             }
         }
         .navigationTitle("Replace")
+        .navigationBarTitleDisplayMode(.inline)
         .alert("Apple Music Required", isPresented: $showingAuthorizationAlert) {
             Button("OK", role: .cancel) { }
         } message: {

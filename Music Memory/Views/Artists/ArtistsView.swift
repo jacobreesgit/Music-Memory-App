@@ -207,6 +207,7 @@ struct ArtistsView: View {
                 }
             }
             .navigationTitle("Artists")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
