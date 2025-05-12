@@ -27,72 +27,15 @@ struct SongVersionsView: View {
                         .font(.headline)
                         .foregroundColor(AppStyles.accentColor)
                     
-                    // Enhanced original song display with similar format to version comparison row
+                    // Using LibraryRow for original song
                     VStack(alignment: .leading, spacing: 8) {
                         // Song title
                         Text(librarySong.title ?? "Unknown")
                             .font(.headline)
                             .lineLimit(1)
                         
-                        // Song details row
-                        HStack(spacing: 12) {
-                            // Artwork
-                            if let artwork = librarySong.artwork {
-                                Image(uiImage: artwork.image(at: CGSize(width: 60, height: 60)) ?? UIImage(systemName: "music.note")!)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 60, height: 60)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                            } else {
-                                Image(systemName: "music.note")
-                                    .font(.system(size: 30))
-                                    .frame(width: 60, height: 60)
-                                    .background(AppStyles.secondaryColor)
-                                    .cornerRadius(AppStyles.cornerRadius)
-                            }
-                            
-                            // Song information
-                            VStack(alignment: .leading, spacing: 2) {
-                                // Artist
-                                Text(librarySong.artist ?? "Unknown Artist")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
-                                
-                                // Album
-                                if let albumTitle = librarySong.albumTitle {
-                                    Text(albumTitle)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
-                                
-                                // Duration and year
-                                let minutes = Int(librarySong.playbackDuration) / 60
-                                let seconds = Int(librarySong.playbackDuration) % 60
-                                let duration = String(format: "%d:%02d", minutes, seconds)
-                                
-                                let yearString = librarySong.releaseDate != nil ?
-                                   DateFormatter().then { $0.dateFormat = "yyyy" }.string(from: librarySong.releaseDate!) :
-                                   "Unknown"
-                                
-                                Text("\(duration) • \(yearString)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            // Explicit tag if applicable
-                            if librarySong.isExplicitItem {
-                                Text("E")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .padding(4)
-                                    .background(Color.red.opacity(0.2))
-                                    .foregroundColor(.red)
-                                    .cornerRadius(4)
-                            }
-                        }
+                        // Use LibraryRow for consistent display
+                        LibraryRow.song(librarySong)
                     }
                     .padding(.vertical, 8)
                     .padding(.horizontal, 4)

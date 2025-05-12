@@ -138,8 +138,8 @@ struct ReplaceView: View {
                     ForEach(filteredItems, id: \.persistentID) { song in
                         NavigationLink(destination: SongVersionsView(librarySong: song, songVersionModel: songVersionModel)) {
                             HStack {
-                                // Song row
-                                SongRow(song: song)
+                                // Use LibraryRow instead of SongRow
+                                LibraryRow.song(song)
                                 
                                 // Replacement badge if we have one
                                 if songVersionModel.replacementMap[song] != nil {
