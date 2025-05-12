@@ -251,7 +251,7 @@ struct DashboardView: View {
                         }
                         
                         // "See All" item
-                        NavigationLink(destination: LibraryView(selectedTab: .constant(0))) {
+                        NavigationLink(destination: RecentlyPlayedSongsView()) {
                             VStack {
                                 ZStack {
                                     Circle()
