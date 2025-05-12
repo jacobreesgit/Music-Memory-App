@@ -753,7 +753,7 @@ struct DashboardView: View {
             let years = days / 365
             return "\(years)y ago"
         }
-    }
+    } 
     
     // Listening style analysis
     private func getListeningStyle() -> (label: String, description: String) {
