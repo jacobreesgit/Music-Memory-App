@@ -20,6 +20,7 @@ struct AlbumsView: View {
         case artist = "Artist"
         case dateAdded = "Date Added"
         case playCount = "Play Count"
+        case recentlyPlayed = "Recently Played"
         case songCount = "Song Count"
         case title = "Title"
         
@@ -63,6 +64,13 @@ struct AlbumsView: View {
                 // Get the most recent date added for each album
                 let date0 = $0.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
                 let date1 = $1.songs.compactMap { song in song.dateAdded }.max() ?? Date.distantPast
+                return sortAscending ? date0 < date1 : date0 > date1
+            }
+        case .recentlyPlayed:
+            return musicLibrary.filteredAlbums.sorted {
+                // Get the most recent played date for each album
+                let date0 = $0.songs.compactMap { song in song.lastPlayedDate }.max() ?? Date.distantPast
+                let date1 = $1.songs.compactMap { song in song.lastPlayedDate }.max() ?? Date.distantPast
                 return sortAscending ? date0 < date1 : date0 > date1
             }
         }

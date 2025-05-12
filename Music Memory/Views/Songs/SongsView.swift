@@ -21,6 +21,7 @@ struct SongsView: View {
         case dateAdded = "Date Added"
         case duration = "Duration"
         case playCount = "Play Count"
+        case recentlyPlayed = "Recently Played"
         case title = "Title"
         
         var id: String { self.rawValue }
@@ -71,6 +72,12 @@ struct SongsView: View {
         case .duration:
             sorted = musicLibrary.filteredSongs.sorted {
                 sortAscending ? $0.playbackDuration < $1.playbackDuration : $0.playbackDuration > $1.playbackDuration
+            }
+        case .recentlyPlayed:
+            sorted = musicLibrary.filteredSongs.sorted {
+                let date0 = $0.lastPlayedDate ?? .distantPast
+                let date1 = $1.lastPlayedDate ?? .distantPast
+                return sortAscending ? date0 < date1 : date0 > date1
             }
         }
         
