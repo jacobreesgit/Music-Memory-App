@@ -16,7 +16,7 @@ struct RecentlyAddedSection: View {
         
         return VStack(alignment: .leading, spacing: 16) {
             Text("Recently Added")
-                .font(.system(size: 24, weight: .bold))
+                .font(.system(size: 24, weight: .bold)) 
                 .foregroundColor(.primary)
                 .padding(.horizontal)
             

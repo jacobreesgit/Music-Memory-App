@@ -18,7 +18,7 @@ struct TopSongsSection: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.primary)
                     .padding(.horizontal)
-                
+                 
                 TopItemsView(
                     title: "",
                     items: Array(musicLibrary.filteredSongs.prefix(5)),

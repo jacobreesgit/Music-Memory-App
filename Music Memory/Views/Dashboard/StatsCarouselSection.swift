@@ -15,7 +15,7 @@ struct StatsCarouselSection: View {
     
     var body: some View {
         let statCards = getStatCards()
-        
+         
         return VStack(alignment: .leading, spacing: 16) {
             Text("Your Music Summary")
                 .font(.system(size: 24, weight: .bold))

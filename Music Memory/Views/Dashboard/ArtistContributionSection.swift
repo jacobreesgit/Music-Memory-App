@@ -16,7 +16,7 @@ struct ArtistContributionSection: View {
         musicLibrary.artists.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
-    private var otherArtistsPercentage: Double {
+    private var otherArtistsPercentage: Double { 
         let totalPlays = musicLibrary.songs.reduce(0) { $0 + $1.playCount }
         let top5Plays = artistContribution.prefix(5).reduce(0) { $0 + $1.totalPlayCount }
         let otherPlays = totalPlays - top5Plays

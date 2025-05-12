@@ -17,7 +17,7 @@ struct TopGenresSection: View {
             Text("Genre Distribution")
                 .font(AppStyles.headlineStyle)
                 .padding(.horizontal)
-            
+             
             // Genre chart
             HStack(alignment: .center) {
                 // Pie chart

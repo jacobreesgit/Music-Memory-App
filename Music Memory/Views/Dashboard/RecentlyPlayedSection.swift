@@ -15,7 +15,7 @@ struct RecentlyPlayedSection: View {
         VStack(alignment: .leading, spacing: 16) {
             if let recentlyPlayed = getRecentlyPlayedSongs(), !recentlyPlayed.isEmpty {
                 Text("Recently Played")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 24, weight: .bold)) 
                     .foregroundColor(.primary)
                     .padding(.horizontal)
                 
