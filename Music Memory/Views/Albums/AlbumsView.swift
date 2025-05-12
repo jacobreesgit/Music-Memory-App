@@ -212,6 +212,7 @@ struct AlbumsView: View {
                     .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
             }
+            .navigationTitle("Albums")
         }
     }
 }

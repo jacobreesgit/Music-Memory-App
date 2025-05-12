@@ -206,6 +206,7 @@ struct ArtistsView: View {
                     .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
             }
+            .navigationTitle("Artists")
         }
     }
 }

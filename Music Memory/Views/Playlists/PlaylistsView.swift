@@ -205,6 +205,7 @@ struct PlaylistsView: View {
                     .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
                 }
             }
+            .navigationTitle("Playlists")
         }
     }
 }

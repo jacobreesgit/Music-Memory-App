@@ -200,5 +200,6 @@ struct GenresView: View {
                 .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling begins
             }
         }
+        .navigationTitle("Genres")
     }
 }
