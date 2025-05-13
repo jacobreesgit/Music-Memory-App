@@ -15,6 +15,7 @@ class NowPlayingModel: ObservableObject {
     @Published var isPlaying: Bool = false
     @Published var playbackProgress: Double = 0.0
     @Published var fetchedArtwork: UIImage? = nil
+    @Published var isLoadingArtwork: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
@@ -49,17 +50,22 @@ class NowPlayingModel: ObservableObject {
     
     private func updateCurrentSong() {
         DispatchQueue.main.async {
+            self.isLoadingArtwork = true  // Set loading state before any artwork operations
             self.currentSong = self.musicPlayer.nowPlayingItem
-            self.fetchedArtwork = nil  // Reset fetched artwork
-            
-            // Try to fetch artwork if local artwork isn't available
-            if self.currentSong?.artwork == nil {
-                self.fetchArtworkForCurrentSong()
-            }
             
             // Reset progress
             self.playbackProgress = 0.0
             self.setupProgressTimer()
+            
+            // Check if local artwork is available
+            if self.currentSong?.artwork != nil {
+                // If we have local artwork, no need to fetch external
+                self.fetchedArtwork = nil
+                self.isLoadingArtwork = false
+            } else {
+                // Try to fetch artwork if local artwork isn't available
+                self.fetchArtworkForCurrentSong()
+            }
         }
     }
     
@@ -71,6 +77,9 @@ class NowPlayingModel: ObservableObject {
         // Only proceed if we have song details
         guard let songTitle = currentSong?.title,
               let artistName = currentSong?.artist else {
+            DispatchQueue.main.async {
+                self.isLoadingArtwork = false
+            }
             return
         }
         
@@ -83,12 +92,15 @@ class NowPlayingModel: ObservableObject {
                 // Check if Apple Music is authorized
                 if MusicAuthorization.currentStatus != .authorized {
                     // We can't fetch artwork without authorization
+                    await MainActor.run {
+                        self.isLoadingArtwork = false
+                    }
                     return
                 }
                 
                 // Create search request
                 var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
-                request.limit = 5  // Limit results to improve performance
+                request.limit = 3  // Limit results to improve performance
                 
                 // Send request
                 let response = try await request.response()
@@ -104,10 +116,19 @@ class NowPlayingModel: ObservableObject {
                     // Update UI on main thread
                     await MainActor.run {
                         self.fetchedArtwork = image
+                        self.isLoadingArtwork = false
+                    }
+                } else {
+                    // No artwork found
+                    await MainActor.run {
+                        self.isLoadingArtwork = false
                     }
                 }
             } catch {
                 print("Error fetching artwork: \(error.localizedDescription)")
+                await MainActor.run {
+                    self.isLoadingArtwork = false
+                }
             }
         }
     }

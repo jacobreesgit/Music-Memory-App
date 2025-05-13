@@ -22,65 +22,75 @@ struct CustomTabBar: View {
     @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
     
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
+        ZStack {
+            // Blur effect background - this needs to be the bottom layer
+            BlurView(style: .systemMaterial)
+                .edgesIgnoringSafeArea(.bottom)
             
-            HStack(spacing: 0) {
-                ForEach(0..<5) { index in
-                    Button(action: {
-                        // Haptic feedback for tap
-                        feedbackGenerator.impactOccurred()
-                        
-                        if selectedTab == index {
-                            if navigationState[index] == true {
-                                // In detail view - do nothing, let NavigationViewWithState handle it
-                            } else {
-                                // In root view - scroll to top
-                                scrollIDs[index] = UUID()
-                            }
-                        }
-                        selectedTab = index
-                    }) {
-                        Spacer()
-                        VStack(spacing: 6) {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: iconForIndex(index))
-                                    .font(.system(size: 21))
-                                    .padding(.top, 8)
-                                
-                                // Badge (if any)
-                                if let count = badgeCounts[index], count > 0 {
-                                    Text("\(count)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(minWidth: 16, minHeight: 16)
-                                        .background(Color.red)
-                                        .clipShape(Circle())
-                                        .offset(x: 10, y: -5)
+            // Divider at the top
+            VStack(spacing: 0) {
+                Divider()
+                    .background(Color.gray.opacity(0.3))
+                
+                // Tab bar content
+                HStack(spacing: 0) {
+                    ForEach(0..<5) { index in
+                        Button(action: {
+                            // Haptic feedback for tap
+                            feedbackGenerator.impactOccurred()
+                            
+                            if selectedTab == index {
+                                if navigationState[index] == true {
+                                    // In detail view - do nothing, let NavigationViewWithState handle it
+                                } else {
+                                    // In root view - scroll to top
+                                    scrollIDs[index] = UUID()
                                 }
                             }
-                            
-                            Text(labelForIndex(index))
-                                .font(.caption)
-                                .dynamicTypeSize(.small ... .large) // Dynamic text support
+                            selectedTab = index
+                        }) {
+                            Spacer()
+                            VStack(spacing: 6) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: iconForIndex(index))
+                                        .font(.system(size: 21))
+                                        .padding(.top, 8)
+                                    
+                                    // Badge (if any)
+                                    if let count = badgeCounts[index], count > 0 {
+                                        Text("\(count)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(minWidth: 16, minHeight: 16)
+                                            .background(Color.red)
+                                            .clipShape(Circle())
+                                            .offset(x: 10, y: -5)
+                                    }
+                                }
+                                
+                                Text(labelForIndex(index))
+                                    .font(.caption)
+                                    .dynamicTypeSize(.small ... .large) // Dynamic text support
+                            }
+                            .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
+                            .frame(height: 56)
+                            .contentShape(Rectangle()) // Improve tap area
+                            // Visual feedback on press
+                            .scaleEffect(selectedTab == index ? 1.0 : 0.97)
+                            .animation(.easeInOut(duration: 0.1), value: selectedTab)
+                            Spacer()
                         }
-                        .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
-                        .frame(height: 56)
-                        .contentShape(Rectangle()) // Improve tap area
-                        // Visual feedback on press
-                        .scaleEffect(selectedTab == index ? 1.0 : 0.97)
-                        .animation(.easeInOut(duration: 0.1), value: selectedTab)
-                        Spacer()
+                        .frame(maxWidth: .infinity)
+                        .accessibilityLabel("\(labelForIndex(index)) Tab")
+                        .accessibilityHint(selectedTab == index ? "Selected" : "")
+                        .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
+                        .background(Color.clear) // Ensure button background is clear
                     }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityLabel("\(labelForIndex(index)) Tab")
-                    .accessibilityHint(selectedTab == index ? "Selected" : "")
-                    .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
                 }
             }
-            .background(Color(UIColor.systemBackground))
         }
-        .background(Color(UIColor.systemBackground))
+        .frame(height: 56) // Fixed height for the tab bar
+        .background(Color.clear) // Ensure the overall background is clear
         .onAppear {
             // Initialize lastSelectedTab on appear
             lastSelectedTab = selectedTab

@@ -55,6 +55,7 @@ struct ContentView: View {
         UINavigationBar.appearance().prefersLargeTitles = true
     }
     
+    // ContentView.swift - update the ZStack in the body
     var body: some View {
         ZStack(alignment: .bottom) {
             // Content area
@@ -95,8 +96,9 @@ struct ContentView: View {
                 .tag(4)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .padding(.bottom, isKeyboardVisible ? 0 : 56)
-            .environmentObject(sortSessionStore)
+            .edgesIgnoringSafeArea(.bottom)
+            // Remove bottom padding to allow content to flow under the tab bar
+            // This ensures we can see content through the translucent tab bar
             
             VStack(spacing: 0) {
                 // Now Playing Bar - display when song is playing and keyboard is not visible
@@ -131,51 +133,50 @@ struct ContentView: View {
         }
         .environmentObject(nowPlayingModel)
     }
-}
-
-// Helper view to track navigation state and handle navigation actions
-struct NavigationViewWithState<Content: View>: View {
-    let rootView: Content
-    @Binding var inDetailView: Bool
-    let scrollToTopAction: () -> Void
     
-    // UIKit navigation controller reference
-    @State private var navController: UINavigationController?
-    
-    var body: some View {
-        NavigationView {
-            rootView
-        }
-        .navigationViewStyle(StackNavigationViewStyle()) // Force consistent navigation style
-        .background(
-            NavigationControllerTracker(isInDetailView: $inDetailView, navController: $navController)
-        )
-        .onChange(of: inDetailView) { newValue in
-            // If tab is tapped while in detail view, pop to root
-            if !newValue, let navController = navController {
-                navController.popToRootViewController(animated: true)
+    // Helper view to track navigation state and handle navigation actions
+    struct NavigationViewWithState<Content: View>: View {
+        let rootView: Content
+        @Binding var inDetailView: Bool
+        let scrollToTopAction: () -> Void
+        
+        // UIKit navigation controller reference
+        @State private var navController: UINavigationController?
+        
+        var body: some View {
+            NavigationView {
+                rootView
+            }
+            .navigationViewStyle(StackNavigationViewStyle()) // Force consistent navigation style
+            .background(
+                NavigationControllerTracker(isInDetailView: $inDetailView, navController: $navController)
+            )
+            .onChange(of: inDetailView) { newValue in
+                // If tab is tapped while in detail view, pop to root
+                if !newValue, let navController = navController {
+                    navController.popToRootViewController(animated: true)
+                }
             }
         }
     }
-}
-
-// UIViewControllerRepresentable to track navigation state
-struct NavigationControllerTracker: UIViewControllerRepresentable {
-    @Binding var isInDetailView: Bool
-    @Binding var navController: UINavigationController?
     
-    func makeUIViewController(context: Context) -> UIViewController {
-        let vc = UIViewController()
-        return vc
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        DispatchQueue.main.async {
-            if let nc = uiViewController.navigationController {
-                navController = nc
-                // We're in a detail view if we're not at the root
-                isInDetailView = nc.viewControllers.count > 1
+    // UIViewControllerRepresentable to track navigation state
+    struct NavigationControllerTracker: UIViewControllerRepresentable {
+        @Binding var isInDetailView: Bool
+        @Binding var navController: UINavigationController?
+        
+        func makeUIViewController(context: Context) -> UIViewController {
+            let vc = UIViewController()
+            return vc
+        }
+        
+        func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+            DispatchQueue.main.async {
+                if let nc = uiViewController.navigationController {
+                    navController = nc
+                    // We're in a detail view if we're not at the root
+                    isInDetailView = nc.viewControllers.count > 1
+                }
             }
         }
-    }
-}
+    }}

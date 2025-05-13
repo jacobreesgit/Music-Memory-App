@@ -25,34 +25,50 @@ struct NowPlayingBar: View {
             
             // Main content
             HStack(spacing: 12) {
-                // Artwork - updated to use fetched artwork when local artwork isn't available
-                if let artwork = nowPlayingModel.currentSong?.artwork {
-                    // Use local artwork if available
-                    Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 40, height: 40)
-                        .cornerRadius(4)
-                } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
-                    // Use fetched artwork if available
-                    Image(uiImage: fetchedArtwork)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 40, height: 40)
-                        .cornerRadius(4)
-                } else {
-                    // Fallback to placeholder
-                    ZStack {
-                        Rectangle()
-                            .fill(AppStyles.secondaryColor)
+                // Artwork with loading state
+                ZStack {
+                    if nowPlayingModel.isLoadingArtwork {
+                        // Show loading indicator while artwork is loading
+                        ZStack {
+                            Rectangle()
+                                .fill(AppStyles.secondaryColor)
+                                .frame(width: 40, height: 40)
+                                .cornerRadius(4)
+                            
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        }
+                    } else if let artwork = nowPlayingModel.currentSong?.artwork {
+                        // Use local artwork if available
+                        Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
                             .frame(width: 40, height: 40)
                             .cornerRadius(4)
-                        
-                        Image(systemName: "music.note")
-                            .font(.system(size: 16))
-                            .foregroundColor(.primary)
+                            .transition(.opacity)
+                    } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
+                        // Use fetched artwork if available
+                        Image(uiImage: fetchedArtwork)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .cornerRadius(4)
+                            .transition(.opacity)
+                    } else {
+                        // Fallback to placeholder
+                        ZStack {
+                            Rectangle()
+                                .fill(AppStyles.secondaryColor)
+                                .frame(width: 40, height: 40)
+                                .cornerRadius(4)
+                            
+                            Image(systemName: "music.note")
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
+                .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.isLoadingArtwork)
                 
                 // Song info
                 VStack(alignment: .leading, spacing: 1) {
