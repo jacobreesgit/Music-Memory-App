@@ -1,45 +1,39 @@
-//
-//  NowPlayingModel.swift
-//  Music Memory
-//
-//  Created on 13/05/2025.
-//
-
+// NowPlayingModel.swift - With stronger artwork validation
 import MediaPlayer
 import Combine
 import MusicKit
 import UIKit
 
 class NowPlayingModel: ObservableObject {
+    // MARK: - Published Properties
     @Published var currentSong: MPMediaItem?
     @Published var isPlaying: Bool = false
     @Published var playbackProgress: Double = 0.0
-    @Published var fetchedArtwork: UIImage? = nil
+    @Published var artworkImage: UIImage?
     @Published var isLoadingArtwork: Bool = false
+    @Published var artworkSource: ArtworkSource = .none
     
-    // BUGFIX: Added artwork version UUID to force SwiftUI view updates
-    // This will change whenever artwork changes, even when the song remains the same
-    // SwiftUI optimizes by not redrawing views if identities haven't changed
-    @Published var artworkVersion = UUID()
-    
-    // Simple cache for artwork
-    private var artworkCache: [String: UIImage] = [:]
-    
-    // Add tracking of previous song ID to prevent duplicate logging
-    private var previousSongPersistentID: MPMediaEntityPersistentID?
-    private var hasLoggedArtworkForCurrentSong = false
-    
+    // MARK: - Private Properties
     private var cancellables = Set<AnyCancellable>()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
     private var progressTimer: Timer?
     private var artworkTask: Task<Void, Never>?
-    private var retryCount = 0
-    private let maxRetries = 2
+    private var artworkCache: [String: UIImage] = [:]
+    private var previousSongID: MPMediaEntityPersistentID?
     
+    // Defines where artwork came from (for debugging)
+    enum ArtworkSource: String {
+        case local = "local"
+        case fetched = "fetched"
+        case none = "none"
+    }
+    
+    // MARK: - Initialization
     init() {
         setupNowPlayingObserver()
     }
     
+    // MARK: - Now Playing Observer
     private func setupNowPlayingObserver() {
         // Register for notifications
         NotificationCenter.default.publisher(for: .MPMusicPlayerControllerNowPlayingItemDidChange)
@@ -62,258 +56,30 @@ class NowPlayingModel: ObservableObject {
         updatePlaybackState()
     }
     
+    // MARK: - Update Methods
     private func updateCurrentSong() {
         DispatchQueue.main.async {
-            // Explicitly clear any existing fetched artwork immediately
-            self.fetchedArtwork = nil
-            self.isLoadingArtwork = true
-            self.retryCount = 0
-            
-            // Get the new song
+            // Check if song actually changed
             let newSong = self.musicPlayer.nowPlayingItem
             let newSongID = newSong?.persistentID
             
-            // Check if this is a different song than before
-            let songChanged = newSongID != self.previousSongPersistentID
+            // Clear current artwork and set loading state
+            if newSongID != self.previousSongID {
+                self.artworkImage = nil
+                self.isLoadingArtwork = true
+                self.artworkSource = .none
+                self.previousSongID = newSongID
+            }
             
-            // Update current song
+            // Set the new song
             self.currentSong = newSong
-            
-            // Reset tracking state
-            if songChanged {
-                self.previousSongPersistentID = newSongID
-                self.hasLoggedArtworkForCurrentSong = false
-            }
-            
-            // Log local artwork info if available and we haven't logged it for this song yet
-            if let localArtwork = self.currentSong?.artwork, !self.hasLoggedArtworkForCurrentSong {
-                // MPMediaItemArtwork doesn't directly expose URLs, so we'll log what we can
-                print("🖼️ Local library artwork dimensions: \(localArtwork.bounds.width)x\(localArtwork.bounds.height)")
-                
-                // Try to get a representation path if possible
-                let image = localArtwork.image(at: CGSize(width: 300, height: 300))
-                if let image = image {
-                    print("🖼️ Local artwork available with size: \(image.size.width)x\(image.size.height)")
-                } else {
-                    print("🖼️ Local artwork reference exists but couldn't generate image")
-                }
-                
-                // Mark that we've logged artwork for this song
-                self.hasLoggedArtworkForCurrentSong = true
-            }
             
             // Reset progress
             self.playbackProgress = 0.0
             self.setupProgressTimer()
             
-            // Check if local artwork is available
-            if self.currentSong?.artwork != nil {
-                // If we have local artwork, no need to fetch external
-                self.isLoadingArtwork = false
-            } else {
-                // Try to fetch artwork if local artwork isn't available
-                self.fetchArtworkForCurrentSong()
-            }
-        }
-    }
-    
-    // Method to fetch artwork from Apple Music
-    private func fetchArtworkForCurrentSong() {
-        // Cancel any previous task
-        artworkTask?.cancel()
-        
-        // Only proceed if we have song details
-        guard let songTitle = currentSong?.title,
-              let artistName = currentSong?.artist else {
-            DispatchQueue.main.async {
-                self.isLoadingArtwork = false
-            }
-            return
-        }
-        
-        // Create a cache key
-        let cacheKey = "\(songTitle)-\(artistName)"
-        
-        // Check if artwork is in the cache
-        if let cachedArtwork = artworkCache[cacheKey] {
-            DispatchQueue.main.async {
-                self.fetchedArtwork = cachedArtwork
-                
-                // BUGFIX: Update the artwork version when setting cached artwork
-                // This ensures SwiftUI refreshes the view even if the song hasn't changed
-                self.artworkVersion = UUID()
-                
-                self.isLoadingArtwork = false
-            }
-            return
-        }
-        
-        // Create search query from song details
-        // Add quotes to make exact match more likely
-        let query = "\"\(songTitle)\" \"\(artistName)\""
-        
-        // Start a new task to search for the song
-        artworkTask = Task {
-            do {
-                // Check if Apple Music is authorized
-                if MusicAuthorization.currentStatus != .authorized {
-                    // We can't fetch artwork without authorization
-                    await MainActor.run {
-                        self.isLoadingArtwork = false
-                    }
-                    return
-                }
-                
-                // Create search request
-                var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
-                request.limit = 5  // Increased to improve chances of a match
-                
-                // Send request
-                let response = try await request.response()
-                
-                // Find matching song with artwork
-                // Try to find an exact match first
-                let exactMatches = response.songs.filter { song in
-                    let titleMatch = song.title.lowercased() == songTitle.lowercased()
-                    let artistMatch = song.artistName.lowercased() == artistName.lowercased()
-                    return titleMatch && artistMatch
-                }
-                
-                // If we have exact matches, use the first one with artwork
-                if let match = exactMatches.first(where: { $0.artwork != nil }),
-                   let artworkUrl = match.artwork?.url(width: 300, height: 300) {
-                    // Only log if we haven't already for this song
-                    if !self.hasLoggedArtworkForCurrentSong {
-                        print("🖼️ Apple Music artwork URL: \(artworkUrl)")
-                        self.hasLoggedArtworkForCurrentSong = true
-                    }
-                    
-                    // Download artwork image
-                    let (data, _) = try await URLSession.shared.data(from: artworkUrl)
-                    if let image = UIImage(data: data) {
-                        // Cache the artwork
-                        self.artworkCache[cacheKey] = image
-                        
-                        // Update UI on main thread
-                        await MainActor.run {
-                            self.fetchedArtwork = image
-                            
-                            // BUGFIX: Create a new UUID to force SwiftUI view refresh
-                            // This is crucial - without this, SwiftUI may not redraw the image
-                            // because the song's persistentID hasn't changed
-                            self.artworkVersion = UUID()
-                            
-                            self.isLoadingArtwork = false
-                            print("🎵 Exact match artwork updated: \(cacheKey)")
-                        }
-                        return
-                    }
-                }
-                
-                // If no exact match, try partial matches
-                if let firstSong = response.songs.first(where: { $0.artwork != nil }),
-                   let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
-                    
-                    // Only log if we haven't already for this song
-                    if !self.hasLoggedArtworkForCurrentSong {
-                        print("🖼️ Apple Music partial match artwork URL: \(artworkUrl)")
-                        self.hasLoggedArtworkForCurrentSong = true
-                    }
-                    
-                    // Download artwork image
-                    let (data, _) = try await URLSession.shared.data(from: artworkUrl)
-                    if let image = UIImage(data: data) {
-                        // Cache the artwork
-                        self.artworkCache[cacheKey] = image
-                        
-                        // Update UI on main thread
-                        await MainActor.run {
-                            self.fetchedArtwork = image
-                            
-                            // BUGFIX: Same UUID update for partial matches
-                            self.artworkVersion = UUID()
-                            
-                            self.isLoadingArtwork = false
-                            print("🎵 Partial match artwork updated: \(cacheKey)")
-                        }
-                        return
-                    }
-                }
-                
-                // If we got here, we didn't find suitable artwork
-                // Try a different search strategy if this is the first attempt
-                if self.retryCount < self.maxRetries {
-                    self.retryCount += 1
-                    
-                    // Try with a simplified query
-                    let simpleQuery = songTitle
-                    await self.retryArtworkSearch(simpleQuery: simpleQuery, cacheKey: cacheKey)
-                } else {
-                    // Give up after max retries
-                    await MainActor.run {
-                        self.isLoadingArtwork = false
-                    }
-                }
-            } catch {
-                print("Error fetching artwork: \(error.localizedDescription)")
-                
-                // Try again with a simpler query if this is the first attempt
-                if self.retryCount < self.maxRetries {
-                    self.retryCount += 1
-                    await self.retryArtworkSearch(simpleQuery: songTitle, cacheKey: cacheKey)
-                } else {
-                    await MainActor.run {
-                        self.isLoadingArtwork = false
-                    }
-                }
-            }
-        }
-    }
-    
-    // Helper method to retry artwork search with a simplified query
-    private func retryArtworkSearch(simpleQuery: String, cacheKey: String) async {
-        do {
-            var request = MusicCatalogSearchRequest(term: simpleQuery, types: [Song.self])
-            request.limit = 10
-            
-            let response = try await request.response()
-            
-            if let firstSong = response.songs.first(where: { $0.artwork != nil }),
-               let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
-                
-                // Only log if we haven't already for this song
-                if !self.hasLoggedArtworkForCurrentSong {
-                    print("🖼️ Apple Music retry match artwork URL: \(artworkUrl)")
-                    self.hasLoggedArtworkForCurrentSong = true
-                }
-                
-                let (data, _) = try await URLSession.shared.data(from: artworkUrl)
-                if let image = UIImage(data: data) {
-                    // Cache the artwork
-                    self.artworkCache[cacheKey] = image
-                    
-                    await MainActor.run {
-                        self.fetchedArtwork = image
-                        
-                        // BUGFIX: Update artwork version for retry fetches too
-                        self.artworkVersion = UUID()
-                        
-                        self.isLoadingArtwork = false
-                        print("🎵 Retry match artwork updated: \(cacheKey)")
-                    }
-                    return
-                }
-            }
-            
-            // If we reach here, we still couldn't find artwork
-            await MainActor.run {
-                self.isLoadingArtwork = false
-            }
-        } catch {
-            print("Error in retry artwork search: \(error.localizedDescription)")
-            await MainActor.run {
-                self.isLoadingArtwork = false
-            }
+            // Handle artwork
+            self.handleArtworkForCurrentSong()
         }
     }
     
@@ -324,24 +90,179 @@ class NowPlayingModel: ObservableObject {
         }
     }
     
+    // MARK: - Artwork Handling
+    private func handleArtworkForCurrentSong() {
+        guard let song = currentSong else {
+            finishArtworkLoading(source: .none)
+            return
+        }
+        
+        // Check if song is actually in the local library - true local songs should have storePersistentID = 0
+        // This is a heuristic that might help identify Apple Music streaming tracks
+        let isLikelyStreamedSong = song.isCloudItem || song.assetURL == nil
+        
+        #if DEBUG
+        print("📱 Song source check: cloudItem=\(song.isCloudItem), hasAssetURL=\(song.assetURL != nil)")
+        #endif
+        
+        // Add extra validation for artwork
+        if let localArtwork = song.artwork {
+            let bounds = localArtwork.bounds
+            
+            #if DEBUG
+            print("🔎 Artwork bounds: \(bounds.width)x\(bounds.height)")
+            #endif
+            
+            // Only consider valid if:
+            // 1. Has non-zero bounds
+            // 2. Actually produces an image
+            // 3. NOT likely a streaming track
+            if bounds.width > 10 && bounds.height > 10 && !isLikelyStreamedSong,
+               let image = localArtwork.image(at: CGSize(width: 300, height: 300)) {
+                // We have genuine local artwork with dimensions and that produces an image
+                self.artworkImage = image
+                finishArtworkLoading(source: .local)
+                
+                #if DEBUG
+                print("✅ Valid local artwork confirmed: \(bounds.width)x\(bounds.height)")
+                #endif
+                
+                return
+            } else {
+                #if DEBUG
+                if bounds.width > 0 && bounds.height > 0 {
+                    print("⚠️ Artwork has dimensions but failed validation: \(bounds.width)x\(bounds.height), likely streamed: \(isLikelyStreamedSong)")
+                } else {
+                    print("⚠️ Empty artwork reference with zero dimensions: \(bounds.width)x\(bounds.height)")
+                }
+                #endif
+            }
+        }
+        
+        // No valid local artwork, try Apple Music
+        if let title = song.title, let artist = song.artist {
+            fetchAppleMusicArtwork(title: title, artist: artist)
+        } else {
+            finishArtworkLoading(source: .none)
+        }
+    }
+    
+    private func fetchAppleMusicArtwork(title: String, artist: String) {
+        // Cancel any previous task
+        artworkTask?.cancel()
+        
+        // Create a cache key
+        let cacheKey = "\(title)-\(artist)"
+        
+        // Check cache first
+        if let cachedImage = artworkCache[cacheKey] {
+            self.artworkImage = cachedImage
+            finishArtworkLoading(source: .fetched)
+            
+            #if DEBUG
+            print("🖼️ Using cached artwork for: \(cacheKey)")
+            #endif
+            
+            return
+        }
+        
+        // Create a new task to search for the song, but only if authorized
+        if MusicAuthorization.currentStatus != .authorized {
+            finishArtworkLoading(source: .none)
+            
+            #if DEBUG
+            print("⚠️ Not authorized for Apple Music API")
+            #endif
+            
+            return
+        }
+        
+        artworkTask = Task {
+            do {
+                let query = "\"\(title)\" \"\(artist)\""
+                
+                #if DEBUG
+                print("🔍 Searching Apple Music for: \(query)")
+                #endif
+                
+                var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
+                request.limit = 5
+                
+                let response = try await request.response()
+                
+                // Find a song with artwork
+                if let matchingSong = response.songs.first(where: { $0.artwork != nil }),
+                   let artworkUrl = matchingSong.artwork?.url(width: 300, height: 300) {
+                    
+                    #if DEBUG
+                    print("🖼️ Found Apple Music artwork URL: \(artworkUrl)")
+                    #endif
+                    
+                    // Download the artwork
+                    let (data, _) = try await URLSession.shared.data(from: artworkUrl)
+                    if let image = UIImage(data: data) {
+                        // Cache the image
+                        self.artworkCache[cacheKey] = image
+                        
+                        await MainActor.run {
+                            self.artworkImage = image
+                            self.finishArtworkLoading(source: .fetched)
+                        }
+                        return
+                    }
+                } else {
+                    #if DEBUG
+                    print("⚠️ No artwork found in Apple Music for: \(query)")
+                    #endif
+                }
+                
+                // If we get here, we didn't find artwork
+                await MainActor.run {
+                    self.finishArtworkLoading(source: .none)
+                }
+            } catch {
+                #if DEBUG
+                print("❌ Error fetching artwork: \(error.localizedDescription)")
+                #endif
+                
+                await MainActor.run {
+                    self.finishArtworkLoading(source: .none)
+                }
+            }
+        }
+    }
+    
+    private func finishArtworkLoading(source: ArtworkSource) {
+        self.isLoadingArtwork = false
+        self.artworkSource = source
+        
+        #if DEBUG
+        print("🔍 Artwork loading complete - source: \(source.rawValue)")
+        #endif
+    }
+    
+    // MARK: - Progress Timer
     private func setupProgressTimer() {
         // Clear existing timer
         progressTimer?.invalidate()
         progressTimer = nil
         
         // Only set up timer if playing
-        guard isPlaying, currentSong != nil, let song = currentSong, song.playbackDuration > 0 else { return }
+        guard isPlaying,
+              let song = currentSong,
+              song.playbackDuration > 0 else {
+            return
+        }
         
-        // Update more frequently for smoother animation
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
+            guard let self = self, let song = self.currentSong else { return }
             
-            // Get actual playback time directly from the music player
             let currentPlaybackTime = self.musicPlayer.currentPlaybackTime
             self.playbackProgress = min(currentPlaybackTime / song.playbackDuration, 1.0)
         }
     }
     
+    // MARK: - Player Controls
     func togglePlayPause() {
         if isPlaying {
             musicPlayer.pause()
@@ -356,14 +277,6 @@ class NowPlayingModel: ObservableObject {
     
     func previousTrack() {
         musicPlayer.skipToPreviousItem()
-    }
-    
-    // Limit cache size
-    private func cleanupCache() {
-        if artworkCache.count > 50 {
-            // Remove oldest entries - fixed the syntax error here
-            artworkCache = Dictionary(uniqueKeysWithValues: artworkCache.suffix(25))
-        }
     }
     
     deinit {

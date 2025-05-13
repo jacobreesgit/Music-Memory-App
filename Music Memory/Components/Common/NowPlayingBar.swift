@@ -1,7 +1,4 @@
-// NowPlayingBar.swift
-// Music Memory
-// Final version with accurate image source detection — fixed print() location
-
+// NowPlayingBar.swift - Complete rewrite
 import SwiftUI
 import MediaPlayer
 
@@ -9,8 +6,7 @@ struct NowPlayingBar: View {
     @ObservedObject var nowPlayingModel: NowPlayingModel
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var showingFullPlayer = false
-    @State private var artworkTransition = false
-
+    
     var body: some View {
         VStack(spacing: 0) {
             // Progress bar
@@ -40,12 +36,6 @@ struct NowPlayingBar: View {
                     }
                 }
                 .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
-                .onChange(of: nowPlayingModel.currentSong?.persistentID) {
-                    artworkTransition = false
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        artworkTransition = true
-                    }
-                }
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(nowPlayingModel.currentSong?.title ?? "Unknown")
@@ -120,56 +110,24 @@ struct NowPlayingBar: View {
         .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong != nil)
     }
     
-    // Extracted artwork view to avoid side effects in ViewBuilder
+    // Artwork view with proper source handling
     private var artworkView: some View {
-        let localImage = nowPlayingModel.currentSong?.artwork?.image(at: CGSize(width: 40, height: 40))
-        
-        // Log the source type outside of the view hierarchy
-        let sourceType: String
-        if nowPlayingModel.fetchedArtwork != nil {
-            sourceType = "fetched"
-        } else if localImage != nil {
-            sourceType = "local"
-        } else {
-            sourceType = "none"
-        }
-        
-        // Log the source type
-        #if DEBUG
-        // Create a one-time effect to log the source type
-        let _ = DispatchQueue.main.async {
-            print("🔍 Showing image: \(sourceType)")
-        }
-        #endif
-        
-        // Return the appropriate view based on available artwork
-        if let fetched = nowPlayingModel.fetchedArtwork {
-            return AnyView(
-                Image(uiImage: fetched)
+        Group {
+            if let artwork = nowPlayingModel.artworkImage {
+                Image(uiImage: artwork)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 40, height: 40)
                     .cornerRadius(4)
                     .transition(.opacity)
-                    .id("fetched_\(nowPlayingModel.artworkVersion.uuidString)")
-            )
-        } else if let local = localImage {
-            return AnyView(
-                Image(uiImage: local)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .cornerRadius(4)
-                    .transition(.opacity)
-                    .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
-            )
-        } else {
-            return AnyView(
+                    .id("artwork_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
+            } else {
+                // Fallback to placeholder
                 Image(systemName: "music.note")
                     .font(.system(size: 16))
                     .foregroundColor(.primary)
                     .transition(.opacity)
-            )
+            }
         }
     }
 
