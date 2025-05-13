@@ -1,9 +1,6 @@
-//
-//  NowPlayingBar.swift
-//  Music Memory
-//
-//  Created on 13/05/2025.
-//
+// NowPlayingBar.swift
+// Music Memory
+// Final version with accurate image source detection — fixed print() location
 
 import SwiftUI
 import MediaPlayer
@@ -13,7 +10,7 @@ struct NowPlayingBar: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var showingFullPlayer = false
     @State private var artworkTransition = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Progress bar
@@ -24,79 +21,91 @@ struct NowPlayingBar: View {
                     .animation(.linear(duration: 0.5), value: nowPlayingModel.playbackProgress)
             }
             .frame(height: 2)
-            
+
             // Main content
             HStack(spacing: 12) {
                 // Artwork with loading state
                 ZStack {
-                    // Background placeholder is always there
                     Rectangle()
                         .fill(AppStyles.secondaryColor)
                         .frame(width: 40, height: 40)
                         .cornerRadius(4)
-                    
+
                     if nowPlayingModel.isLoadingArtwork {
-                        // Loading indicator
                         ProgressView()
                             .scaleEffect(0.7)
                             .transition(.opacity)
                     } else {
-                        if let artwork = nowPlayingModel.currentSong?.artwork {
-                            // Local artwork
-                            Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 40, height: 40)
-                                .cornerRadius(4)
-                                .transition(.opacity)
-                                .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")  // Force view refresh
-                        } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
-                            // Fetched artwork
-                            Image(uiImage: fetchedArtwork)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 40, height: 40)
-                                .cornerRadius(4)
-                                .transition(.opacity)
-                                .id("fetched_\(nowPlayingModel.currentSong?.persistentID ?? 0)")  // Force view refresh
+                        let localImage = nowPlayingModel.currentSong?.artwork?.image(at: CGSize(width: 40, height: 40))
+
+                        let source: String
+                        if nowPlayingModel.fetchedArtwork != nil {
+                            source = "fetched"
+                        } else if localImage != nil {
+                            source = "local"
                         } else {
-                            // Fallback placeholder
-                            Image(systemName: "music.note")
-                                .font(.system(size: 16))
-                                .foregroundColor(.primary)
-                                .transition(.opacity)
+                            source = "none"
+                        }
+
+                        #if DEBUG
+                        DispatchQueue.main.async {
+                            print("🔍 Showing image: \(source)")
+                        }
+                        #endif
+
+                        Group {
+                            if let fetched = nowPlayingModel.fetchedArtwork {
+                                Image(uiImage: fetched)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(4)
+                                    .transition(.opacity)
+                                    .id("fetched_\(nowPlayingModel.artworkVersion.uuidString)")
+
+                            } else if let local = localImage {
+                                Image(uiImage: local)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(4)
+                                    .transition(.opacity)
+                                    .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
+
+                            } else {
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+                                    .transition(.opacity)
+                            }
                         }
                     }
                 }
                 .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
-                .onChange(of: nowPlayingModel.currentSong?.persistentID) { _ in
-                    // When song changes, trigger transition effect
+                .onChange(of: nowPlayingModel.currentSong?.persistentID) {
                     artworkTransition = false
                     withAnimation(.easeInOut(duration: 0.1)) {
                         artworkTransition = true
                     }
                 }
-                
-                // Song info
+
                 VStack(alignment: .leading, spacing: 1) {
                     Text(nowPlayingModel.currentSong?.title ?? "Unknown")
                         .font(.footnote)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                    
-                    // Artist name with play count
+
                     HStack(spacing: 4) {
                         Text(nowPlayingModel.currentSong?.artist ?? "Unknown Artist")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
-                        
-                        // Show play count if available
+
                         if let plays = getSongPlayCount() {
                             Text("•")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
-                            
+
                             Text("\(plays) plays")
                                 .font(.caption2)
                                 .foregroundColor(AppStyles.accentColor)
@@ -104,15 +113,13 @@ struct NowPlayingBar: View {
                         }
                     }
                 }
-                .id(nowPlayingModel.currentSong?.persistentID ?? 0)  // Force redraw on song change
-                
+                .id(nowPlayingModel.currentSong?.persistentID ?? 0)
+
                 Spacer()
-                
-                // Playback controls
+
                 HStack(spacing: 18) {
                     Button(action: {
                         nowPlayingModel.previousTrack()
-                        // Add light haptic feedback
                         let feedback = UIImpactFeedbackGenerator(style: .light)
                         feedback.impactOccurred()
                     }) {
@@ -120,10 +127,9 @@ struct NowPlayingBar: View {
                             .font(.system(size: 16))
                             .foregroundColor(.primary)
                     }
-                    
+
                     Button(action: {
                         nowPlayingModel.togglePlayPause()
-                        // Add medium haptic feedback
                         let feedback = UIImpactFeedbackGenerator(style: .medium)
                         feedback.impactOccurred()
                     }) {
@@ -131,10 +137,9 @@ struct NowPlayingBar: View {
                             .font(.system(size: 20))
                             .foregroundColor(.primary)
                     }
-                    
+
                     Button(action: {
                         nowPlayingModel.nextTrack()
-                        // Add light haptic feedback
                         let feedback = UIImpactFeedbackGenerator(style: .light)
                         feedback.impactOccurred()
                     }) {
@@ -151,22 +156,14 @@ struct NowPlayingBar: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            // For future implementation: Navigate to full player view
             showingFullPlayer = true
         }
         .transition(.move(edge: .bottom))
         .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong != nil)
     }
-    
-    // Helper function to get play count from music library
+
     private func getSongPlayCount() -> Int? {
         guard let currentSong = nowPlayingModel.currentSong else { return nil }
-        
-        // Find the song in the music library
-        let songInLibrary = musicLibrary.songs.first { song in
-            song.persistentID == currentSong.persistentID
-        }
-        
-        return songInLibrary?.playCount
+        return musicLibrary.songs.first { $0.persistentID == currentSong.persistentID }?.playCount
     }
 }

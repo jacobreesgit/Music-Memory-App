@@ -41,30 +41,25 @@ struct LibraryRow: View {
     
     var body: some View {
         HStack(spacing: AppStyles.smallPadding) {
-            // Artwork/icon section
-            if let artwork = artwork {
-                Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: iconName)!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(AppStyles.cornerRadius)
-            } else {
-                // Placeholder with appropriate shape
-                if useCircularPlaceholder {
-                    ZStack {
+            // Artwork/icon section - fixed width to prevent squeezing
+            ZStack {
+                if let artwork = artwork {
+                    Image(uiImage: artwork.image(at: CGSize(width: 50, height: 50)) ?? UIImage(systemName: iconName)!)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .cornerRadius(AppStyles.cornerRadius)
+                } else {
+                    // Placeholder with appropriate shape
+                    if useCircularPlaceholder {
                         Circle()
                             .fill(AppStyles.secondaryColor)
-                            .frame(width: 50, height: 50)
                         
                         Image(systemName: iconName)
                             .font(.system(size: 24))
                             .foregroundColor(.primary)
-                    }
-                } else {
-                    ZStack {
+                    } else {
                         RoundedRectangle(cornerRadius: AppStyles.cornerRadius)
                             .fill(AppStyles.secondaryColor)
-                            .frame(width: 50, height: 50)
                         
                         Image(systemName: iconName)
                             .font(.system(size: 24))
@@ -72,27 +67,34 @@ struct LibraryRow: View {
                     }
                 }
             }
+            .frame(width: 50, height: 50)
             
-            // Title and subtitle
+            // Text content - allow to wrap and prioritize expansion
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(AppStyles.bodyStyle)
-                    .lineLimit(1)
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 
                 if !subtitle.isEmpty {
                     Text(subtitle)
                         .font(AppStyles.captionStyle)
                         .foregroundColor(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(nil)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .layoutPriority(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Spacer()
-            
-            // Play count
+            // Play count - fixed width to prevent squeezing
             Text("\(playCount) plays")
                 .font(AppStyles.playCountStyle)
                 .foregroundColor(AppStyles.accentColor)
+                .layoutPriority(0)
+                .frame(width: 80, alignment: .trailing)
         }
         .standardRowStyle()
     }

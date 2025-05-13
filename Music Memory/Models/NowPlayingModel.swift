@@ -17,6 +17,11 @@ class NowPlayingModel: ObservableObject {
     @Published var fetchedArtwork: UIImage? = nil
     @Published var isLoadingArtwork: Bool = false
     
+    // BUGFIX: Added artwork version UUID to force SwiftUI view updates
+    // This will change whenever artwork changes, even when the song remains the same
+    // SwiftUI optimizes by not redrawing views if identities haven't changed
+    @Published var artworkVersion = UUID()
+    
     // Simple cache for artwork
     private var artworkCache: [String: UIImage] = [:]
     
@@ -99,6 +104,11 @@ class NowPlayingModel: ObservableObject {
         if let cachedArtwork = artworkCache[cacheKey] {
             DispatchQueue.main.async {
                 self.fetchedArtwork = cachedArtwork
+                
+                // BUGFIX: Update the artwork version when setting cached artwork
+                // This ensures SwiftUI refreshes the view even if the song hasn't changed
+                self.artworkVersion = UUID()
+                
                 self.isLoadingArtwork = false
             }
             return
@@ -147,7 +157,14 @@ class NowPlayingModel: ObservableObject {
                         // Update UI on main thread
                         await MainActor.run {
                             self.fetchedArtwork = image
+                            
+                            // BUGFIX: Create a new UUID to force SwiftUI view refresh
+                            // This is crucial - without this, SwiftUI may not redraw the image
+                            // because the song's persistentID hasn't changed
+                            self.artworkVersion = UUID()
+                            
                             self.isLoadingArtwork = false
+                            print("🎵 Exact match artwork updated: \(cacheKey)")
                         }
                         return
                     }
@@ -166,7 +183,12 @@ class NowPlayingModel: ObservableObject {
                         // Update UI on main thread
                         await MainActor.run {
                             self.fetchedArtwork = image
+                            
+                            // BUGFIX: Same UUID update for partial matches
+                            self.artworkVersion = UUID()
+                            
                             self.isLoadingArtwork = false
+                            print("🎵 Partial match artwork updated: \(cacheKey)")
                         }
                         return
                     }
@@ -220,7 +242,12 @@ class NowPlayingModel: ObservableObject {
                     
                     await MainActor.run {
                         self.fetchedArtwork = image
+                        
+                        // BUGFIX: Update artwork version for retry fetches too
+                        self.artworkVersion = UUID()
+                        
                         self.isLoadingArtwork = false
+                        print("🎵 Retry match artwork updated: \(cacheKey)")
                     }
                     return
                 }
