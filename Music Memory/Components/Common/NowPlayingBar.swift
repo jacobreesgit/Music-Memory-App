@@ -12,6 +12,7 @@ struct NowPlayingBar: View {
     @ObservedObject var nowPlayingModel: NowPlayingModel
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var showingFullPlayer = false
+    @State private var artworkTransition = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -28,52 +29,53 @@ struct NowPlayingBar: View {
             HStack(spacing: 12) {
                 // Artwork with loading state
                 ZStack {
+                    // Background placeholder is always there
+                    Rectangle()
+                        .fill(AppStyles.secondaryColor)
+                        .frame(width: 40, height: 40)
+                        .cornerRadius(4)
+                    
                     if nowPlayingModel.isLoadingArtwork {
-                        // Show loading indicator while artwork is loading
-                        ZStack {
-                            Rectangle()
-                                .fill(AppStyles.secondaryColor)
-                                .frame(width: 40, height: 40)
-                                .cornerRadius(4)
-                            
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        }
-                        .transition(.opacity.combined(with: .scale))
-                    } else if let artwork = nowPlayingModel.currentSong?.artwork {
-                        // Use local artwork if available
-                        Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .cornerRadius(4)
-                            .transition(.opacity.combined(with: .scale))
-                    } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
-                        // Use fetched artwork if available
-                        Image(uiImage: fetchedArtwork)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .cornerRadius(4)
-                            .transition(.opacity.combined(with: .scale))
+                        // Loading indicator
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .transition(.opacity)
                     } else {
-                        // Fallback to placeholder
-                        ZStack {
-                            Rectangle()
-                                .fill(AppStyles.secondaryColor)
+                        if let artwork = nowPlayingModel.currentSong?.artwork {
+                            // Local artwork
+                            Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
                                 .frame(width: 40, height: 40)
                                 .cornerRadius(4)
-                            
+                                .transition(.opacity)
+                                .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")  // Force view refresh
+                        } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
+                            // Fetched artwork
+                            Image(uiImage: fetchedArtwork)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 40, height: 40)
+                                .cornerRadius(4)
+                                .transition(.opacity)
+                                .id("fetched_\(nowPlayingModel.currentSong?.persistentID ?? 0)")  // Force view refresh
+                        } else {
+                            // Fallback placeholder
                             Image(systemName: "music.note")
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
+                                .transition(.opacity)
                         }
-                        .transition(.opacity.combined(with: .scale))
                     }
                 }
                 .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
-                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.fetchedArtwork != nil)
-                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong?.artwork != nil)
+                .onChange(of: nowPlayingModel.currentSong?.persistentID) { _ in
+                    // When song changes, trigger transition effect
+                    artworkTransition = false
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        artworkTransition = true
+                    }
+                }
                 
                 // Song info
                 VStack(alignment: .leading, spacing: 1) {
@@ -102,6 +104,7 @@ struct NowPlayingBar: View {
                         }
                     }
                 }
+                .id(nowPlayingModel.currentSong?.persistentID ?? 0)  // Force redraw on song change
                 
                 Spacer()
                 
@@ -145,8 +148,6 @@ struct NowPlayingBar: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color(UIColor.systemBackground))
-            
-            // Removed Divider here
         }
         .contentShape(Rectangle())
         .onTapGesture {

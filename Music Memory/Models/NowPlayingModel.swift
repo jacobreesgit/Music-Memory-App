@@ -17,10 +17,15 @@ class NowPlayingModel: ObservableObject {
     @Published var fetchedArtwork: UIImage? = nil
     @Published var isLoadingArtwork: Bool = false
     
+    // Simple cache for artwork
+    private var artworkCache: [String: UIImage] = [:]
+    
     private var cancellables = Set<AnyCancellable>()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
     private var progressTimer: Timer?
     private var artworkTask: Task<Void, Never>?
+    private var retryCount = 0
+    private let maxRetries = 2
     
     init() {
         setupNowPlayingObserver()
@@ -53,6 +58,9 @@ class NowPlayingModel: ObservableObject {
             // Explicitly clear any existing fetched artwork immediately
             self.fetchedArtwork = nil
             self.isLoadingArtwork = true
+            self.retryCount = 0
+            
+            // Update current song
             self.currentSong = self.musicPlayer.nowPlayingItem
             
             // Reset progress
@@ -84,8 +92,21 @@ class NowPlayingModel: ObservableObject {
             return
         }
         
+        // Create a cache key
+        let cacheKey = "\(songTitle)-\(artistName)"
+        
+        // Check if artwork is in the cache
+        if let cachedArtwork = artworkCache[cacheKey] {
+            DispatchQueue.main.async {
+                self.fetchedArtwork = cachedArtwork
+                self.isLoadingArtwork = false
+            }
+            return
+        }
+        
         // Create search query from song details
-        let query = "\(songTitle) \(artistName)"
+        // Add quotes to make exact match more likely
+        let query = "\"\(songTitle)\" \"\(artistName)\""
         
         // Start a new task to search for the song
         artworkTask = Task {
@@ -101,35 +122,118 @@ class NowPlayingModel: ObservableObject {
                 
                 // Create search request
                 var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
-                request.limit = 3  // Limit results to improve performance
+                request.limit = 5  // Increased to improve chances of a match
                 
                 // Send request
                 let response = try await request.response()
                 
-                // Find first matching song with artwork
-                if let firstSong = response.songs.first,
-                   let artworkUrl = firstSong.artwork?.url(width: 200, height: 200) {
+                // Find matching song with artwork
+                // Try to find an exact match first
+                let exactMatches = response.songs.filter { song in
+                    let titleMatch = song.title.lowercased() == songTitle.lowercased()
+                    let artistMatch = song.artistName.lowercased() == artistName.lowercased()
+                    return titleMatch && artistMatch
+                }
+                
+                // If we have exact matches, use the first one with artwork
+                if let match = exactMatches.first(where: { $0.artwork != nil }),
+                   let artworkUrl = match.artwork?.url(width: 300, height: 300) {
+                    // Download artwork image
+                    let (data, _) = try await URLSession.shared.data(from: artworkUrl)
+                    if let image = UIImage(data: data) {
+                        // Cache the artwork
+                        self.artworkCache[cacheKey] = image
+                        
+                        // Update UI on main thread
+                        await MainActor.run {
+                            self.fetchedArtwork = image
+                            self.isLoadingArtwork = false
+                        }
+                        return
+                    }
+                }
+                
+                // If no exact match, try partial matches
+                if let firstSong = response.songs.first(where: { $0.artwork != nil }),
+                   let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
                     
                     // Download artwork image
                     let (data, _) = try await URLSession.shared.data(from: artworkUrl)
-                    let image = UIImage(data: data)
-                    
-                    // Update UI on main thread
-                    await MainActor.run {
-                        self.fetchedArtwork = image
-                        self.isLoadingArtwork = false
+                    if let image = UIImage(data: data) {
+                        // Cache the artwork
+                        self.artworkCache[cacheKey] = image
+                        
+                        // Update UI on main thread
+                        await MainActor.run {
+                            self.fetchedArtwork = image
+                            self.isLoadingArtwork = false
+                        }
+                        return
                     }
+                }
+                
+                // If we got here, we didn't find suitable artwork
+                // Try a different search strategy if this is the first attempt
+                if self.retryCount < self.maxRetries {
+                    self.retryCount += 1
+                    
+                    // Try with a simplified query
+                    let simpleQuery = songTitle
+                    await self.retryArtworkSearch(simpleQuery: simpleQuery, cacheKey: cacheKey)
                 } else {
-                    // No artwork found
+                    // Give up after max retries
                     await MainActor.run {
                         self.isLoadingArtwork = false
                     }
                 }
             } catch {
                 print("Error fetching artwork: \(error.localizedDescription)")
-                await MainActor.run {
-                    self.isLoadingArtwork = false
+                
+                // Try again with a simpler query if this is the first attempt
+                if self.retryCount < self.maxRetries {
+                    self.retryCount += 1
+                    await self.retryArtworkSearch(simpleQuery: songTitle, cacheKey: cacheKey)
+                } else {
+                    await MainActor.run {
+                        self.isLoadingArtwork = false
+                    }
                 }
+            }
+        }
+    }
+    
+    // Helper method to retry artwork search with a simplified query
+    private func retryArtworkSearch(simpleQuery: String, cacheKey: String) async {
+        do {
+            var request = MusicCatalogSearchRequest(term: simpleQuery, types: [Song.self])
+            request.limit = 10
+            
+            let response = try await request.response()
+            
+            if let firstSong = response.songs.first(where: { $0.artwork != nil }),
+               let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
+                
+                let (data, _) = try await URLSession.shared.data(from: artworkUrl)
+                if let image = UIImage(data: data) {
+                    // Cache the artwork
+                    self.artworkCache[cacheKey] = image
+                    
+                    await MainActor.run {
+                        self.fetchedArtwork = image
+                        self.isLoadingArtwork = false
+                    }
+                    return
+                }
+            }
+            
+            // If we reach here, we still couldn't find artwork
+            await MainActor.run {
+                self.isLoadingArtwork = false
+            }
+        } catch {
+            print("Error in retry artwork search: \(error.localizedDescription)")
+            await MainActor.run {
+                self.isLoadingArtwork = false
             }
         }
     }
@@ -173,6 +277,14 @@ class NowPlayingModel: ObservableObject {
     
     func previousTrack() {
         musicPlayer.skipToPreviousItem()
+    }
+    
+    // Limit cache size
+    private func cleanupCache() {
+        if artworkCache.count > 50 {
+            // Remove oldest entries - fixed the syntax error here
+            artworkCache = Dictionary(uniqueKeysWithValues: artworkCache.suffix(25))
+        }
     }
     
     deinit {
