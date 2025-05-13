@@ -24,7 +24,7 @@ extension ArtistData: MediaListDisplayable {
     }
     
     var useCircularArtwork: Bool {
-        return true
+        return false
     }
     
     func createDetailView(rank: Int?) -> some View {

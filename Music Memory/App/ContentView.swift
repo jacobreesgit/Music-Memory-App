@@ -8,10 +8,12 @@
 import SwiftUI
 import UIKit
 import Combine
+import MediaPlayer
 
 struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @StateObject var sortSessionStore = SortSessionStore()
+    @StateObject var nowPlayingModel = NowPlayingModel()
     @State private var selectedTab = 0
     @State private var navigationState = [0: false, 1: false, 2: false, 3: false, 4: false]
     @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID(), 4: UUID()]
@@ -106,70 +108,78 @@ struct ContentView: View {
                 }
             }
             
-            // Custom footer - only show when keyboard is not visible
-            if !isKeyboardVisible {
-                VStack(spacing: 0) {
-                    Divider()
-                    
-                    HStack(spacing: 0) {
-                        ForEach(0..<5) { index in
-                            Button(action: {
-                                // Haptic feedback for tap
-                                feedbackGenerator.impactOccurred()
-                                
-                                if selectedTab == index {
-                                    if navigationState[index] == true {
-                                        // In detail view - do nothing, let NavigationViewWithState handle it
-                                    } else {
-                                        // In root view - scroll to top
-                                        scrollIDs[index] = UUID()
-                                    }
-                                }
-                                selectedTab = index
-                            }) {
-                                Spacer()
-                                VStack(spacing: 6) {
-                                    ZStack(alignment: .topTrailing) {
-                                        Image(systemName: iconForIndex(index))
-                                            .font(.system(size: 21))
-                                            .padding(.top, 8)
-                                        
-                                        // Badge (if any)
-                                        if let count = badgeCounts[index], count > 0 {
-                                            Text("\(count)")
-                                                .font(.system(size: 12, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .frame(minWidth: 16, minHeight: 16)
-                                                .background(Color.red)
-                                                .clipShape(Circle())
-                                                .offset(x: 10, y: -5)
+            VStack(spacing: 0) {
+                // Now Playing Bar - display when song is playing and keyboard is not visible
+                if !isKeyboardVisible && nowPlayingModel.currentSong != nil {
+                    NowPlayingBar(nowPlayingModel: nowPlayingModel)
+                }
+                
+                // Custom footer - only show when keyboard is not visible
+                if !isKeyboardVisible {
+                    VStack(spacing: 0) {
+                        Divider()
+                        
+                        HStack(spacing: 0) {
+                            ForEach(0..<5) { index in
+                                Button(action: {
+                                    // Haptic feedback for tap
+                                    feedbackGenerator.impactOccurred()
+                                    
+                                    if selectedTab == index {
+                                        if navigationState[index] == true {
+                                            // In detail view - do nothing, let NavigationViewWithState handle it
+                                        } else {
+                                            // In root view - scroll to top
+                                            scrollIDs[index] = UUID()
                                         }
                                     }
-                                    
-                                    Text(labelForIndex(index))
-                                        .font(.caption)
-                                        .dynamicTypeSize(.small ... .large) // Dynamic text support
+                                    selectedTab = index
+                                }) {
+                                    Spacer()
+                                    VStack(spacing: 6) {
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(systemName: iconForIndex(index))
+                                                .font(.system(size: 21))
+                                                .padding(.top, 8)
+                                            
+                                            // Badge (if any)
+                                            if let count = badgeCounts[index], count > 0 {
+                                                Text("\(count)")
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .foregroundColor(.white)
+                                                    .frame(minWidth: 16, minHeight: 16)
+                                                    .background(Color.red)
+                                                    .clipShape(Circle())
+                                                    .offset(x: 10, y: -5)
+                                            }
+                                        }
+                                        
+                                        Text(labelForIndex(index))
+                                            .font(.caption)
+                                            .dynamicTypeSize(.small ... .large) // Dynamic text support
+                                    }
+                                    .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
+                                    .frame(height: 56)
+                                    .contentShape(Rectangle()) // Improve tap area
+                                    // Visual feedback on press
+                                    .scaleEffect(selectedTab == index ? 1.0 : 0.97)
+                                    .animation(.easeInOut(duration: 0.1), value: selectedTab)
+                                    Spacer()
                                 }
-                                .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
-                                .frame(height: 56)
-                                .contentShape(Rectangle()) // Improve tap area
-                                // Visual feedback on press
-                                .scaleEffect(selectedTab == index ? 1.0 : 0.97)
-                                .animation(.easeInOut(duration: 0.1), value: selectedTab)
-                                Spacer()
+                                .frame(maxWidth: .infinity)
+                                .accessibilityLabel("\(labelForIndex(index)) Tab")
+                                .accessibilityHint(selectedTab == index ? "Selected" : "")
+                                .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
                             }
-                            .frame(maxWidth: .infinity)
-                            .accessibilityLabel("\(labelForIndex(index)) Tab")
-                            .accessibilityHint(selectedTab == index ? "Selected" : "")
-                            .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
                         }
+                        .background(Color(UIColor.systemBackground))
                     }
-                    .background(Color(UIColor.systemBackground))
                 }
-                .edgesIgnoringSafeArea(.bottom)
-                .transition(.move(edge: .bottom))
-                .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
             }
+            .edgesIgnoringSafeArea(.bottom)
+            .transition(.move(edge: .bottom))
+            .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
+            .background(Color(UIColor.systemBackground))
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             isKeyboardVisible = true
@@ -181,6 +191,7 @@ struct ContentView: View {
             // Initialize lastSelectedTab on appear
             lastSelectedTab = selectedTab
         }
+        .environmentObject(nowPlayingModel)
     }
     
     private func iconForIndex(_ index: Int) -> String {
