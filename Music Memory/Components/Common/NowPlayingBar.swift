@@ -36,49 +36,7 @@ struct NowPlayingBar: View {
                             .scaleEffect(0.7)
                             .transition(.opacity)
                     } else {
-                        let localImage = nowPlayingModel.currentSong?.artwork?.image(at: CGSize(width: 40, height: 40))
-
-                        let source: String
-                        if nowPlayingModel.fetchedArtwork != nil {
-                            source = "fetched"
-                        } else if localImage != nil {
-                            source = "local"
-                        } else {
-                            source = "none"
-                        }
-
-                        #if DEBUG
-                        DispatchQueue.main.async {
-                            print("🔍 Showing image: \(source)")
-                        }
-                        #endif
-
-                        Group {
-                            if let fetched = nowPlayingModel.fetchedArtwork {
-                                Image(uiImage: fetched)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 40, height: 40)
-                                    .cornerRadius(4)
-                                    .transition(.opacity)
-                                    .id("fetched_\(nowPlayingModel.artworkVersion.uuidString)")
-
-                            } else if let local = localImage {
-                                Image(uiImage: local)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 40, height: 40)
-                                    .cornerRadius(4)
-                                    .transition(.opacity)
-                                    .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
-
-                            } else {
-                                Image(systemName: "music.note")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                    .transition(.opacity)
-                            }
-                        }
+                        artworkView
                     }
                 }
                 .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
@@ -160,6 +118,59 @@ struct NowPlayingBar: View {
         }
         .transition(.move(edge: .bottom))
         .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong != nil)
+    }
+    
+    // Extracted artwork view to avoid side effects in ViewBuilder
+    private var artworkView: some View {
+        let localImage = nowPlayingModel.currentSong?.artwork?.image(at: CGSize(width: 40, height: 40))
+        
+        // Log the source type outside of the view hierarchy
+        let sourceType: String
+        if nowPlayingModel.fetchedArtwork != nil {
+            sourceType = "fetched"
+        } else if localImage != nil {
+            sourceType = "local"
+        } else {
+            sourceType = "none"
+        }
+        
+        // Log the source type
+        #if DEBUG
+        // Create a one-time effect to log the source type
+        let _ = DispatchQueue.main.async {
+            print("🔍 Showing image: \(sourceType)")
+        }
+        #endif
+        
+        // Return the appropriate view based on available artwork
+        if let fetched = nowPlayingModel.fetchedArtwork {
+            return AnyView(
+                Image(uiImage: fetched)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(4)
+                    .transition(.opacity)
+                    .id("fetched_\(nowPlayingModel.artworkVersion.uuidString)")
+            )
+        } else if let local = localImage {
+            return AnyView(
+                Image(uiImage: local)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(4)
+                    .transition(.opacity)
+                    .id("local_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
+            )
+        } else {
+            return AnyView(
+                Image(systemName: "music.note")
+                    .font(.system(size: 16))
+                    .foregroundColor(.primary)
+                    .transition(.opacity)
+            )
+        }
     }
 
     private func getSongPlayCount() -> Int? {
