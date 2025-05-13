@@ -50,7 +50,9 @@ class NowPlayingModel: ObservableObject {
     
     private func updateCurrentSong() {
         DispatchQueue.main.async {
-            self.isLoadingArtwork = true  // Set loading state before any artwork operations
+            // Explicitly clear any existing fetched artwork immediately
+            self.fetchedArtwork = nil
+            self.isLoadingArtwork = true
             self.currentSong = self.musicPlayer.nowPlayingItem
             
             // Reset progress
@@ -60,7 +62,6 @@ class NowPlayingModel: ObservableObject {
             // Check if local artwork is available
             if self.currentSong?.artwork != nil {
                 // If we have local artwork, no need to fetch external
-                self.fetchedArtwork = nil
                 self.isLoadingArtwork = false
             } else {
                 // Try to fetch artwork if local artwork isn't available

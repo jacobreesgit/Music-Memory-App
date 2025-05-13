@@ -132,6 +132,7 @@ struct ContentView: View {
             lastSelectedTab = selectedTab
         }
         .environmentObject(nowPlayingModel)
+        .environmentObject(sortSessionStore)
     }
     
     // Helper view to track navigation state and handle navigation actions

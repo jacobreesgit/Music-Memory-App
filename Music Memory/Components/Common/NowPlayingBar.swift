@@ -39,6 +39,7 @@ struct NowPlayingBar: View {
                             ProgressView()
                                 .scaleEffect(0.7)
                         }
+                        .transition(.opacity.combined(with: .scale))
                     } else if let artwork = nowPlayingModel.currentSong?.artwork {
                         // Use local artwork if available
                         Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
@@ -46,7 +47,7 @@ struct NowPlayingBar: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 40, height: 40)
                             .cornerRadius(4)
-                            .transition(.opacity)
+                            .transition(.opacity.combined(with: .scale))
                     } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
                         // Use fetched artwork if available
                         Image(uiImage: fetchedArtwork)
@@ -54,7 +55,7 @@ struct NowPlayingBar: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 40, height: 40)
                             .cornerRadius(4)
-                            .transition(.opacity)
+                            .transition(.opacity.combined(with: .scale))
                     } else {
                         // Fallback to placeholder
                         ZStack {
@@ -67,9 +68,12 @@ struct NowPlayingBar: View {
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
                         }
+                        .transition(.opacity.combined(with: .scale))
                     }
                 }
-                .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.isLoadingArtwork)
+                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
+                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.fetchedArtwork != nil)
+                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong?.artwork != nil)
                 
                 // Song info
                 VStack(alignment: .leading, spacing: 1) {
