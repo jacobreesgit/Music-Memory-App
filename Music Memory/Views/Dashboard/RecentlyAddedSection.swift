@@ -26,11 +26,11 @@ struct RecentlyAddedSection: View {
                 artwork: { $0.artwork },
                 itemTitle: { $0.title ?? "Unknown" },
                 itemSubtitle: { $0.artist ?? "Unknown" },
-                itemPlays: { _ in 0 },  // Not used when customPlayLabel is provided
+                itemPlays: { $0.playCount },  // Using actual play count
                 iconName: { _ in "music.note" },
                 destination: { song, _ in SongDetailView(song: song) },
                 seeAllDestination: { RecentlyAddedSongsView() },
-                customPlayLabel: { song in daysAgo(song.dateAdded) },
+                customPlayLabel: { song in "\(song.playCount) plays • \(daysAgo(song.dateAdded))" },  // Combined format
                 showRank: false
             )
         }
