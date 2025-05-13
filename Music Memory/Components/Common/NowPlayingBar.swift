@@ -19,6 +19,7 @@ struct NowPlayingBar: View {
                 Rectangle()
                     .fill(AppStyles.accentColor)
                     .frame(width: geometry.size.width * nowPlayingModel.playbackProgress, height: 2)
+                    .animation(.linear(duration: 0.5), value: nowPlayingModel.playbackProgress)
             }
             .frame(height: 2)
             
@@ -98,20 +99,7 @@ struct NowPlayingBar: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(
-                // Subtle animation while playing
-                Group {
-                    if nowPlayingModel.isPlaying {
-                        Color(UIColor.systemBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 0)
-                                    .strokeBorder(AppStyles.accentColor.opacity(0.1), lineWidth: 1)
-                            )
-                    } else {
-                        Color(UIColor.systemBackground)
-                    }
-                }
-            )
+            .background(Color(UIColor.systemBackground))
             
             Divider()
         }

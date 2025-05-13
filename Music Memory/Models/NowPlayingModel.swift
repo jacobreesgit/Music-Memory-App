@@ -66,19 +66,15 @@ class NowPlayingModel: ObservableObject {
         progressTimer = nil
         
         // Only set up timer if playing
-        guard isPlaying, currentSong != nil else { return }
+        guard isPlaying, currentSong != nil, let song = currentSong, song.playbackDuration > 0 else { return }
         
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let song = self.currentSong else { return }
+        // Update more frequently for smoother animation
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
             
-            // Get playback time - no need for optional binding here since it's not optional
+            // Get actual playback time directly from the music player
             let currentPlaybackTime = self.musicPlayer.currentPlaybackTime
-            if song.playbackDuration > 0 {
-                self.playbackProgress = min(currentPlaybackTime / song.playbackDuration, 1.0)
-            } else {
-                // Just increment as a fallback
-                self.playbackProgress = min(self.playbackProgress + 0.01, 1.0)
-            }
+            self.playbackProgress = min(currentPlaybackTime / song.playbackDuration, 1.0)
         }
     }
     
