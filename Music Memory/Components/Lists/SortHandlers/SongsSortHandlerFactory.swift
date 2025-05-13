@@ -26,10 +26,8 @@ struct SongsSortHandlerFactory: SortHandlerFactory {
             return { ($0.artist ?? "") < ($1.artist ?? "") }
         case .dateAdded:
             return {
-                guard let date0 = $0.dateAdded, let date1 = $1.dateAdded else {
-                    return $0.dateAdded != nil
-                }
-                return date0 > date1
+                // Fixed version - directly compare dates since they're not optional
+                return $0.dateAdded > $1.dateAdded
             }
         case .duration:
             return { $0.playbackDuration > $1.playbackDuration }
