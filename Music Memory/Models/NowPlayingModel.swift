@@ -25,6 +25,10 @@ class NowPlayingModel: ObservableObject {
     // Simple cache for artwork
     private var artworkCache: [String: UIImage] = [:]
     
+    // Add tracking of previous song ID to prevent duplicate logging
+    private var previousSongPersistentID: MPMediaEntityPersistentID?
+    private var hasLoggedArtworkForCurrentSong = false
+    
     private var cancellables = Set<AnyCancellable>()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
     private var progressTimer: Timer?
@@ -65,8 +69,38 @@ class NowPlayingModel: ObservableObject {
             self.isLoadingArtwork = true
             self.retryCount = 0
             
+            // Get the new song
+            let newSong = self.musicPlayer.nowPlayingItem
+            let newSongID = newSong?.persistentID
+            
+            // Check if this is a different song than before
+            let songChanged = newSongID != self.previousSongPersistentID
+            
             // Update current song
-            self.currentSong = self.musicPlayer.nowPlayingItem
+            self.currentSong = newSong
+            
+            // Reset tracking state
+            if songChanged {
+                self.previousSongPersistentID = newSongID
+                self.hasLoggedArtworkForCurrentSong = false
+            }
+            
+            // Log local artwork info if available and we haven't logged it for this song yet
+            if let localArtwork = self.currentSong?.artwork, !self.hasLoggedArtworkForCurrentSong {
+                // MPMediaItemArtwork doesn't directly expose URLs, so we'll log what we can
+                print("🖼️ Local library artwork dimensions: \(localArtwork.bounds.width)x\(localArtwork.bounds.height)")
+                
+                // Try to get a representation path if possible
+                let image = localArtwork.image(at: CGSize(width: 300, height: 300))
+                if let image = image {
+                    print("🖼️ Local artwork available with size: \(image.size.width)x\(image.size.height)")
+                } else {
+                    print("🖼️ Local artwork reference exists but couldn't generate image")
+                }
+                
+                // Mark that we've logged artwork for this song
+                self.hasLoggedArtworkForCurrentSong = true
+            }
             
             // Reset progress
             self.playbackProgress = 0.0
@@ -148,6 +182,12 @@ class NowPlayingModel: ObservableObject {
                 // If we have exact matches, use the first one with artwork
                 if let match = exactMatches.first(where: { $0.artwork != nil }),
                    let artworkUrl = match.artwork?.url(width: 300, height: 300) {
+                    // Only log if we haven't already for this song
+                    if !self.hasLoggedArtworkForCurrentSong {
+                        print("🖼️ Apple Music artwork URL: \(artworkUrl)")
+                        self.hasLoggedArtworkForCurrentSong = true
+                    }
+                    
                     // Download artwork image
                     let (data, _) = try await URLSession.shared.data(from: artworkUrl)
                     if let image = UIImage(data: data) {
@@ -173,6 +213,12 @@ class NowPlayingModel: ObservableObject {
                 // If no exact match, try partial matches
                 if let firstSong = response.songs.first(where: { $0.artwork != nil }),
                    let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
+                    
+                    // Only log if we haven't already for this song
+                    if !self.hasLoggedArtworkForCurrentSong {
+                        print("🖼️ Apple Music partial match artwork URL: \(artworkUrl)")
+                        self.hasLoggedArtworkForCurrentSong = true
+                    }
                     
                     // Download artwork image
                     let (data, _) = try await URLSession.shared.data(from: artworkUrl)
@@ -234,6 +280,12 @@ class NowPlayingModel: ObservableObject {
             
             if let firstSong = response.songs.first(where: { $0.artwork != nil }),
                let artworkUrl = firstSong.artwork?.url(width: 300, height: 300) {
+                
+                // Only log if we haven't already for this song
+                if !self.hasLoggedArtworkForCurrentSong {
+                    print("🖼️ Apple Music retry match artwork URL: \(artworkUrl)")
+                    self.hasLoggedArtworkForCurrentSong = true
+                }
                 
                 let (data, _) = try await URLSession.shared.data(from: artworkUrl)
                 if let image = UIImage(data: data) {
