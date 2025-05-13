@@ -18,7 +18,7 @@ struct GenreDetailView: View {
     var body: some View {
         MediaDetailView(item: genre, rank: rank) { genre in
             Group {
-                // MARK: - Sort Buttons Section
+                // MARK: - Sort Buttons Section - MOVED ABOVE STATISTICS
                 let artists = findGenreArtists()
                 let albums = findGenreAlbums()
                 

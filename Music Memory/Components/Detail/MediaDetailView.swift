@@ -1,5 +1,7 @@
+//
 //  MediaDetailView.swift
 //  Music Memory
+//  Updated to support bottom safe area
 
 import SwiftUI
 import MediaPlayer
@@ -53,5 +55,7 @@ struct MediaDetailView<Item: MediaDetailDisplayable, Content: View>: View {
         .listSectionSpacing(0) // Consistent spacing
         .navigationTitle(item.displayTitle)
         .navigationBarTitleDisplayMode(.inline)
+        // Apply the bottom safe area modifier to ensure content is visible
+        .withBottomSafeArea()
     }
 }

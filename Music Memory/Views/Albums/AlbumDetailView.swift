@@ -18,7 +18,7 @@ struct AlbumDetailView: View {
     var body: some View {
         MediaDetailView(item: album, rank: rank) { album in
             Group {
-                // MARK: - Sort Songs Button
+                // MARK: - Sort Songs Button - MOVED ABOVE STATISTICS
                 if album.songs.count > 1 {
                     SortActionButton(
                         title: "Sort Songs",

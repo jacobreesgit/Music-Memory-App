@@ -18,7 +18,7 @@ struct ArtistDetailView: View {
     var body: some View {
         MediaDetailView(item: artist, rank: rank) { artist in
             Group {
-                // MARK: - Sort Buttons Section
+                // MARK: - Sort Buttons Section - MOVED ABOVE STATISTICS
                 let albums = findArtistAlbums()
                 let hasMultipleSongs = artist.songs.count > 1
                 let hasMultipleAlbums = albums.count > 1

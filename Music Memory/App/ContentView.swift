@@ -20,6 +20,9 @@ struct ContentView: View {
     @State private var isKeyboardVisible = false
     @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
     
+    // Keep track of the height of the bottom UI for padding
+    @State private var bottomBarHeight: CGFloat = 56 // Default to just tab bar height
+    
     // Added to track the currently selected library tab
     @State private var currentLibraryTab = 0
     
@@ -55,7 +58,6 @@ struct ContentView: View {
         UINavigationBar.appearance().prefersLargeTitles = true
     }
     
-    // ContentView.swift - update the ZStack in the body
     var body: some View {
         ZStack(alignment: .bottom) {
             // Content area
@@ -97,17 +99,19 @@ struct ContentView: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .edgesIgnoringSafeArea(.bottom)
-            // Remove bottom padding to allow content to flow under the tab bar
-            // This ensures we can see content through the translucent tab bar
+            // Pass the bottom bar height to all views in the environment
+            .environment(\.bottomBarHeight, bottomBarHeight)
             
-            VStack(spacing: 0) {
-                // Now Playing Bar - display when song is playing and keyboard is not visible
-                if !isKeyboardVisible && nowPlayingModel.currentSong != nil {
-                    NowPlayingBar(nowPlayingModel: nowPlayingModel)
-                }
-                
-                // Custom footer - only show when keyboard is not visible
-                if !isKeyboardVisible {
+            // Now Playing Bar and Tab Bar Container
+            if !isKeyboardVisible {
+                // Container for measuring height
+                VStack(spacing: 0) {
+                    // Now Playing Bar
+                    if nowPlayingModel.currentSong != nil {
+                        NowPlayingBar(nowPlayingModel: nowPlayingModel)
+                    }
+                    
+                    // Custom TabBar
                     CustomTabBar(
                         selectedTab: $selectedTab,
                         navigationState: $navigationState,
@@ -116,10 +120,21 @@ struct ContentView: View {
                         badgeCounts: badgeCounts
                     )
                 }
+                .background(BlurView(style: .systemMaterial))
+                .edgesIgnoringSafeArea(.bottom)
+                .transition(.move(edge: .bottom))
+                .animation(.easeInOut(duration: 0.25), value: nowPlayingModel.currentSong != nil)
+                // Measure the height of the bottom UI to update our environment
+                .background(
+                    GeometryReader { geometry -> Color in
+                        DispatchQueue.main.async {
+                            // Update the height state when it changes
+                            bottomBarHeight = geometry.size.height
+                        }
+                        return Color.clear
+                    }
+                )
             }
-            .edgesIgnoringSafeArea(.bottom)
-            .transition(.move(edge: .bottom))
-            .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             isKeyboardVisible = true
@@ -146,7 +161,8 @@ struct ContentView: View {
         
         var body: some View {
             NavigationView {
-                rootView
+                // Apply the bottom safe area to the root view
+                rootView.withBottomSafeArea()
             }
             .navigationViewStyle(StackNavigationViewStyle()) // Force consistent navigation style
             .background(
@@ -180,4 +196,5 @@ struct ContentView: View {
                 }
             }
         }
-    }}
+    }
+}
