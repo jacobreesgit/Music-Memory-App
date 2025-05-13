@@ -1,8 +1,11 @@
-// NowPlayingModel.swift - Fixed for progress bar initialization
+// NowPlayingModel.swift
+// Complete file with Dynamic Island integration
+
 import MediaPlayer
 import Combine
 import MusicKit
 import UIKit
+import ActivityKit  // New import for Live Activities
 
 class NowPlayingModel: ObservableObject {
     // MARK: - Published Properties
@@ -88,6 +91,9 @@ class NowPlayingModel: ObservableObject {
                 self.playbackProgress = min(self.musicPlayer.currentPlaybackTime /
                     (newSong?.playbackDuration ?? 1.0), 1.0)
             }
+            
+            // Update the Dynamic Island
+            self.updateDynamicIsland()
         }
     }
     
@@ -105,6 +111,9 @@ class NowPlayingModel: ObservableObject {
             }
             
             self.setupProgressTimer()
+            
+            // Update the Dynamic Island
+            self.updateDynamicIsland()
         }
     }
     
@@ -340,6 +349,11 @@ class NowPlayingModel: ObservableObject {
             
             let currentPlaybackTime = self.musicPlayer.currentPlaybackTime
             self.playbackProgress = min(currentPlaybackTime / song.playbackDuration, 1.0)
+            
+            // Update the Dynamic Island when progress changes
+            if self.playbackProgress > 0 {
+                self.updateDynamicIsland()
+            }
         }
     }
     
@@ -350,14 +364,29 @@ class NowPlayingModel: ObservableObject {
         } else {
             musicPlayer.play()
         }
+        
+        // Update Dynamic Island after play/pause
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.updateDynamicIsland()
+        }
     }
     
     func nextTrack() {
         musicPlayer.skipToNextItem()
+        
+        // Update Dynamic Island after skipping track
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.updateDynamicIsland()
+        }
     }
     
     func previousTrack() {
         musicPlayer.skipToPreviousItem()
+        
+        // Update Dynamic Island after skipping track
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.updateDynamicIsland()
+        }
     }
     
     // Limit cache size periodically
@@ -374,5 +403,8 @@ class NowPlayingModel: ObservableObject {
         progressTimer?.invalidate()
         musicPlayer.endGeneratingPlaybackNotifications()
         artworkTask?.cancel()
+        
+        // End Dynamic Island activity when model is deinitialized
+        endActivity()
     }
 }
