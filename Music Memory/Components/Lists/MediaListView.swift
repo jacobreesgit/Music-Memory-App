@@ -172,13 +172,13 @@ struct MediaListView<T: MediaListDisplayable, SortOption: RawRepresentable & Has
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.listTitle)
                     .font(AppStyles.bodyStyle)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 
                 if !item.listSubtitle.isEmpty {
                     Text(item.listSubtitle)
                         .font(AppStyles.captionStyle)
                         .foregroundColor(.secondary)
-                        .lineLimit(1)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             

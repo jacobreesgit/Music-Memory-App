@@ -1,4 +1,4 @@
-// NowPlayingModel.swift - Fixed to ensure track navigation works properly
+// NowPlayingModel.swift - Fixed and optimized version
 import MediaPlayer
 import Combine
 import MusicKit
@@ -19,9 +19,6 @@ class NowPlayingModel: ObservableObject {
     private var artworkTask: Task<Void, Never>?
     private var artworkCache: [String: UIImage] = [:]
     private var previousSongID: MPMediaEntityPersistentID?
-    private var lastManualAction = Date()
-    private var retryCount = 0
-    private let maxRetries = 2
     
     // MARK: - Initialization
     init() {
@@ -57,24 +54,15 @@ class NowPlayingModel: ObservableObject {
         artworkTask?.cancel()
         
         DispatchQueue.main.async {
-            #if DEBUG
-            print("🔄 Now playing item changed")
-            #endif
-            
             // Get the new song
             let newSong = self.musicPlayer.nowPlayingItem
             let newSongID = newSong?.persistentID
             
             // Check if song actually changed
             if newSongID != self.previousSongID {
-                #if DEBUG
-                print("🎵 New song detected: \(newSong?.title ?? "Unknown") - \(newSong?.artist ?? "Unknown")")
-                #endif
-                
                 // Clear previous artwork when song changes
                 self.artworkImage = nil
                 self.isLoadingArtwork = true
-                self.retryCount = 0
                 self.previousSongID = newSongID
                 
                 // Set the new song
@@ -84,8 +72,8 @@ class NowPlayingModel: ObservableObject {
                 self.playbackProgress = 0.0
                 self.setupProgressTimer()
                 
-                // Immediately start artwork loading
-                self.handleArtworkForCurrentSong()
+                // Immediately start artwork loading with fast path detection
+                self.handleArtworkWithFastPath()
             }
         }
     }
@@ -94,88 +82,66 @@ class NowPlayingModel: ObservableObject {
         DispatchQueue.main.async {
             let newState = self.musicPlayer.playbackState == .playing
             if self.isPlaying != newState {
-                #if DEBUG
-                print("▶️ Playback state changed: \(newState ? "Playing" : "Paused")")
-                #endif
                 self.isPlaying = newState
             }
             self.setupProgressTimer()
         }
     }
     
-    // MARK: - Artwork Handling
-    private func handleArtworkForCurrentSong() {
+    // MARK: - Fast Path Artwork Handling
+    private func handleArtworkWithFastPath() {
         guard let song = currentSong else {
             finishArtworkLoading(success: false)
             return
         }
         
-        #if DEBUG
-        let debugInfo = """
-        📊 Song details:
-          - Title: \(song.title ?? "Unknown")
-          - Artist: \(song.artist ?? "Unknown")
-          - PersistentID: \(song.persistentID)
-          - CloudItem: \(song.isCloudItem)
-          - HasAssetURL: \(song.assetURL != nil)
-        """
-        print(debugInfo)
-        #endif
-        
-        // First check cache using a consistent key format
-        if let title = song.title, let artist = song.artist {
+        // Fast path 1: Check cache first (fastest path)
+        if let title = song.title, let artist = song.artist, !title.isEmpty, !artist.isEmpty {
             let cacheKey = "\(title)-\(artist)"
             
             if let cachedImage = artworkCache[cacheKey] {
-                #if DEBUG
-                print("🖼️ Using cached artwork for: \(cacheKey)")
-                #endif
-                
                 self.artworkImage = cachedImage
                 finishArtworkLoading(success: true)
                 return
             }
         }
         
-        // Try to get artwork from song (most likely won't work based on logs)
-        if let localArtwork = song.artwork {
-            let bounds = localArtwork.bounds
-            
-            #if DEBUG
-            print("🔎 Artwork bounds: \(bounds.width)x\(bounds.height)")
-            #endif
-            
-            // Only proceed if artwork has valid dimensions
-            if bounds.width > 10 && bounds.height > 10,
-               let image = localArtwork.image(at: CGSize(width: 300, height: 300)) {
-                #if DEBUG
-                print("✅ Using valid local artwork")
-                #endif
-                
-                self.artworkImage = image
-                
-                // Cache it for reuse
-                if let title = song.title, let artist = song.artist {
-                    self.artworkCache["\(title)-\(artist)"] = image
-                }
-                
-                finishArtworkLoading(success: true)
-                return
-            } else {
-                #if DEBUG
-                print("⚠️ Invalid local artwork dimensions: \(bounds.width)x\(bounds.height)")
-                #endif
-            }
+        // Fast path 2: Quick check for streaming vs local track
+        let isStreamingTrack = song.isCloudItem || song.assetURL == nil
+        
+        // For streaming tracks, skip straight to Apple Music search
+        if isStreamingTrack {
+            // Skip local artwork check for streaming tracks
+            searchAppleMusicArtwork(forceImmediate: true)
+            return
         }
         
-        // As a last resort, search Apple Music
-        searchAppleMusicArtwork()
+        // Fast path 3: Local artwork check (only for real local tracks)
+        if let localArtwork = song.artwork,
+           localArtwork.bounds.width > 10,
+           let image = localArtwork.image(at: CGSize(width: 300, height: 300)) {
+            
+            self.artworkImage = image
+            
+            // Cache it for reuse
+            if let title = song.title, let artist = song.artist {
+                self.artworkCache["\(title)-\(artist)"] = image
+            }
+            
+            finishArtworkLoading(success: true)
+            return
+        }
+        
+        // Default path: Search Apple Music
+        searchAppleMusicArtwork(forceImmediate: false)
     }
     
-    private func searchAppleMusicArtwork() {
+    // MARK: - Apple Music Artwork Search
+    private func searchAppleMusicArtwork(forceImmediate: Bool) {
         guard let song = currentSong,
               let title = song.title,
-              let artist = song.artist else {
+              let artist = song.artist,
+              !title.isEmpty else {
             finishArtworkLoading(success: false)
             return
         }
@@ -184,16 +150,9 @@ class NowPlayingModel: ObservableObject {
         
         // Check authorization
         guard MusicAuthorization.currentStatus == .authorized else {
-            #if DEBUG
-            print("⚠️ Not authorized for Apple Music API")
-            #endif
             finishArtworkLoading(success: false)
             return
         }
-        
-        #if DEBUG
-        print("🔍 Searching Apple Music for: \"\(title)\" \"\(artist)\"")
-        #endif
         
         // Cancel any existing task
         artworkTask?.cancel()
@@ -201,21 +160,20 @@ class NowPlayingModel: ObservableObject {
         // Create a new task to search for the song
         artworkTask = Task {
             do {
-                // Use a more specific query with quotes for exact matching
-                let query = "\"\(title)\" \"\(artist)\""
+                // Streamline query for better performance
+                // Don't use quotes for immediate search to get better results
+                let query = forceImmediate ? "\(title) \(artist)" : "\"\(title)\" \"\(artist)\""
                 
                 var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
-                request.limit = 5
+                request.limit = forceImmediate ? 10 : 5
                 
                 let response = try await request.response()
                 
-                // Check if we found a matching song with artwork
-                if let matchingSong = response.songs.first(where: { $0.artwork != nil }),
-                   let artworkUrl = matchingSong.artwork?.url(width: 300, height: 300) {
-                    
-                    #if DEBUG
-                    print("🖼️ Found Apple Music artwork URL: \(artworkUrl)")
-                    #endif
+                // Enhanced matching to find the best artwork faster
+                let bestMatch = findBestMatch(title: title, artist: artist, from: response.songs)
+                
+                if let bestMatch = bestMatch,
+                   let artworkUrl = bestMatch.artwork?.url(width: 300, height: 300) {
                     
                     // Download the artwork
                     let (data, _) = try await URLSession.shared.data(from: artworkUrl)
@@ -231,34 +189,18 @@ class NowPlayingModel: ObservableObject {
                     }
                 }
                 
-                // Try again with a simpler query if we couldn't find anything
-                if self.retryCount < self.maxRetries {
-                    self.retryCount += 1
-                    
-                    #if DEBUG
-                    print("🔁 Retrying search (attempt \(self.retryCount))")
-                    #endif
-                    
-                    self.retryAppleMusicSearch(title: title, artist: artist)
+                // If we get here with no match from forceImmediate search, try a broader search
+                if forceImmediate {
+                    self.searchAppleMusicWithBroaderTerms(title: title, artist: artist)
                 } else {
                     await MainActor.run {
                         self.finishArtworkLoading(success: false)
                     }
                 }
             } catch {
-                #if DEBUG
-                print("❌ Error fetching artwork: \(error.localizedDescription)")
-                #endif
-                
-                // Retry with a simpler query if we hit an error
-                if self.retryCount < self.maxRetries {
-                    self.retryCount += 1
-                    
-                    #if DEBUG
-                    print("🔁 Retrying after error (attempt \(self.retryCount))")
-                    #endif
-                    
-                    self.retryAppleMusicSearch(title: title, artist: artist)
+                // In case of error, try a broader search for streaming tracks
+                if forceImmediate {
+                    self.searchAppleMusicWithBroaderTerms(title: title, artist: artist)
                 } else {
                     await MainActor.run {
                         self.finishArtworkLoading(success: false)
@@ -268,38 +210,22 @@ class NowPlayingModel: ObservableObject {
         }
     }
     
-    private func retryAppleMusicSearch(title: String, artist: String) {
-        // Simpler query for retry
+    // Immediately try a broader search instead of waiting for retries
+    private func searchAppleMusicWithBroaderTerms(title: String, artist: String) {
         let cacheKey = "\(title)-\(artist)"
         
         Task {
             do {
-                // Try with just the title for broader results
+                // Try with just the title for better results
                 let simpleQuery = title
                 
-                #if DEBUG
-                print("🔄 Retrying search with simpler query: \(simpleQuery)")
-                #endif
-                
                 var request = MusicCatalogSearchRequest(term: simpleQuery, types: [Song.self])
-                request.limit = 10
+                request.limit = 15
                 
                 let response = try await request.response()
                 
-                // Look for a likely match
-                let possibleMatches = response.songs.filter { song in
-                    let titleMatch = song.title.lowercased().contains(title.lowercased())
-                    let artistMatch = song.artistName.lowercased().contains(artist.lowercased())
-                    return (titleMatch && artistMatch) || titleMatch
-                }
-                
-                if let matchingSong = possibleMatches.first(where: { $0.artwork != nil }) ??
-                                     response.songs.first(where: { $0.artwork != nil }),
-                   let artworkUrl = matchingSong.artwork?.url(width: 300, height: 300) {
-                    
-                    #if DEBUG
-                    print("🖼️ Found artwork on retry: \(artworkUrl)")
-                    #endif
+                if let bestMatch = findBestMatch(title: title, artist: artist, from: response.songs),
+                   let artworkUrl = bestMatch.artwork?.url(width: 300, height: 300) {
                     
                     // Download the artwork
                     let (data, _) = try await URLSession.shared.data(from: artworkUrl)
@@ -319,10 +245,6 @@ class NowPlayingModel: ObservableObject {
                     self.finishArtworkLoading(success: false)
                 }
             } catch {
-                #if DEBUG
-                print("❌ Retry error: \(error.localizedDescription)")
-                #endif
-                
                 await MainActor.run {
                     self.finishArtworkLoading(success: false)
                 }
@@ -330,12 +252,51 @@ class NowPlayingModel: ObservableObject {
         }
     }
     
+    // Enhanced algorithm to find the best match faster
+    private func findBestMatch(title: String, artist: String, from songs: MusicItemCollection<Song>) -> Song? {
+        // If no songs have artwork, return nil immediately
+        guard songs.contains(where: { $0.artwork != nil }) else {
+            return nil
+        }
+        
+        // First look for exact matches
+        let exactMatches = songs.filter { song in
+            song.title.lowercased() == title.lowercased() &&
+            song.artistName.lowercased() == artist.lowercased() &&
+            song.artwork != nil
+        }
+        
+        if let firstExactMatch = exactMatches.first {
+            return firstExactMatch
+        }
+        
+        // Then try title-only exact matches
+        let titleMatches = songs.filter { song in
+            song.title.lowercased() == title.lowercased() &&
+            song.artwork != nil
+        }
+        
+        if let firstTitleMatch = titleMatches.first {
+            return firstTitleMatch
+        }
+        
+        // Then try partial matches with both title and artist
+        let partialMatches = songs.filter { song in
+            song.title.lowercased().contains(title.lowercased()) &&
+            song.artistName.lowercased().contains(artist.lowercased()) &&
+            song.artwork != nil
+        }
+        
+        if let firstPartialMatch = partialMatches.first {
+            return firstPartialMatch
+        }
+        
+        // Finally, just return any song with artwork
+        return songs.first(where: { $0.artwork != nil })
+    }
+    
     private func finishArtworkLoading(success: Bool) {
         self.isLoadingArtwork = false
-        
-        #if DEBUG
-        print("🔍 Artwork loading complete - success: \(success)")
-        #endif
     }
     
     // MARK: - Progress Timer
@@ -361,48 +322,27 @@ class NowPlayingModel: ObservableObject {
     
     // MARK: - Player Controls
     func togglePlayPause() {
-        #if DEBUG
-        print("⏯️ Toggle play/pause requested")
-        #endif
-        
         if isPlaying {
             musicPlayer.pause()
         } else {
             musicPlayer.play()
         }
-        
-        // Mark the time of this manual action
-        lastManualAction = Date()
     }
     
     func nextTrack() {
-        #if DEBUG
-        print("⏭️ Next track requested")
-        #endif
-        
         musicPlayer.skipToNextItem()
-        
-        // Mark the time of this manual action
-        lastManualAction = Date()
     }
     
     func previousTrack() {
-        #if DEBUG
-        print("⏮️ Previous track requested")
-        #endif
-        
         musicPlayer.skipToPreviousItem()
-        
-        // Mark the time of this manual action
-        lastManualAction = Date()
     }
     
     // Limit cache size periodically
     private func cleanupCache() {
-        if artworkCache.count > 50 {
-            // Keep just the 25 most recent items
+        if artworkCache.count > 75 {
+            // Keep just the 50 most recent items
             let sortedKeys = artworkCache.keys.sorted()
-            let keysToRemove = sortedKeys.prefix(sortedKeys.count - 25)
+            let keysToRemove = sortedKeys.prefix(sortedKeys.count - 50)
             keysToRemove.forEach { artworkCache.removeValue(forKey: $0) }
         }
     }

@@ -77,14 +77,12 @@ struct LibraryRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(AppStyles.bodyStyle)
-                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 
                 if !subtitle.isEmpty {
                     Text(subtitle)
                         .font(AppStyles.captionStyle)
                         .foregroundColor(.secondary)
-                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
