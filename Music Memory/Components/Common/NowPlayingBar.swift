@@ -10,6 +10,7 @@ import MediaPlayer
 
 struct NowPlayingBar: View {
     @ObservedObject var nowPlayingModel: NowPlayingModel
+    @EnvironmentObject var musicLibrary: MusicLibraryModel
     @State private var showingFullPlayer = false
     
     var body: some View {
@@ -77,10 +78,25 @@ struct NowPlayingBar: View {
                         .fontWeight(.medium)
                         .lineLimit(1)
                     
-                    Text(nowPlayingModel.currentSong?.artist ?? "Unknown Artist")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    // Artist name with play count
+                    HStack(spacing: 4) {
+                        Text(nowPlayingModel.currentSong?.artist ?? "Unknown Artist")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                        
+                        // Show play count if available
+                        if let plays = getSongPlayCount() {
+                            Text("•")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Text("\(plays) plays")
+                                .font(.caption2)
+                                .foregroundColor(AppStyles.accentColor)
+                                .lineLimit(1)
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -126,7 +142,7 @@ struct NowPlayingBar: View {
             .padding(.vertical, 6)
             .background(Color(UIColor.systemBackground))
             
-            Divider()
+            // Removed Divider here
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -136,14 +152,16 @@ struct NowPlayingBar: View {
         .transition(.move(edge: .bottom))
         .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong != nil)
     }
-}
-
-struct NowPlayingBar_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack {
-            Spacer()
-            NowPlayingBar(nowPlayingModel: NowPlayingModel())
+    
+    // Helper function to get play count from music library
+    private func getSongPlayCount() -> Int? {
+        guard let currentSong = nowPlayingModel.currentSong else { return nil }
+        
+        // Find the song in the music library
+        let songInLibrary = musicLibrary.songs.first { song in
+            song.persistentID == currentSong.persistentID
         }
-        .previewLayout(.sizeThatFits)
+        
+        return songInLibrary?.playCount
     }
 }
