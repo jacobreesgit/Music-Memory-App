@@ -1,4 +1,4 @@
-// NowPlayingModel.swift - Fixed and optimized version
+// NowPlayingModel.swift - Fixed for progress bar initialization
 import MediaPlayer
 import Combine
 import MusicKit
@@ -23,6 +23,13 @@ class NowPlayingModel: ObservableObject {
     // MARK: - Initialization
     init() {
         setupNowPlayingObserver()
+        
+        // Initialize with current state immediately
+        updateCurrentSong()
+        updatePlaybackState()
+        
+        // Force progress timer setup regardless of play state during initialization
+        setupProgressTimer(forceUpdate: true)
     }
     
     // MARK: - Now Playing Observer
@@ -42,10 +49,6 @@ class NowPlayingModel: ObservableObject {
         
         // Begin receiving notifications
         musicPlayer.beginGeneratingPlaybackNotifications()
-        
-        // Initialize with current state
-        updateCurrentSong()
-        updatePlaybackState()
     }
     
     // MARK: - Update Methods
@@ -68,12 +71,22 @@ class NowPlayingModel: ObservableObject {
                 // Set the new song
                 self.currentSong = newSong
                 
-                // Reset progress
-                self.playbackProgress = 0.0
+                // Update progress immediately with current position
+                if self.musicPlayer.playbackState == .playing && newSong != nil {
+                    self.playbackProgress = min(self.musicPlayer.currentPlaybackTime /
+                        (newSong?.playbackDuration ?? 1.0), 1.0)
+                } else {
+                    self.playbackProgress = 0.0
+                }
+                
                 self.setupProgressTimer()
                 
                 // Immediately start artwork loading with fast path detection
                 self.handleArtworkWithFastPath()
+            } else if newSong != nil {
+                // Even if song didn't change, update progress for initial load
+                self.playbackProgress = min(self.musicPlayer.currentPlaybackTime /
+                    (newSong?.playbackDuration ?? 1.0), 1.0)
             }
         }
     }
@@ -84,6 +97,13 @@ class NowPlayingModel: ObservableObject {
             if self.isPlaying != newState {
                 self.isPlaying = newState
             }
+            
+            // Always update the progress when playback state changes
+            if self.currentSong != nil {
+                self.playbackProgress = min(self.musicPlayer.currentPlaybackTime /
+                    (self.currentSong?.playbackDuration ?? 1.0), 1.0)
+            }
+            
             self.setupProgressTimer()
         }
     }
@@ -300,17 +320,20 @@ class NowPlayingModel: ObservableObject {
     }
     
     // MARK: - Progress Timer
-    private func setupProgressTimer() {
+    private func setupProgressTimer(forceUpdate: Bool = false) {
         // Clear existing timer
         progressTimer?.invalidate()
         progressTimer = nil
         
-        // Only set up timer if playing
-        guard isPlaying,
+        // Set up timer if playing or force update is requested
+        guard (isPlaying || forceUpdate),
               let song = currentSong,
               song.playbackDuration > 0 else {
             return
         }
+        
+        // Update progress once immediately
+        playbackProgress = min(musicPlayer.currentPlaybackTime / song.playbackDuration, 1.0)
         
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self = self, let song = self.currentSong else { return }

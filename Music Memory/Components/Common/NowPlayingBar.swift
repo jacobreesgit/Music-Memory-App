@@ -1,4 +1,4 @@
-// NowPlayingBar.swift - Updated implementation
+// NowPlayingBar.swift - Updated to match LibraryRow design
 import SwiftUI
 import MediaPlayer
 
@@ -19,13 +19,13 @@ struct NowPlayingBar: View {
             .frame(height: 2)
 
             // Main content
-            HStack(spacing: 12) {
-                // Artwork with loading state
+            HStack(spacing: AppStyles.smallPadding) {
+                // Artwork with loading state - increased to match LibraryRow
                 ZStack {
                     Rectangle()
                         .fill(AppStyles.secondaryColor)
-                        .frame(width: 40, height: 40)
-                        .cornerRadius(4)
+                        .frame(width: 50, height: 50)
+                        .cornerRadius(AppStyles.cornerRadius)
 
                     if nowPlayingModel.isLoadingArtwork {
                         ProgressView()
@@ -34,45 +34,42 @@ struct NowPlayingBar: View {
                         Image(uiImage: artwork)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .cornerRadius(4)
+                            .frame(width: 50, height: 50)
+                            .cornerRadius(AppStyles.cornerRadius)
                             .id("artwork_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
                     } else {
                         Image(systemName: "music.note")
-                            .font(.system(size: 16))
+                            .font(.system(size: 20))
                             .foregroundColor(.primary)
                     }
                 }
-                // Use opacity transition to avoid flickering
                 .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.isLoadingArtwork)
                 .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.artworkImage != nil)
 
-                // Track info with ID for proper updates
-                VStack(alignment: .leading, spacing: 1) {
+                // Track info - updated to match LibraryRow font styles
+                VStack(alignment: .leading, spacing: 2) {
                     Text(nowPlayingModel.currentSong?.title ?? "Unknown")
-                        .font(.footnote)
-                        .fontWeight(.medium)
+                        .font(AppStyles.bodyStyle)
                         .lineLimit(1)
 
                     HStack(spacing: 4) {
                         Text(nowPlayingModel.currentSong?.artist ?? "Unknown Artist")
-                            .font(.caption2)
+                            .font(AppStyles.captionStyle)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
 
                         if let plays = getSongPlayCount() {
                             Text("•")
-                                .font(.caption2)
+                                .font(AppStyles.captionStyle)
                                 .foregroundColor(.secondary)
 
                             Text("\(plays) plays")
-                                .font(.caption2)
+                                .font(AppStyles.captionStyle)
                                 .foregroundColor(AppStyles.accentColor)
                                 .lineLimit(1)
                         }
                     }
                 }
-                // Important: Use a stable ID for proper view updates
                 .id("info_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
 
                 Spacer()
@@ -112,7 +109,7 @@ struct NowPlayingBar: View {
                 .padding(.trailing, 4)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8) // Adjusted to better match LibraryRow's height with padding of 4
             .background(Color(UIColor.systemBackground))
         }
         .contentShape(Rectangle())
