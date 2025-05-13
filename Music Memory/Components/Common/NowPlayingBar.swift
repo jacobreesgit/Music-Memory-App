@@ -25,14 +25,23 @@ struct NowPlayingBar: View {
             
             // Main content
             HStack(spacing: 12) {
-                // Artwork
+                // Artwork - updated to use fetched artwork when local artwork isn't available
                 if let artwork = nowPlayingModel.currentSong?.artwork {
+                    // Use local artwork if available
                     Image(uiImage: artwork.image(at: CGSize(width: 40, height: 40)) ?? UIImage(systemName: "music.note")!)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 40, height: 40)
                         .cornerRadius(4)
+                } else if let fetchedArtwork = nowPlayingModel.fetchedArtwork {
+                    // Use fetched artwork if available
+                    Image(uiImage: fetchedArtwork)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .cornerRadius(4)
                 } else {
+                    // Fallback to placeholder
                     ZStack {
                         Rectangle()
                             .fill(AppStyles.secondaryColor)

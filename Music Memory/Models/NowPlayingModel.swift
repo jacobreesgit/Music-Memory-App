@@ -7,15 +7,19 @@
 
 import MediaPlayer
 import Combine
+import MusicKit
+import UIKit
 
 class NowPlayingModel: ObservableObject {
     @Published var currentSong: MPMediaItem?
     @Published var isPlaying: Bool = false
     @Published var playbackProgress: Double = 0.0
+    @Published var fetchedArtwork: UIImage? = nil
     
     private var cancellables = Set<AnyCancellable>()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
     private var progressTimer: Timer?
+    private var artworkTask: Task<Void, Never>?
     
     init() {
         setupNowPlayingObserver()
@@ -46,10 +50,65 @@ class NowPlayingModel: ObservableObject {
     private func updateCurrentSong() {
         DispatchQueue.main.async {
             self.currentSong = self.musicPlayer.nowPlayingItem
+            self.fetchedArtwork = nil  // Reset fetched artwork
+            
+            // Try to fetch artwork if local artwork isn't available
+            if self.currentSong?.artwork == nil {
+                self.fetchArtworkForCurrentSong()
+            }
             
             // Reset progress
             self.playbackProgress = 0.0
             self.setupProgressTimer()
+        }
+    }
+    
+    // Method to fetch artwork from Apple Music
+    private func fetchArtworkForCurrentSong() {
+        // Cancel any previous task
+        artworkTask?.cancel()
+        
+        // Only proceed if we have song details
+        guard let songTitle = currentSong?.title,
+              let artistName = currentSong?.artist else {
+            return
+        }
+        
+        // Create search query from song details
+        let query = "\(songTitle) \(artistName)"
+        
+        // Start a new task to search for the song
+        artworkTask = Task {
+            do {
+                // Check if Apple Music is authorized
+                if MusicAuthorization.currentStatus != .authorized {
+                    // We can't fetch artwork without authorization
+                    return
+                }
+                
+                // Create search request
+                var request = MusicCatalogSearchRequest(term: query, types: [Song.self])
+                request.limit = 5  // Limit results to improve performance
+                
+                // Send request
+                let response = try await request.response()
+                
+                // Find first matching song with artwork
+                if let firstSong = response.songs.first,
+                   let artworkUrl = firstSong.artwork?.url(width: 200, height: 200) {
+                    
+                    // Download artwork image
+                    let (data, _) = try await URLSession.shared.data(from: artworkUrl)
+                    let image = UIImage(data: data)
+                    
+                    // Update UI on main thread
+                    await MainActor.run {
+                        self.fetchedArtwork = image
+                    }
+                }
+            } catch {
+                print("Error fetching artwork: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -97,5 +156,6 @@ class NowPlayingModel: ObservableObject {
     deinit {
         progressTimer?.invalidate()
         musicPlayer.endGeneratingPlaybackNotifications()
+        artworkTask?.cancel()
     }
 }

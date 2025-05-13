@@ -26,8 +26,6 @@ struct ContentView: View {
     // Optional badge counts for tabs
     let badgeCounts: [Int: Int] = [:] // e.g. [1: 3] would show a badge with "3" on the Library tab
     
-    let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-    
     // Helper function to create proper bindings to dictionary values
     private func bindingFor(key: Int) -> Binding<Bool> {
         return Binding(
@@ -99,14 +97,6 @@ struct ContentView: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .padding(.bottom, isKeyboardVisible ? 0 : 56)
             .environmentObject(sortSessionStore)
-            // Add haptic feedback for swipe gestures between main tabs
-            .onChange(of: selectedTab) { newValue in
-                // Only trigger haptic if the tab actually changed (not just programmatic update)
-                if newValue != lastSelectedTab {
-                    feedbackGenerator.impactOccurred()
-                    lastSelectedTab = newValue
-                }
-            }
             
             VStack(spacing: 0) {
                 // Now Playing Bar - display when song is playing and keyboard is not visible
@@ -116,70 +106,18 @@ struct ContentView: View {
                 
                 // Custom footer - only show when keyboard is not visible
                 if !isKeyboardVisible {
-                    VStack(spacing: 0) {
-                        Divider()
-                        
-                        HStack(spacing: 0) {
-                            ForEach(0..<5) { index in
-                                Button(action: {
-                                    // Haptic feedback for tap
-                                    feedbackGenerator.impactOccurred()
-                                    
-                                    if selectedTab == index {
-                                        if navigationState[index] == true {
-                                            // In detail view - do nothing, let NavigationViewWithState handle it
-                                        } else {
-                                            // In root view - scroll to top
-                                            scrollIDs[index] = UUID()
-                                        }
-                                    }
-                                    selectedTab = index
-                                }) {
-                                    Spacer()
-                                    VStack(spacing: 6) {
-                                        ZStack(alignment: .topTrailing) {
-                                            Image(systemName: iconForIndex(index))
-                                                .font(.system(size: 21))
-                                                .padding(.top, 8)
-                                            
-                                            // Badge (if any)
-                                            if let count = badgeCounts[index], count > 0 {
-                                                Text("\(count)")
-                                                    .font(.system(size: 12, weight: .bold))
-                                                    .foregroundColor(.white)
-                                                    .frame(minWidth: 16, minHeight: 16)
-                                                    .background(Color.red)
-                                                    .clipShape(Circle())
-                                                    .offset(x: 10, y: -5)
-                                            }
-                                        }
-                                        
-                                        Text(labelForIndex(index))
-                                            .font(.caption)
-                                            .dynamicTypeSize(.small ... .large) // Dynamic text support
-                                    }
-                                    .foregroundColor(selectedTab == index ? AppStyles.accentColor : Color.gray)
-                                    .frame(height: 56)
-                                    .contentShape(Rectangle()) // Improve tap area
-                                    // Visual feedback on press
-                                    .scaleEffect(selectedTab == index ? 1.0 : 0.97)
-                                    .animation(.easeInOut(duration: 0.1), value: selectedTab)
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity)
-                                .accessibilityLabel("\(labelForIndex(index)) Tab")
-                                .accessibilityHint(selectedTab == index ? "Selected" : "")
-                                .accessibilityAddTraits(selectedTab == index ? .isSelected : [])
-                            }
-                        }
-                        .background(Color(UIColor.systemBackground))
-                    }
+                    CustomTabBar(
+                        selectedTab: $selectedTab,
+                        navigationState: $navigationState,
+                        scrollIDs: $scrollIDs,
+                        isKeyboardVisible: isKeyboardVisible,
+                        badgeCounts: badgeCounts
+                    )
                 }
             }
             .edgesIgnoringSafeArea(.bottom)
             .transition(.move(edge: .bottom))
             .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
-            .background(Color(UIColor.systemBackground))
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             isKeyboardVisible = true
@@ -192,28 +130,6 @@ struct ContentView: View {
             lastSelectedTab = selectedTab
         }
         .environmentObject(nowPlayingModel)
-    }
-    
-    private func iconForIndex(_ index: Int) -> String {
-        switch index {
-        case 0: return "chart.bar.fill"
-        case 1: return "music.note"
-        case 2: return "arrow.up.arrow.down"
-        case 3: return "arrow.2.squarepath"
-        case 4: return "gearshape.fill"
-        default: return ""
-        }
-    }
-    
-    private func labelForIndex(_ index: Int) -> String {
-        switch index {
-        case 0: return "Dashboard"
-        case 1: return "Library"
-        case 2: return "Sorter"
-        case 3: return "Replace"
-        case 4: return "Settings"
-        default: return ""
-        }
     }
 }
 
