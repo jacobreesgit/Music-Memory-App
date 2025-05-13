@@ -26,6 +26,34 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
     let iconName: (T) -> String
     let destination: (T, Int) -> DestinationView
     let seeAllDestination: () -> AllItemsView
+    let customPlayLabel: ((T) -> String)?
+    let showRank: Bool
+    
+    init(
+        title: String,
+        items: [T],
+        artwork: @escaping (T) -> MPMediaItemArtwork?,
+        itemTitle: @escaping (T) -> String,
+        itemSubtitle: @escaping (T) -> String,
+        itemPlays: @escaping (T) -> Int,
+        iconName: @escaping (T) -> String,
+        destination: @escaping (T, Int) -> DestinationView,
+        seeAllDestination: @escaping () -> AllItemsView,
+        customPlayLabel: ((T) -> String)? = nil,
+        showRank: Bool = true
+    ) {
+        self.title = title
+        self.items = items
+        self.artwork = artwork
+        self.itemTitle = itemTitle
+        self.itemSubtitle = itemSubtitle
+        self.itemPlays = itemPlays
+        self.iconName = iconName
+        self.destination = destination
+        self.seeAllDestination = seeAllDestination
+        self.customPlayLabel = customPlayLabel
+        self.showRank = showRank
+    }
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -41,7 +69,7 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                     ForEach(Array(items.prefix(5).enumerated()), id: \.offset) { index, item in
                         NavigationLink(destination: destination(item, index + 1)) {
                             VStack {
-                                // Rank badge
+                                // Artwork or placeholder
                                 ZStack(alignment: .topLeading) {
                                     // Artwork or placeholder
                                     if let artwork = artwork(item) {
@@ -60,15 +88,17 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                                             .cornerRadius(AppStyles.cornerRadius)
                                     }
                                     
-                                    // Rank badge
-                                    Text("#\(index + 1)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(AppStyles.accentColor)
-                                        .cornerRadius(8)
-                                        .offset(x: -5, y: -5)
+                                    // Rank badge - only show if showRank is true
+                                    if showRank {
+                                        Text("#\(index + 1)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(AppStyles.accentColor)
+                                            .cornerRadius(8)
+                                            .offset(x: -5, y: -5)
+                                    }
                                 }
                                 // Add spacing to ensure badge is fully visible
                                 .padding(.top, 5)
@@ -85,10 +115,16 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
                                 
-                                // Play count
-                                Text("\(itemPlays(item)) plays")
-                                    .font(AppStyles.captionStyle)
-                                    .foregroundColor(AppStyles.accentColor)
+                                // Play count or custom label
+                                if let customLabel = customPlayLabel {
+                                    Text(customLabel(item))
+                                        .font(AppStyles.captionStyle)
+                                        .foregroundColor(AppStyles.accentColor)
+                                } else {
+                                    Text("\(itemPlays(item)) plays")
+                                        .font(AppStyles.captionStyle)
+                                        .foregroundColor(AppStyles.accentColor)
+                                }
                             }
                             .frame(width: 100)
                         }
