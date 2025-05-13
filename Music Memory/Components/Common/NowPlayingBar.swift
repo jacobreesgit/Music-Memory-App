@@ -1,4 +1,4 @@
-// NowPlayingBar.swift - Complete rewrite
+// NowPlayingBar.swift - Updated implementation
 import SwiftUI
 import MediaPlayer
 
@@ -30,13 +30,24 @@ struct NowPlayingBar: View {
                     if nowPlayingModel.isLoadingArtwork {
                         ProgressView()
                             .scaleEffect(0.7)
-                            .transition(.opacity)
+                    } else if let artwork = nowPlayingModel.artworkImage {
+                        Image(uiImage: artwork)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .cornerRadius(4)
+                            .id("artwork_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
                     } else {
-                        artworkView
+                        Image(systemName: "music.note")
+                            .font(.system(size: 16))
+                            .foregroundColor(.primary)
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.isLoadingArtwork)
+                // Use opacity transition to avoid flickering
+                .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.isLoadingArtwork)
+                .animation(.easeInOut(duration: 0.2), value: nowPlayingModel.artworkImage != nil)
 
+                // Track info with ID for proper updates
                 VStack(alignment: .leading, spacing: 1) {
                     Text(nowPlayingModel.currentSong?.title ?? "Unknown")
                         .font(.footnote)
@@ -61,10 +72,12 @@ struct NowPlayingBar: View {
                         }
                     }
                 }
-                .id(nowPlayingModel.currentSong?.persistentID ?? 0)
+                // Important: Use a stable ID for proper view updates
+                .id("info_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
 
                 Spacer()
 
+                // Player controls
                 HStack(spacing: 18) {
                     Button(action: {
                         nowPlayingModel.previousTrack()
@@ -108,27 +121,6 @@ struct NowPlayingBar: View {
         }
         .transition(.move(edge: .bottom))
         .animation(.easeInOut(duration: 0.3), value: nowPlayingModel.currentSong != nil)
-    }
-    
-    // Artwork view with proper source handling
-    private var artworkView: some View {
-        Group {
-            if let artwork = nowPlayingModel.artworkImage {
-                Image(uiImage: artwork)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .cornerRadius(4)
-                    .transition(.opacity)
-                    .id("artwork_\(nowPlayingModel.currentSong?.persistentID ?? 0)")
-            } else {
-                // Fallback to placeholder
-                Image(systemName: "music.note")
-                    .font(.system(size: 16))
-                    .foregroundColor(.primary)
-                    .transition(.opacity)
-            }
-        }
     }
 
     private func getSongPlayCount() -> Int? {
