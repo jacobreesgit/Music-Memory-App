@@ -4,6 +4,7 @@
 import Foundation
 import WidgetKit
 import SwiftUI
+import MusicMemoryWidgetsExtension
 
 // Struct to hold shared music item data for widgets
 struct MusicHighlightsItem: Codable, Hashable {
