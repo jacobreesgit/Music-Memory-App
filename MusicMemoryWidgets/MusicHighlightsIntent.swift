@@ -1,11 +1,3 @@
-//
-//  MusicHighlightsIntent.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 15/05/2025.
-//
-
-
 // MusicHighlightsIntent.swift
 // MusicMemoryWidgets
 
@@ -23,7 +15,7 @@ struct MusicHighlightsIntent: WidgetConfigurationIntent {
     var contentType: MusicContentType
     
     // Custom title option
-    @Parameter(title: "Custom Title", 
+    @Parameter(title: "Custom Title",
               description: "Leave empty to use default title",
               default: "")
     var customTitle: String

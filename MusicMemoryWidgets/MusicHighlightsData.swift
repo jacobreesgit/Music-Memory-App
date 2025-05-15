@@ -1,11 +1,3 @@
-//
-//  MusicHighlightsItem.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 15/05/2025.
-//
-
-
 // MusicHighlightsData.swift
 // Shared between app and widget extension
 

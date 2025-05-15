@@ -75,6 +75,13 @@
 			);
 			target = 076065B82DD3D697009507CF /* MusicMemoryWidgetsExtension */;
 		};
+		076065F32DD60543009507CF /* Exceptions for "MusicMemoryWidgets" folder in "Music Memory" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				MusicHighlightsData.swift,
+			);
+			target = 0707E9C12DBE57A600BE138D /* Music Memory */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -99,6 +106,7 @@
 		076065BF2DD3D697009507CF /* MusicMemoryWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				076065F32DD60543009507CF /* Exceptions for "MusicMemoryWidgets" folder in "Music Memory" target */,
 				076065D32DD3D698009507CF /* Exceptions for "MusicMemoryWidgets" folder in "MusicMemoryWidgetsExtension" target */,
 			);
 			path = MusicMemoryWidgets;
