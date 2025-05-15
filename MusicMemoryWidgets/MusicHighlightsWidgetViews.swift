@@ -131,7 +131,6 @@ struct SmallMusicHighlightsView: View {
     }
 }
 
-// Medium widget view (shows top 3 items)
 struct MediumMusicHighlightsView: View {
     var entry: MusicHighlightsProvider.Entry
     
@@ -157,77 +156,76 @@ struct MediumMusicHighlightsView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             
-            // Items in horizontal layout (top 3)
+            // Items in grid layout (top 3) instead of ScrollView
             if !entry.items.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(Array(entry.items.prefix(3).enumerated()), id: \.element.id) { index, item in
-                            // Item card
-                            VStack(spacing: 4) {
-                                // Artwork or placeholder
-                                ZStack {
-                                    if let artworkData = item.artworkData,
-                                       let artwork = UIImage(data: artworkData) {
-                                        Image(uiImage: artwork)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 60, height: 60)
-                                            .cornerRadius(8)
-                                    } else {
-                                        // Placeholder with icon
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.purple.opacity(0.2))
-                                            .frame(width: 60, height: 60)
-                                        
-                                        Image(systemName: entry.configuration.contentType.iconName)
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.purple)
-                                    }
+                HStack(spacing: 12) {
+                    ForEach(Array(entry.items.prefix(3).enumerated()), id: \.element.id) { index, item in
+                        // Item card
+                        VStack(spacing: 4) {
+                            // Artwork or placeholder
+                            ZStack {
+                                if let artworkData = item.artworkData,
+                                   let artwork = UIImage(data: artworkData) {
+                                    Image(uiImage: artwork)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 60, height: 60)
+                                        .cornerRadius(8)
+                                } else {
+                                    // Placeholder with icon
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.purple.opacity(0.2))
+                                        .frame(width: 60, height: 60)
                                     
-                                    // Rank badge
-                                    VStack {
-                                        HStack {
-                                            Text("#\(index + 1)")
-                                                .font(.system(size: 9, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 4)
-                                                .padding(.vertical, 2)
-                                                .background(Color.purple)
-                                                .cornerRadius(4)
-                                            
-                                            Spacer()
-                                        }
+                                    Image(systemName: entry.configuration.contentType.iconName)
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.purple)
+                                }
+                                
+                                // Rank badge
+                                VStack {
+                                    HStack {
+                                        Text("#\(index + 1)")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 2)
+                                            .background(Color.purple)
+                                            .cornerRadius(4)
+                                        
                                         Spacer()
                                     }
-                                    .padding(2)
-                                    .frame(width: 60, height: 60)
+                                    Spacer()
                                 }
-                                
-                                // Title
-                                Text(item.title)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .lineLimit(1)
+                                .padding(2)
+                                .frame(width: 60, height: 60)
+                            }
+                            
+                            // Title
+                            Text(item.title)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                                .frame(width: 60)
+                            
+                            // Subtitle
+                            Text(item.subtitle)
+                                .font(.system(size: 9))
+                                .lineLimit(1)
+                                .foregroundColor(.secondary)
+                                .frame(width: 60)
+                            
+                            // Play count if enabled
+                            if entry.configuration.showPlayCounts {
+                                Text("\(item.plays) plays")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(.purple)
                                     .frame(width: 60)
-                                
-                                // Subtitle
-                                Text(item.subtitle)
-                                    .font(.system(size: 9))
-                                    .lineLimit(1)
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 60)
-                                
-                                // Play count if enabled
-                                if entry.configuration.showPlayCounts {
-                                    Text("\(item.plays) plays")
-                                        .font(.system(size: 9, weight: .medium))
-                                        .foregroundColor(.purple)
-                                        .frame(width: 60)
-                                }
                             }
                         }
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 16)
                 }
+                .padding(.horizontal, 16)
             } else {
                 // No items placeholder
                 Text("No data available")
