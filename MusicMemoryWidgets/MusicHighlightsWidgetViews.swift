@@ -30,10 +30,8 @@ struct SmallMusicHighlightsView: View {
     var entry: MusicHighlightsProvider.Entry
     
     var body: some View {
-        // Get display title
-        let title = entry.configuration.customTitle.isEmpty ?
-            entry.configuration.contentType.displayTitle :
-            entry.configuration.customTitle
+        // Get display title - always use the content type's display title
+        let title = entry.configuration.contentType.displayTitle
         
         VStack(alignment: .leading, spacing: 8) {
             // Header
@@ -135,10 +133,8 @@ struct MediumMusicHighlightsView: View {
     var entry: MusicHighlightsProvider.Entry
     
     var body: some View {
-        // Get display title
-        let title = entry.configuration.customTitle.isEmpty ?
-            entry.configuration.contentType.displayTitle :
-            entry.configuration.customTitle
+        // Get display title - always use the content type's display title
+        let title = entry.configuration.contentType.displayTitle
         
         VStack(alignment: .leading, spacing: 8) {
             // Header
@@ -244,10 +240,8 @@ struct LargeMusicHighlightsView: View {
     var entry: MusicHighlightsProvider.Entry
     
     var body: some View {
-        // Get display title
-        let title = entry.configuration.customTitle.isEmpty ?
-            entry.configuration.contentType.displayTitle :
-            entry.configuration.customTitle
+        // Get display title - always use the content type's display title
+        let title = entry.configuration.contentType.displayTitle
             
         VStack(alignment: .leading, spacing: 12) {
             // Header

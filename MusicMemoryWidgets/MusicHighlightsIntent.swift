@@ -14,12 +14,6 @@ struct MusicHighlightsIntent: WidgetConfigurationIntent {
     @Parameter(title: "Content Type", default: .songs)
     var contentType: MusicContentType
     
-    // Custom title option
-    @Parameter(title: "Custom Title",
-              description: "Leave empty to use default title",
-              default: "")
-    var customTitle: String
-    
     // Show/hide play counts option
     @Parameter(title: "Show Play Counts", default: true)
     var showPlayCounts: Bool
