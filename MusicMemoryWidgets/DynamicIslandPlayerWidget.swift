@@ -184,11 +184,3 @@ struct DynamicIslandPlayerLiveActivity: Widget {
         }
     }
 }
-
-// Live Activity Widget entry point
-@main
-struct DynamicIslandPlayerBundle: WidgetBundle {
-    var body: some Widget {
-        DynamicIslandPlayerLiveActivity()
-    }
-}
