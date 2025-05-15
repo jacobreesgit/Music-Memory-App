@@ -11,14 +11,10 @@ import SwiftUI
 @main
 struct MusicMemoryWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        // Add our new Music Highlights widget
+        // Music Highlights widget (main widget)
         MusicHighlightsWidget()
         
-        // Keep control widget
-        MusicMemoryWidgetsControl()
-        
-        // Keep Live Activity widgets
-        MusicMemoryWidgetsLiveActivity()
+        // Dynamic Island widget for now playing
         DynamicIslandPlayerLiveActivity()
     }
 }
