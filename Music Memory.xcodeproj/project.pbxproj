@@ -82,6 +82,13 @@
 			);
 			target = 0707E9C12DBE57A600BE138D /* Music Memory */;
 		};
+		076065FC2DD62750009507CF /* Exceptions for "Music Memory" folder in "MusicMemoryWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				MusicContentTypeShared,
+			);
+			target = 076065B82DD3D697009507CF /* MusicMemoryWidgetsExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -89,6 +96,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				0708F0DE2DC4C98700E7EE94 /* Exceptions for "Music Memory" folder in "Music Memory" target */,
+				076065FC2DD62750009507CF /* Exceptions for "Music Memory" folder in "MusicMemoryWidgetsExtension" target */,
 			);
 			path = "Music Memory";
 			sourceTree = "<group>";
