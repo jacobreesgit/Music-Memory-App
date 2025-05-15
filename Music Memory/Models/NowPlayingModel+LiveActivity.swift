@@ -56,10 +56,11 @@ extension NowPlayingModel {
         }
     }
     
-    // End the current activity
-    private func endActivity() {
+    // End the current activity - changed from private to internal access
+    // Also fixed the immediate dismissal policy
+    func endActivity() {
         Task {
-            await LiveActivityState.currentActivity?.end(dismissalPolicy: .immediate)
+            await LiveActivityState.currentActivity?.end(dismissalPolicy: ActivityUIDismissalPolicy.immediate)
             LiveActivityState.currentActivity = nil
         }
     }

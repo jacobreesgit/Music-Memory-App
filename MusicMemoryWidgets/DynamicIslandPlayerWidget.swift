@@ -1,20 +1,9 @@
 // DynamicIslandPlayerWidget.swift
-// Create this file in a new "Widgets" folder
+// This version has the NowPlayingAttributes definition removed
 
 import WidgetKit
 import SwiftUI
 import ActivityKit
-
-struct NowPlayingAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var title: String
-        var artist: String
-        var playCount: Int
-        var playbackProgress: Double
-        var isPlaying: Bool
-        var artworkData: Data?
-    }
-}
 
 struct DynamicIslandPlayerLiveActivity: Widget {
     var body: some WidgetConfiguration {
