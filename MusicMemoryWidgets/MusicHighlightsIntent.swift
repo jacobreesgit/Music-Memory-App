@@ -25,8 +25,8 @@ struct MusicHighlightsIntent: WidgetConfigurationIntent {
     var showPlayCounts: Bool
 }
 
-// Enum for content type selection
-enum MusicContentType: String, AppEnum {
+// Enum for content type selection - make this public so it can be accessed from main app
+public enum MusicContentType: String, AppEnum {
     case songs
     case artists
     case albums
@@ -41,8 +41,8 @@ enum MusicContentType: String, AppEnum {
         .playlists: .init(title: "Playlists")
     ]
     
-    // Helper to get display title
-    var displayTitle: String {
+    // Helper to get display title - make public
+    public var displayTitle: String {
         switch self {
         case .songs: return "Top Songs"
         case .artists: return "Top Artists"
@@ -51,8 +51,8 @@ enum MusicContentType: String, AppEnum {
         }
     }
     
-    // Helper to get icon name
-    var iconName: String {
+    // Helper to get icon name - make public
+    public var iconName: String {
         switch self {
         case .songs: return "music.note"
         case .artists: return "music.mic"

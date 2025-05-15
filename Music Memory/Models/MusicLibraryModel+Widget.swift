@@ -19,7 +19,7 @@ extension MusicLibraryModel {
                 artworkData: song.artwork?.image(at: CGSize(width: 100, height: 100))?.pngData()
             )
         }
-        MusicHighlightsDataStore.shared.saveTopItems(Array(topSongs), forType: .songs)
+        MusicHighlightsDataStore.shared.saveTopItems(Array(topSongs), forType: MusicContentType.songs)
         
         // Process and save top artists
         let topArtists = self.filteredArtists.prefix(5).map { artist in
@@ -31,7 +31,7 @@ extension MusicLibraryModel {
                 artworkData: artist.artwork?.image(at: CGSize(width: 100, height: 100))?.pngData()
             )
         }
-        MusicHighlightsDataStore.shared.saveTopItems(Array(topArtists), forType: .artists)
+        MusicHighlightsDataStore.shared.saveTopItems(Array(topArtists), forType: MusicContentType.artists)
         
         // Process and save top albums
         let topAlbums = self.filteredAlbums.prefix(5).map { album in
@@ -43,7 +43,7 @@ extension MusicLibraryModel {
                 artworkData: album.artwork?.image(at: CGSize(width: 100, height: 100))?.pngData()
             )
         }
-        MusicHighlightsDataStore.shared.saveTopItems(Array(topAlbums), forType: .albums)
+        MusicHighlightsDataStore.shared.saveTopItems(Array(topAlbums), forType: MusicContentType.albums)
         
         // Process and save top playlists
         let topPlaylists = self.filteredPlaylists.prefix(5).map { playlist in
@@ -55,7 +55,7 @@ extension MusicLibraryModel {
                 artworkData: playlist.artwork?.image(at: CGSize(width: 100, height: 100))?.pngData()
             )
         }
-        MusicHighlightsDataStore.shared.saveTopItems(Array(topPlaylists), forType: .playlists)
+        MusicHighlightsDataStore.shared.saveTopItems(Array(topPlaylists), forType: MusicContentType.playlists)
         
         // Refresh widgets
         WidgetCenter.shared.reloadTimelines(ofKind: "MusicHighlightsWidget")
