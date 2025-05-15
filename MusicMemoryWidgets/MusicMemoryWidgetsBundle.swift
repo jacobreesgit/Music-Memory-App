@@ -14,5 +14,6 @@ struct MusicMemoryWidgetsBundle: WidgetBundle {
         MusicMemoryWidgets()
         MusicMemoryWidgetsControl()
         MusicMemoryWidgetsLiveActivity()
+        DynamicIslandPlayerLiveActivity() // Add this line to include the Dynamic Island widget
     }
 }

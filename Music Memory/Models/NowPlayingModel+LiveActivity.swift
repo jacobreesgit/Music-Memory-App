@@ -1,6 +1,4 @@
-// NowPlayingModel+LiveActivity.swift
-// Add this file to the Models folder
-
+// NowPlayingModel+LiveActivity.swift - Minimalist version
 import ActivityKit
 import MediaPlayer
 import SwiftUI
@@ -11,7 +9,7 @@ extension NowPlayingModel {
         static var currentActivity: Activity<NowPlayingAttributes>? = nil
     }
     
-    // Start or update the Dynamic Island Live Activity
+    // Start or update the Dynamic Island Live Activity - Focused only on play count
     func updateDynamicIsland() {
         guard let currentSong = currentSong else {
             // End activity if no song is playing
@@ -19,20 +17,15 @@ extension NowPlayingModel {
             return
         }
         
-        // Get artwork data
-        var artworkData: Data? = nil
-        if let artwork = artworkImage {
-            artworkData = artwork.pngData()
-        }
-        
-        // Create content state
+        // Ultra-minimal content state - just what we need for the play count
         let contentState = NowPlayingAttributes.ContentState(
             title: currentSong.title ?? "Unknown",
             artist: currentSong.artist ?? "Unknown Artist",
             playCount: currentSong.playCount,
             playbackProgress: playbackProgress,
             isPlaying: isPlaying,
-            artworkData: artworkData
+            // No artwork at all to keep payload tiny
+            artworkData: nil
         )
         
         if let activity = LiveActivityState.currentActivity {
@@ -56,8 +49,7 @@ extension NowPlayingModel {
         }
     }
     
-    // End the current activity - changed from private to internal access
-    // Also fixed the immediate dismissal policy
+    // End the current activity
     func endActivity() {
         Task {
             await LiveActivityState.currentActivity?.end(dismissalPolicy: ActivityUIDismissalPolicy.immediate)
