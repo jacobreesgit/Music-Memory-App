@@ -1,20 +1,20 @@
-// MusicContentTypeShared.swift
-// Shared between app and widget extension
+// SharedTypes.swift
+// Place this file in your main app directory (Music Memory)
 
 import Foundation
 import SwiftUI
 import AppIntents
 
-// Enum for content type selection
+// Mark everything as public to make it accessible to extensions
 public enum MusicContentType: String, AppEnum {
     case songs
     case artists
     case albums
     case playlists
     
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = .init(name: "Content Type")
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation = .init(name: "Content Type")
     
-    static var caseDisplayRepresentations: [MusicContentType: DisplayRepresentation] = [
+    public static var caseDisplayRepresentations: [MusicContentType: DisplayRepresentation] = [
         .songs: .init(title: "Songs"),
         .artists: .init(title: "Artists"),
         .albums: .init(title: "Albums"),
