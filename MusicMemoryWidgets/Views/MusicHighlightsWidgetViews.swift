@@ -106,12 +106,10 @@ struct SmallMusicHighlightsView: View {
                         .lineLimit(1)
                         .foregroundColor(.secondary)
                     
-                    // Play count if enabled
-                    if entry.configuration.showPlayCounts {
-                        Text("\(topItem.plays) plays")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.purple)
-                    }
+                    // Play count - always shown now
+                    Text("\(topItem.plays) plays")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.purple)
                 }
                 .frame(maxWidth: .infinity)
                 
@@ -210,13 +208,11 @@ struct MediumMusicHighlightsView: View {
                                 .foregroundColor(.secondary)
                                 .frame(width: 60)
                             
-                            // Play count if enabled
-                            if entry.configuration.showPlayCounts {
-                                Text("\(item.plays) plays")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundColor(.purple)
-                                    .frame(width: 60)
-                            }
+                            // Play count - always shown now
+                            Text("\(item.plays) plays")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(.purple)
+                                .frame(width: 60)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -306,12 +302,10 @@ struct LargeMusicHighlightsView: View {
                             
                             Spacer()
                             
-                            // Play count if enabled
-                            if entry.configuration.showPlayCounts {
-                                Text("\(item.plays) plays")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.purple)
-                            }
+                            // Play count - always shown now
+                            Text("\(item.plays) plays")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.purple)
                         }
                         .padding(.horizontal, 16)
                         

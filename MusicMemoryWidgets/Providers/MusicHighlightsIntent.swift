@@ -13,8 +13,4 @@ struct MusicHighlightsIntent: WidgetConfigurationIntent {
     // Content type selection
     @Parameter(title: "Content Type", default: .songs)
     var contentType: MusicContentType
-    
-    // Show/hide play counts option
-    @Parameter(title: "Show Play Counts", default: true)
-    var showPlayCounts: Bool
-}
+    }

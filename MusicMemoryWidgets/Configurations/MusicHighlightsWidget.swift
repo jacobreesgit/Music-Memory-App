@@ -129,7 +129,6 @@ extension MusicHighlightsIntent {
     fileprivate static var songs: MusicHighlightsIntent {
         let intent = MusicHighlightsIntent()
         intent.contentType = .songs
-        intent.showPlayCounts = true
         return intent
     }
     
@@ -137,7 +136,6 @@ extension MusicHighlightsIntent {
     fileprivate static var artists: MusicHighlightsIntent {
         let intent = MusicHighlightsIntent()
         intent.contentType = .artists
-        intent.showPlayCounts = true
         return intent
     }
     
@@ -145,7 +143,6 @@ extension MusicHighlightsIntent {
     fileprivate static var albums: MusicHighlightsIntent {
         let intent = MusicHighlightsIntent()
         intent.contentType = .albums
-        intent.showPlayCounts = false
         return intent
     }
 }
