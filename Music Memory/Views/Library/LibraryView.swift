@@ -1,10 +1,3 @@
-//
-//  LibraryView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 30/04/2025.
-//
-
 import SwiftUI
 import MediaPlayer
 
@@ -12,6 +5,7 @@ struct LibraryView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @Binding var selectedTab: Int
     @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
+    @State private var pendingNavigationRequest: (type: String, id: String)? = nil
     
     // Feedback generator for haptic feedback
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
@@ -95,10 +89,16 @@ struct LibraryView: View {
                         feedbackGenerator.impactOccurred()
                         lastSelectedTab = newValue
                     }
+                    
+                    // Check if we have a pending navigation after tab changed
+                    handlePendingNavigation()
                 }
                 .onAppear {
                     // Initialize lastSelectedTab on appear
                     lastSelectedTab = selectedTab
+                    
+                    // Listen for navigation requests from deep links
+                    setupNavigationNotificationObserver()
                 }
             }
         }
@@ -113,5 +113,57 @@ struct LibraryView: View {
         case 4: return "Playlists"
         default: return ""
         }
+    }
+    
+    // Add notification observer for deep link navigation requests
+    private func setupNavigationNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("NavigateToDetailItem"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let userInfo = notification.userInfo,
+               let type = userInfo["type"] as? String,
+               let id = userInfo["id"] as? String {
+                // Store the navigation request
+                pendingNavigationRequest = (type: type, id: id)
+                
+                // Set the appropriate tab first
+                switch type {
+                case "songs":
+                    selectedTab = 0
+                case "artists":
+                    selectedTab = 1
+                case "albums":
+                    selectedTab = 2
+                case "genres":
+                    selectedTab = 3
+                case "playlists":
+                    selectedTab = 4
+                default:
+                    selectedTab = 0
+                }
+                
+                // The tab change will trigger handlePendingNavigation via onChange
+            }
+        }
+    }
+    
+    // Handle pending navigation after tab selection is complete
+    private func handlePendingNavigation() {
+        guard let navigation = pendingNavigationRequest else { return }
+        
+        // We need to find the item and navigate to it programmatically
+        // This might require implementing a helper function in each view
+        // to find and navigate to an item by ID
+        
+        // For now, we'll just print what we're trying to navigate to
+        print("Should navigate to \(navigation.type) with ID: \(navigation.id)")
+        
+        // Clear the pending navigation
+        pendingNavigationRequest = nil
+        
+        // TODO: Add actual navigation logic here or better yet, introduce a NavigationManager class
+        // that can be injected into each tab view to handle finding items by ID
     }
 }

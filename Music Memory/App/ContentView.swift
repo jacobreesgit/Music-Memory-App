@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  Music Memory
-//
-//  Created by Jacob Rees on 27/04/2025.
-//
-
 import SwiftUI
 import UIKit
 import Combine
@@ -14,6 +7,12 @@ struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @StateObject var sortSessionStore = SortSessionStore()
     @StateObject var nowPlayingModel = NowPlayingModel()
+    
+    // Read environment values passed from MusicMemoryApp
+    @Environment(\.selectedTabIndex) private var appSelectedTabIndex
+    @Environment(\.selectedLibraryTab) private var appSelectedLibraryTab
+    @Environment(\.navigateToDetailItem) private var appNavigateToDetailItem
+    
     @State private var selectedTab = 0
     @State private var navigationState = [0: false, 1: false, 2: false, 3: false, 4: false]
     @State private var scrollIDs = [0: UUID(), 1: UUID(), 2: UUID(), 3: UUID(), 4: UUID()]
@@ -72,7 +71,8 @@ struct ContentView: View {
                 NavigationViewWithState(
                     rootView: LibraryView(selectedTab: libraryTabBinding).id(scrollIDs[1]),
                     inDetailView: bindingFor(key: 1),
-                    scrollToTopAction: { scrollIDs[1] = UUID() }
+                    scrollToTopAction: { scrollIDs[1] = UUID() },
+                    navigateToDetailItem: appNavigateToDetailItem
                 )
                 .tag(1)
                 
@@ -145,6 +145,15 @@ struct ContentView: View {
         .onAppear {
             // Initialize lastSelectedTab on appear
             lastSelectedTab = selectedTab
+            
+            // Apply navigation settings from App - This is the key addition
+            if appSelectedTabIndex > 0 {
+                selectedTab = appSelectedTabIndex
+            }
+            
+            if appSelectedTabIndex == 1 && appSelectedLibraryTab > 0 {
+                currentLibraryTab = appSelectedLibraryTab
+            }
         }
         .environmentObject(nowPlayingModel)
         .environmentObject(sortSessionStore)
@@ -155,9 +164,17 @@ struct ContentView: View {
         let rootView: Content
         @Binding var inDetailView: Bool
         let scrollToTopAction: () -> Void
+        var navigateToDetailItem: (type: String, id: String)? = nil
         
         // UIKit navigation controller reference
         @State private var navController: UINavigationController?
+        
+        init(rootView: Content, inDetailView: Binding<Bool>, scrollToTopAction: @escaping () -> Void, navigateToDetailItem: (type: String, id: String)? = nil) {
+            self.rootView = rootView
+            self._inDetailView = inDetailView
+            self.scrollToTopAction = scrollToTopAction
+            self.navigateToDetailItem = navigateToDetailItem
+        }
         
         var body: some View {
             NavigationView {
@@ -172,6 +189,22 @@ struct ContentView: View {
                 // If tab is tapped while in detail view, pop to root
                 if !newValue, let navController = navController {
                     navController.popToRootViewController(animated: true)
+                }
+            }
+            .onAppear {
+                // Handle deep link navigation if present
+                if let detailItem = navigateToDetailItem, let navController = navController {
+                    // This is a placeholder for LibraryView to handle - the actual navigation
+                    // to detail view needs to happen in LibraryView since it knows how to find
+                    // and navigate to the specific item
+                    print("Navigation requested to \(detailItem.type) with ID: \(detailItem.id)")
+                    
+                    // We'll post a notification that LibraryView can observe
+                    NotificationCenter.default.post(
+                        name: Notification.Name("NavigateToDetailItem"),
+                        object: nil,
+                        userInfo: ["type": detailItem.type, "id": detailItem.id]
+                    )
                 }
             }
         }

@@ -1,10 +1,10 @@
-// Music Memory/Views/Artists/ArtistsView.swift
 import SwiftUI
 import MediaPlayer
 
 struct ArtistsView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
     @StateObject private var viewModel: MediaListViewModel<ArtistData, ArtistSortOption>
+    @StateObject private var navigationManager = NavigationManager.shared
     
     // Initialize with default or specified sort options
     init(initialSortOption: ArtistSortOption = .playCount, initialSortAscending: Bool = false) {
@@ -27,14 +27,27 @@ struct ArtistsView: View {
             } else if !musicLibrary.hasAccess {
                 LibraryAccessView()
             } else {
-                MediaListView(
-                    viewModel: viewModel,
-                    emptyStateIcon: "music.mic",
-                    emptyStateTitle: "No artists found in your library",
-                    emptyStateMessage: "Artists with play count information will appear here",
-                    searchPlaceholder: "Search artists",
-                    loadMoreButtonText: "Load More Artists"
-                )
+                ZStack {
+                    MediaListView(
+                        viewModel: viewModel,
+                        emptyStateIcon: "music.mic",
+                        emptyStateTitle: "No artists found in your library",
+                        emptyStateMessage: "Artists with play count information will appear here",
+                        searchPlaceholder: "Search artists",
+                        loadMoreButtonText: "Load More Artists"
+                    )
+                    
+                    // Hidden navigation link that will be triggered programmatically
+                    NavigationLink(
+                        destination: navigationManager.navigateToArtist.map { ArtistDetailView(artist: $0) },
+                        isActive: Binding(
+                            get: { navigationManager.navigateToArtist != nil },
+                            set: { if !$0 { navigationManager.navigateToArtist = nil } }
+                        )
+                    ) {
+                        EmptyView()
+                    }
+                }
             }
         }
         .navigationTitle("Artists")
@@ -45,11 +58,18 @@ struct ArtistsView: View {
                 viewModel.items = musicLibrary.filteredArtists
                 viewModel.resetView()
             }
+            
+            // Process any pending navigation
+            navigationManager.processNavigation(using: musicLibrary)
         }
         .onChange(of: musicLibrary.filteredArtists) { oldValue, newValue in
             // Update viewModel when the source data changes
             viewModel.items = newValue
             viewModel.resetView()
+        }
+        .onDisappear {
+            // Reset navigation when leaving the view
+            navigationManager.navigateToArtist = nil
         }
     }
 }

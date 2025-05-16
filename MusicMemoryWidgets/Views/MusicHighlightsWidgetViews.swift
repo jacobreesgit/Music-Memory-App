@@ -1,4 +1,4 @@
-// MusicHighlightsWidgetViews.swift
+// MusicHighlightsWidgetViews.swift - Updated for proper deep linking
 // MusicMemoryWidgets
 
 import WidgetKit
@@ -92,8 +92,8 @@ struct SmallMusicHighlightsView: View {
                 // Center the content vertically
                 .frame(maxHeight: .infinity, alignment: .center)
                 
-                // Item-specific deep link
-                .widgetURL(URL(string: "musicmemory://highlights/\(entry.configuration.contentType.rawValue)/\(topItem.id)"))
+                // Item-specific deep link - Ensure ID is valid
+                .widgetURL(makeDeepLink(type: entry.configuration.contentType.rawValue, id: topItem.id))
             } else {
                 // No items placeholder
                 Text("No data available")
@@ -103,6 +103,17 @@ struct SmallMusicHighlightsView: View {
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)
+    }
+    
+    // Helper to make proper deep links
+    private func makeDeepLink(type: String, id: String) -> URL {
+        // Make sure to properly escape components for URLs
+        let baseURLString = "musicmemory://highlights"
+        let encodedType = type.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? type
+        let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        
+        return URL(string: "\(baseURLString)/\(encodedType)/\(encodedId)") ??
+               URL(string: "musicmemory://highlights")!
     }
 }
 
@@ -133,65 +144,67 @@ struct MediumMusicHighlightsView: View {
             if !entry.items.isEmpty {
                 HStack(spacing: 12) {
                     ForEach(Array(entry.items.prefix(3).enumerated()), id: \.element.id) { index, item in
-                        // Item card
-                        VStack(spacing: 4) {
-                            // Artwork or placeholder
-                            ZStack {
-                                if let artworkData = item.artworkData,
-                                   let artwork = UIImage(data: artworkData) {
-                                    Image(uiImage: artwork)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 60, height: 60)
-                                        .cornerRadius(8)
-                                } else {
-                                    // Placeholder with icon
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.purple.opacity(0.2))
-                                        .frame(width: 60, height: 60)
-                                    
-                                    Image(systemName: entry.configuration.contentType.iconName)
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.purple)
-                                }
-                                
-                                // Rank badge
-                                VStack {
-                                    HStack {
-                                        Text("#\(index + 1)")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 2)
-                                            .background(Color.purple)
-                                            .cornerRadius(4)
+                        // Item card - wrap each in a Link
+                        Link(destination: makeDeepLink(type: entry.configuration.contentType.rawValue, id: item.id)) {
+                            VStack(spacing: 4) {
+                                // Artwork or placeholder
+                                ZStack {
+                                    if let artworkData = item.artworkData,
+                                       let artwork = UIImage(data: artworkData) {
+                                        Image(uiImage: artwork)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 60, height: 60)
+                                            .cornerRadius(8)
+                                    } else {
+                                        // Placeholder with icon
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.purple.opacity(0.2))
+                                            .frame(width: 60, height: 60)
                                         
+                                        Image(systemName: entry.configuration.contentType.iconName)
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.purple)
+                                    }
+                                    
+                                    // Rank badge
+                                    VStack {
+                                        HStack {
+                                            Text("#\(index + 1)")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 4)
+                                                .padding(.vertical, 2)
+                                                .background(Color.purple)
+                                                .cornerRadius(4)
+                                            
+                                            Spacer()
+                                        }
                                         Spacer()
                                     }
-                                    Spacer()
+                                    .padding(2)
+                                    .frame(width: 60, height: 60)
                                 }
-                                .padding(2)
-                                .frame(width: 60, height: 60)
+                                
+                                // Title
+                                Text(item.title)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .lineLimit(1)
+                                    .frame(width: 60)
+                                
+                                // Subtitle
+                                Text(item.subtitle)
+                                    .font(.system(size: 9))
+                                    .lineLimit(1)
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 60)
+                                
+                                // Play count - always shown now
+                                Text("\(item.plays) plays")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(.purple)
+                                    .frame(width: 60)
                             }
-                            
-                            // Title
-                            Text(item.title)
-                                .font(.system(size: 11, weight: .medium))
-                                .lineLimit(1)
-                                .frame(width: 60)
-                            
-                            // Subtitle
-                            Text(item.subtitle)
-                                .font(.system(size: 9))
-                                .lineLimit(1)
-                                .foregroundColor(.secondary)
-                                .frame(width: 60)
-                            
-                            // Play count - always shown now
-                            Text("\(item.plays) plays")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.purple)
-                                .frame(width: 60)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -205,8 +218,25 @@ struct MediumMusicHighlightsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .widgetURL(URL(string: "musicmemory://highlights/\(entry.configuration.contentType.rawValue)"))
+        // Link for the whole widget goes to the category page
+        .widgetURL(makeDeepLink(type: entry.configuration.contentType.rawValue, id: ""))
         .containerBackground(.fill.tertiary, for: .widget)
+    }
+    
+    // Helper to make proper deep links
+    private func makeDeepLink(type: String, id: String) -> URL {
+        // Make sure to properly escape components for URLs
+        let baseURLString = "musicmemory://highlights"
+        let encodedType = type.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? type
+        
+        if id.isEmpty {
+            return URL(string: "\(baseURLString)/\(encodedType)") ??
+                   URL(string: "musicmemory://highlights")!
+        } else {
+            let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+            return URL(string: "\(baseURLString)/\(encodedType)/\(encodedId)") ??
+                   URL(string: "musicmemory://highlights")!
+        }
     }
 }
 
@@ -239,54 +269,56 @@ struct LargeMusicHighlightsView: View {
                 VStack(spacing: 12) {
                     ForEach(Array(entry.items.prefix(5).enumerated()), id: \.element.id) { index, item in
                         // Row layout
-                        HStack(spacing: 12) {
-                            // Rank number
-                            Text("#\(index + 1)")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.purple)
-                                .frame(width: 30, alignment: .center)
-                            
-                            // Artwork or placeholder
-                            if let artworkData = item.artworkData,
-                               let artwork = UIImage(data: artworkData) {
-                                Image(uiImage: artwork)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 48, height: 48)
-                                    .cornerRadius(6)
-                            } else {
-                                // Placeholder with icon
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.purple.opacity(0.2))
-                                        .frame(width: 48, height: 48)
-                                    
-                                    Image(systemName: entry.configuration.contentType.iconName)
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.purple)
-                                }
-                            }
-                            
-                            // Title and subtitle
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.title)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .lineLimit(1)
+                        Link(destination: makeDeepLink(type: entry.configuration.contentType.rawValue, id: item.id)) {
+                            HStack(spacing: 12) {
+                                // Rank number
+                                Text("#\(index + 1)")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.purple)
+                                    .frame(width: 30, alignment: .center)
                                 
-                                Text(item.subtitle)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
+                                // Artwork or placeholder
+                                if let artworkData = item.artworkData,
+                                   let artwork = UIImage(data: artworkData) {
+                                    Image(uiImage: artwork)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 48, height: 48)
+                                        .cornerRadius(6)
+                                } else {
+                                    // Placeholder with icon
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color.purple.opacity(0.2))
+                                            .frame(width: 48, height: 48)
+                                        
+                                        Image(systemName: entry.configuration.contentType.iconName)
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.purple)
+                                    }
+                                }
+                                
+                                // Title and subtitle
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.title)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .lineLimit(1)
+                                    
+                                    Text(item.subtitle)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                                
+                                Spacer()
+                                
+                                // Play count - always shown now
+                                Text("\(item.plays) plays")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.purple)
                             }
-                            
-                            Spacer()
-                            
-                            // Play count - always shown now
-                            Text("\(item.plays) plays")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.purple)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(.horizontal, 16)
                         
                         // Divider for all but the last item
                         if index < entry.items.count - 1 && index < 4 {
@@ -303,7 +335,24 @@ struct LargeMusicHighlightsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .widgetURL(URL(string: "musicmemory://highlights/\(entry.configuration.contentType.rawValue)"))
+        // Link for the whole widget goes to the category page
+        .widgetURL(makeDeepLink(type: entry.configuration.contentType.rawValue, id: ""))
         .containerBackground(.fill.tertiary, for: .widget)
+    }
+    
+    // Helper to make proper deep links
+    private func makeDeepLink(type: String, id: String) -> URL {
+        // Make sure to properly escape components for URLs
+        let baseURLString = "musicmemory://highlights"
+        let encodedType = type.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? type
+        
+        if id.isEmpty {
+            return URL(string: "\(baseURLString)/\(encodedType)") ??
+                   URL(string: "musicmemory://highlights")!
+        } else {
+            let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+            return URL(string: "\(baseURLString)/\(encodedType)/\(encodedId)") ??
+                   URL(string: "musicmemory://highlights")!
+        }
     }
 }
