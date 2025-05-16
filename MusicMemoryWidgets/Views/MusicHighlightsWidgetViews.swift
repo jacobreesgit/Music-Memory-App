@@ -25,95 +25,75 @@ struct MusicHighlightsWidgetEntryView: View {
     }
 }
 
-// Small widget view (shows just top item)
+// Small widget view (shows just top item) - with deep linking to detail view
 struct SmallMusicHighlightsView: View {
     var entry: MusicHighlightsProvider.Entry
     
     var body: some View {
-        // Get display title - always use the content type's display title
-        let title = entry.configuration.contentType.displayTitle
-        
-        VStack(alignment: .leading, spacing: 8) {
-            // Header
-            HStack {
-                Image(systemName: entry.configuration.contentType.iconName)
-                    .font(.system(size: 12))
-                    .foregroundColor(.purple)
-                
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            
+        ZStack {
             // Show only the #1 item
             if let topItem = entry.items.first {
-                Spacer()
-                
-                // Center main content
-                VStack(spacing: 6) {
-                    // Artwork or placeholder
-                    ZStack {
+                // Center content both horizontally and vertically
+                VStack(spacing: 2) {  // Reduced spacing to match screenshot
+                    // Artwork or placeholder - smaller size
+                    ZStack(alignment: .topLeading) {
                         if let artworkData = topItem.artworkData,
                            let artwork = UIImage(data: artworkData) {
                             Image(uiImage: artwork)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 70, height: 70)
+                                .frame(width: 80, height: 80)  // Smaller artwork
                                 .cornerRadius(8)
                         } else {
                             // Placeholder with icon
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.purple.opacity(0.2))
-                                .frame(width: 70, height: 70)
+                                .frame(width: 80, height: 80)  // Smaller artwork
                             
                             Image(systemName: entry.configuration.contentType.iconName)
-                                .font(.system(size: 24))
+                                .font(.system(size: 20))  // Smaller icon
                                 .foregroundColor(.purple)
                         }
                         
                         // Top rank badge
-                        VStack {
-                            HStack {
-                                Text("#1")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 2)
-                                    .background(Color.purple)
-                                    .cornerRadius(4)
-                                
-                                Spacer()
-                            }
-                            Spacer()
-                        }
-                        .padding(2)
-                        .frame(width: 70, height: 70)
+                        Text("#1")
+                            .font(.system(size: 10, weight: .bold))  // Smaller font
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.purple)
+                            .cornerRadius(6)
+                            .offset(x: -4, y: -4)  // Adjusted offset
                     }
+                    .padding(.top, 4)
                     
                     // Title
                     Text(topItem.title)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 14, weight: .semibold))  // Smaller font
                         .lineLimit(1)
                         .foregroundColor(.primary)
+                        .padding(.top, 4)
                     
-                    // Subtitle
+                    // Subtitle (artist name)
                     Text(topItem.subtitle)
-                        .font(.system(size: 10))
-                        .lineLimit(1)
+                        .font(.system(size: 12))  // Smaller font
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .padding(.top, 1)
                     
-                    // Play count - always shown now
+                    // Play count
                     Text("\(topItem.plays) plays")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 12))  // Smaller font
                         .foregroundColor(.purple)
+                        .padding(.top, 1)
                 }
-                .frame(maxWidth: .infinity)
+                // Center the content horizontally
+                .frame(maxWidth: .infinity, alignment: .center)
+                // Center the content vertically
+                .frame(maxHeight: .infinity, alignment: .center)
                 
-                Spacer()
+                // Item-specific deep link
+                .widgetURL(URL(string: "musicmemory://highlights/\(entry.configuration.contentType.rawValue)/\(topItem.id)"))
             } else {
                 // No items placeholder
                 Text("No data available")
@@ -122,7 +102,6 @@ struct SmallMusicHighlightsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .widgetURL(URL(string: "musicmemory://highlights/\(entry.configuration.contentType.rawValue)"))
         .containerBackground(.fill.tertiary, for: .widget)
     }
 }
