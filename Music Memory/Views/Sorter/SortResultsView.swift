@@ -273,7 +273,7 @@ struct SortResultsView: View {
                         Text("#\(rank)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         LibraryRow.song(song)
                     }
@@ -288,7 +288,7 @@ struct SortResultsView: View {
                         Text("#\(rank)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         LibraryRow.album(album)
                     }
@@ -303,7 +303,7 @@ struct SortResultsView: View {
                         Text("#\(rank)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         LibraryRow.artist(artist)
                     }
@@ -318,7 +318,7 @@ struct SortResultsView: View {
                         Text("#\(rank)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         LibraryRow.genre(genre)
                     }
@@ -333,7 +333,7 @@ struct SortResultsView: View {
                         Text("#\(rank)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         LibraryRow.playlist(playlist)
                     }

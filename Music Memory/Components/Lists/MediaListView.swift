@@ -80,7 +80,7 @@ struct MediaListView<T: MediaListDisplayable, SortOption: RawRepresentable & Has
                         Text("#\(getRank(for: item))")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(AppStyles.accentColor)
-                            .frame(width: 50, alignment: .leading)
+                            .frame(width: 30, alignment: .leading)
                         
                         // Item row
                         itemRow(for: item)
