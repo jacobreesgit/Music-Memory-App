@@ -29,7 +29,13 @@ struct RecentlyAddedSection: View {
                 itemPlays: { $0.playCount },  // Using actual play count
                 iconName: { _ in "music.note" },
                 destination: { song, _ in SongDetailView(song: song) },
-                seeAllDestination: { RecentlyAddedSongsView() },
+                seeAllDestination: {
+                    LibraryView(
+                        selectedTab: .constant(0),
+                        initialSongsSortOption: .dateAdded,
+                        initialSongsSortAscending: false
+                    )
+                },
                 customPlayLabel: { song in "\(song.playCount) plays" },
                 showRank: false
             )

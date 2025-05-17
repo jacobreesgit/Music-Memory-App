@@ -7,12 +7,18 @@ struct LibraryView: View {
     @State private var lastSelectedTab = 0 // Track previous tab for swipe detection
     @State private var pendingNavigationRequest: (type: String, id: String)? = nil
     
+    // Sort options for each tab
+    let initialSongsSortOption: SongSortOption?
+    let initialSongsSortAscending: Bool?
+    
     // Feedback generator for haptic feedback
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
     
     // Initialize with a default value for previews and a binding for real usage
-    init(selectedTab: Binding<Int>? = nil) {
+    init(selectedTab: Binding<Int>? = nil, initialSongsSortOption: SongSortOption? = nil, initialSongsSortAscending: Bool? = nil) {
         self._selectedTab = selectedTab ?? .constant(0)
+        self.initialSongsSortOption = initialSongsSortOption
+        self.initialSongsSortAscending = initialSongsSortAscending
     }
     
     var body: some View {
@@ -61,8 +67,11 @@ struct LibraryView: View {
                 // Tab content - added animation modifier to match main navigation
                 TabView(selection: $selectedTab) {
                     // Tracks tab
-                    SongsView()
-                        .tag(0)
+                    SongsView(
+                        initialSortOption: initialSongsSortOption ?? .playCount,
+                        initialSortAscending: initialSongsSortAscending ?? false
+                    )
+                    .tag(0)
                     
                     // Artists tab
                     ArtistsView()

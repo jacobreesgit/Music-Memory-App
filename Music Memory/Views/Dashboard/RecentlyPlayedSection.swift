@@ -28,7 +28,13 @@ struct RecentlyPlayedSection: View {
                     itemPlays: { $0.playCount },
                     iconName: { _ in "music.note" },
                     destination: { song, _ in SongDetailView(song: song) },
-                    seeAllDestination: { RecentlyPlayedSongsView() },
+                    seeAllDestination: {
+                        LibraryView(
+                            selectedTab: .constant(0),
+                            initialSongsSortOption: .recentlyPlayed,
+                            initialSongsSortAscending: false
+                        )
+                    },
                     customPlayLabel: { song in "\(song.playCount) plays" },
                     showRank: false
                 )
