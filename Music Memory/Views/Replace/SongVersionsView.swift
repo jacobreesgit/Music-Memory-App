@@ -8,6 +8,7 @@ import MusicKit
 struct SongVersionsView: View {
     let librarySong: MPMediaItem
     @ObservedObject var songVersionModel: SongVersionModel
+    @Environment(\.bottomBarHeight) var bottomBarHeight
     
     @State private var catalogVersions: [Song] = []
     @State private var isLoading = false
@@ -94,10 +95,15 @@ struct SongVersionsView: View {
                         }
                     }
                 }
+                
+                // Add explicit bottom padding equal to the bottom bar height
+                Spacer().frame(height: bottomBarHeight + 20)
             }
         }
         .navigationTitle(librarySong.title ?? "Song Details")
         .navigationBarTitleDisplayMode(.inline)
+        // Remove this as it doesn't work with ScrollView as expected
+        //.withBottomSafeArea()
         .onAppear {
             loadVersions()
         }

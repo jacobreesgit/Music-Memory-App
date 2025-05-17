@@ -81,6 +81,7 @@ struct SortResultsView: View {
         .listSectionSpacing(0) // Match other detail views' section spacing
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline) // Consistent with other detail views
+        .withBottomSafeArea() // Add this line to ensure bottom padding
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {

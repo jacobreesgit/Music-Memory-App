@@ -67,7 +67,7 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                 HStack(spacing: 15) {
                     // Regular items (limit to 5)
                     ForEach(Array(items.prefix(5).enumerated()), id: \.offset) { index, item in
-                        NavigationLink(destination: destination(item, index + 1)) {
+                        NavigationLink(destination: destination(item, index + 1).withBottomSafeArea()) {
                             VStack {
                                 // Artwork or placeholder
                                 ZStack(alignment: .topLeading) {
@@ -131,7 +131,7 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                     }
                     
                     // "See All" item
-                    NavigationLink(destination: seeAllDestination()) {
+                    NavigationLink(destination: seeAllDestination().withBottomSafeArea()) {
                         VStack {
                             ZStack {
                                 Circle()
