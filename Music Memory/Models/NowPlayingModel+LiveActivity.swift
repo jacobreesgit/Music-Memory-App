@@ -1,4 +1,4 @@
-// Fixed NowPlayingModel+LiveActivity.swift
+// NowPlayingModel+LiveActivity.swift - Fixed version
 
 import ActivityKit
 import MediaPlayer
@@ -6,7 +6,7 @@ import SwiftUI
 
 extension NowPlayingModel {
     // Static property to track the current activity across the app lifecycle
-    private static var currentActivity: Activity<NowPlayingAttributes>? = nil
+    static var currentActivity: Activity<NowPlayingAttributes>? = nil
     
     // Start or update the Dynamic Island Live Activity
     func updateDynamicIsland() {
@@ -16,8 +16,8 @@ extension NowPlayingModel {
             return
         }
         
-        // Find song rank - use a simpler approach based on the current song context
-        let songRank = findSongRank(currentSong)
+        // Get the actual rank from the music library
+        let songRank = findActualSongRank(currentSong)
         
         // Create content state with song info
         let contentState = NowPlayingAttributes.ContentState(
@@ -32,9 +32,9 @@ extension NowPlayingModel {
         
         // Check if we have an existing activity
         if let activity = NowPlayingModel.currentActivity {
-            // Update existing activity - using the non-deprecated method
+            // Update existing activity with the correct syntax
             Task {
-                await activity.update(contentState)
+                await activity.update(using: contentState)
             }
         } else {
             // Start new activity only if one doesn't exist
@@ -43,7 +43,7 @@ extension NowPlayingModel {
                     let attributes = NowPlayingAttributes()
                     NowPlayingModel.currentActivity = try Activity.request(
                         attributes: attributes,
-                        content: contentState
+                        content: ActivityContent(state: contentState, staleDate: nil)
                     )
                 } catch {
                     print("Error starting live activity: \(error.localizedDescription)")
@@ -61,27 +61,29 @@ extension NowPlayingModel {
         }
     }
     
-    // Helper function to estimate song rank based on play count
-    private func findSongRank(_ song: MPMediaItem) -> Int {
-        guard let currentPlayCount = song.value(forProperty: MPMediaItemPropertyPlayCount) as? Int else {
-            return 1 // Default rank if no play count
+    // Find the actual rank of a song in the library
+    private func findActualSongRank(_ song: MPMediaItem) -> Int {
+        // Safely unwrap the optional musicLibrary
+        guard let musicLib = musicLibrary else {
+            // If musicLibrary is not set yet, use a default rank
+            return 1
         }
         
-        // We'll use an estimation approach since we can't directly access the sorted library
-        // This is an estimate based on the song's play count.
-        // For most apps, higher play counts mean higher ranks (lower number)
+        // Get the sorted songs by play count
+        let sortedSongs = musicLib.filteredSongs
         
-        // If it's a highly played song (100+ plays), it's probably in the top 10
-        if currentPlayCount > 100 {
-            return max(1, min(5, 101 - currentPlayCount / 20))
+        // Find the index of the current song in the sorted list
+        if let index = sortedSongs.firstIndex(where: { $0.persistentID == song.persistentID }) {
+            return index + 1 // +1 because ranks start at 1, not 0
         }
-        // Medium play count (30-99)
-        else if currentPlayCount > 30 {
-            return max(5, min(20, 100 - currentPlayCount))
-        }
-        // Lower play count
-        else {
-            return max(20, 100 - currentPlayCount * 3)
-        }
+        
+        // If song not found in the sorted list (rare case), find its rank by play count
+        let playCount = song.playCount
+        
+        // Count how many songs have more plays than the current song
+        let higherRankedSongs = sortedSongs.filter { $0.playCount > playCount }.count
+        
+        // Return rank (add 1 since ranks start at 1)
+        return higherRankedSongs + 1
     }
 }

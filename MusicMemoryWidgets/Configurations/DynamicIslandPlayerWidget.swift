@@ -13,7 +13,7 @@ struct DynamicIslandPlayerLiveActivity: Widget {
                 Text("#\(context.state.songRank)")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color.purple) // AppStyles.accentColor
-                    .frame(width: 30, alignment: .leading)
+                    .frame(width: 50, alignment: .leading)
                 
                 // Artwork with exact size from LibraryRow (50x50)
                 ZStack {

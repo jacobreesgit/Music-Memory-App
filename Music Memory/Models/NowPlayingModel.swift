@@ -23,6 +23,9 @@ class NowPlayingModel: ObservableObject {
     private var artworkCache: [String: UIImage] = [:]
     private var previousSongID: MPMediaEntityPersistentID?
     
+    // MARK: - MusicLibrary reference for rank determination (made optional)
+    var musicLibrary: MusicLibraryModel?
+    
     // MARK: - Initialization
     init() {
         setupNowPlayingObserver()
@@ -33,6 +36,11 @@ class NowPlayingModel: ObservableObject {
         
         // Force progress timer setup regardless of play state during initialization
         setupProgressTimer(forceUpdate: true)
+    }
+    
+    // Add a method to set musicLibrary after initialization
+    func setMusicLibrary(_ library: MusicLibraryModel) {
+        self.musicLibrary = library
     }
     
     // MARK: - Now Playing Observer

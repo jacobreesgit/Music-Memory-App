@@ -5,8 +5,8 @@ import MediaPlayer
 
 struct ContentView: View {
     @EnvironmentObject var musicLibrary: MusicLibraryModel
-    @StateObject var sortSessionStore = SortSessionStore()
-    @StateObject var nowPlayingModel = NowPlayingModel()
+    @StateObject private var sortSessionStore = SortSessionStore()
+    @StateObject var nowPlayingModel = NowPlayingModel() // Initialize without musicLibrary
     
     // Read environment values passed from MusicMemoryApp
     @Environment(\.selectedTabIndex) private var appSelectedTabIndex
@@ -145,6 +145,9 @@ struct ContentView: View {
         .onAppear {
             // Initialize lastSelectedTab on appear
             lastSelectedTab = selectedTab
+            
+            // Set the musicLibrary on the nowPlayingModel
+            nowPlayingModel.setMusicLibrary(musicLibrary)
             
             // Apply navigation settings from App - This is the key addition
             if appSelectedTabIndex > 0 {

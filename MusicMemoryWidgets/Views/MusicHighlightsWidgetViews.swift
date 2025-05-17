@@ -275,7 +275,7 @@ struct LargeMusicHighlightsView: View {
                                 Text("#\(index + 1)")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.purple)
-                                    .frame(width: 30, alignment: .center)
+                                    .frame(width: 50, alignment: .center)
                                 
                                 // Artwork or placeholder
                                 if let artworkData = item.artworkData,

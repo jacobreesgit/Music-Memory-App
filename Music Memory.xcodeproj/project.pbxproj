@@ -117,16 +117,6 @@
 			path = "Music Memory";
 			sourceTree = "<group>";
 		};
-		0707E9D22DBE57A700BE138D /* Music MemoryTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Music MemoryTests";
-			sourceTree = "<group>";
-		};
-		0707E9DC2DBE57A700BE138D /* Music MemoryUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Music MemoryUITests";
-			sourceTree = "<group>";
-		};
 		076065BF2DD3D697009507CF /* MusicMemoryWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -176,8 +166,6 @@
 			isa = PBXGroup;
 			children = (
 				0707E9C42DBE57A600BE138D /* Music Memory */,
-				0707E9D22DBE57A700BE138D /* Music MemoryTests */,
-				0707E9DC2DBE57A700BE138D /* Music MemoryUITests */,
 				076065BF2DD3D697009507CF /* MusicMemoryWidgets */,
 				076065BA2DD3D697009507CF /* Frameworks */,
 				0707E9C32DBE57A600BE138D /* Products */,
@@ -244,9 +232,6 @@
 			dependencies = (
 				0707E9D12DBE57A700BE138D /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				0707E9D22DBE57A700BE138D /* Music MemoryTests */,
-			);
 			name = "Music MemoryTests";
 			packageProductDependencies = (
 			);
@@ -266,9 +251,6 @@
 			);
 			dependencies = (
 				0707E9DB2DBE57A700BE138D /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				0707E9DC2DBE57A700BE138D /* Music MemoryUITests */,
 			);
 			name = "Music MemoryUITests";
 			packageProductDependencies = (
