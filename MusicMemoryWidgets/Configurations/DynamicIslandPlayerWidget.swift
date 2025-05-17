@@ -1,3 +1,5 @@
+// LibraryRow-matched DynamicIslandPlayerWidget.swift
+
 import WidgetKit
 import SwiftUI
 import ActivityKit
@@ -51,7 +53,7 @@ struct DynamicIslandPlayerLiveActivity: Widget {
             }
             .padding(.vertical, 4) // Match LibraryRow padding
             .padding(.horizontal, 16)
-            .containerBackground(.ultraThinMaterial, for: .liveActivity) // Native frosted glass effect
+            
             
         } dynamicIsland: { context in
             DynamicIsland {
@@ -113,5 +115,14 @@ struct DynamicIslandPlayerLiveActivity: Widget {
                     .foregroundColor(.purple)
             }
         }
+    }
+}
+
+// Extension to add blur effect to Color
+extension Color {
+    func blurEffect(radius: CGFloat = 30) -> some View {
+        self
+            .blur(radius: radius)
+            .opacity(0.8)
     }
 }
