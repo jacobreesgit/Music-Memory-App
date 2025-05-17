@@ -29,7 +29,7 @@ struct RecentlyPlayedSection: View {
                     iconName: { _ in "music.note" },
                     destination: { song, _ in SongDetailView(song: song) },
                     seeAllDestination: { RecentlyPlayedSongsView() },
-                    customPlayLabel: { song in "\(song.playCount) plays • \(lastPlayedTimeAgo(song.lastPlayedDate))" },  // Combined format
+                    customPlayLabel: { song in "\(song.playCount) plays" },
                     showRank: false
                 )
             }

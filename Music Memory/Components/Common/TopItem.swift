@@ -105,7 +105,7 @@ struct TopItemsView<T, DestinationView: View, AllItemsView: View>: View {
                                 
                                 // Title
                                 Text(itemTitle(item))
-                                    .font(AppStyles.bodyStyle)
+                                    .font(.subheadline)
                                     .lineLimit(1)
                                     .foregroundColor(.primary)
                                 

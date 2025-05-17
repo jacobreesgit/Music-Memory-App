@@ -69,23 +69,23 @@ struct SmallMusicHighlightsView: View {
                     
                     // Title
                     Text(topItem.title)
-                        .font(.system(size: 14, weight: .semibold))  // Smaller font
+                        .font(.subheadline)
                         .lineLimit(1)
                         .foregroundColor(.primary)
-                        .padding(.top, 4)
+                        .padding(.top, 6)  // Adjusted padding from 4 to 6
                     
                     // Subtitle (artist name)
                     Text(topItem.subtitle)
-                        .font(.system(size: 12))  // Smaller font
+                        .font(.caption)  // Changed from .system(size: 12) to .caption
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                        .padding(.top, 1)
+                        .padding(.top, 2)  // Adjusted padding from 1 to 2
                     
                     // Play count
                     Text("\(topItem.plays) plays")
-                        .font(.system(size: 12))  // Smaller font
+                        .font(.caption)  // Changed from .system(size: 12) to .caption
                         .foregroundColor(.purple)
-                        .padding(.top, 1)
+                        .padding(.top, 2)  // Adjusted padding from 1 to 2
                 }
                 // Center the content horizontally
                 .frame(maxWidth: .infinity, alignment: .center)
