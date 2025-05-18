@@ -1,5 +1,6 @@
-//  SongDetailView.swift
+//  SongDetailView.swift - Option 4: Rank with total count
 //  Music Memory
+//  Updated with clearer song rankings within each related category
 
 import SwiftUI
 import MediaPlayer
@@ -17,12 +18,22 @@ struct SongDetailView: View {
     var body: some View {
         MediaDetailView(item: song, rank: rank) { song in
             Group {
-                // Album section
+                // Album section with song's rank within album
                 if let albumTitle = song.albumTitle {
                     Section(header: Text("Album").padding(.leading, -15)) {
                         if let album = findAlbum(for: song) {
                             NavigationLink(destination: AlbumDetailView(album: album)) {
-                                LibraryRow.album(album)
+                                HStack(spacing: 10) {
+                                    // Show song's rank within this album with total count
+                                    if let rank = getSongRankInAlbum(song, album: album) {
+                                        Text("#\(rank)/\(album.songs.count)")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(AppStyles.accentColor)
+                                            .frame(width: 50, alignment: .leading)
+                                    }
+                                    
+                                    LibraryRow.album(album)
+                                }
                             }
                             .listRowSeparator(.hidden)
                         } else {
@@ -39,12 +50,22 @@ struct SongDetailView: View {
                     }
                 }
                 
-                // Artist section
+                // Artist section with song's rank within artist
                 if let artistName = song.artist {
                     Section(header: Text("Artist").padding(.leading, -15)) {
                         if let artist = findArtist(for: song) {
                             NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                                LibraryRow.artist(artist)
+                                HStack(spacing: 10) {
+                                    // Show song's rank within this artist's catalog with total count
+                                    if let rank = getSongRankInArtist(song, artist: artist) {
+                                        Text("#\(rank)/\(artist.songs.count)")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(AppStyles.accentColor)
+                                            .frame(width: 50, alignment: .leading)
+                                    }
+                                    
+                                    LibraryRow.artist(artist)
+                                }
                             }
                             .listRowSeparator(.hidden)
                         } else {
@@ -62,27 +83,53 @@ struct SongDetailView: View {
                     }
                 }
                 
-                // Genre section
+                // Genre section with song's rank within genre
                 if let genre = findGenre(for: song) {
                     Section(header: Text("Genre").padding(.leading, -15)) {
                         NavigationLink(destination: GenreDetailView(genre: genre)) {
-                            LibraryRow.genre(genre)
+                            HStack(spacing: 10) {
+                                // Show song's rank within this genre with total count
+                                if let rank = getSongRankInGenre(song, genre: genre) {
+                                    Text("#\(rank)/\(genre.songs.count)")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 50, alignment: .leading)
+                                }
+                                
+                                LibraryRow.genre(genre)
+                            }
                         }
                         .listRowSeparator(.hidden)
                     }
                 }
                 
-                // Playlists section with dynamic title
-                let containingPlaylists = findPlaylists(for: song)
+                // Playlists section with song's rank within each playlist
+                let containingPlaylists = findPlaylistsWithRanks(for: song)
                 if !containingPlaylists.isEmpty {
                     let playlistTitle = containingPlaylists.count == 1 ? "Playlist" : "Playlists"
-                    PlaylistsSection(playlists: containingPlaylists, title: playlistTitle)
+                    Section(header: Text(playlistTitle).padding(.leading, -15)) {
+                        ForEach(containingPlaylists, id: \.playlist.id) { playlistWithRank in
+                            NavigationLink(destination: PlaylistDetailView(playlist: playlistWithRank.playlist)) {
+                                HStack(spacing: 10) {
+                                    // Show song's rank within this playlist with total count
+                                    Text("#\(playlistWithRank.rank)/\(playlistWithRank.playlist.songs.count)")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 50, alignment: .leading)
+                                    
+                                    LibraryRow.playlist(playlistWithRank.playlist)
+                                }
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                    }
                 }
             }
         }
     }
     
-    // Helper methods to find related items
+    // MARK: - Existing Helper Methods
+    
     private func findAlbum(for song: MPMediaItem) -> AlbumData? {
         guard let albumTitle = song.albumTitle else { return nil }
         return musicLibrary.albums.first {
@@ -104,6 +151,64 @@ struct SongDetailView: View {
     private func findPlaylists(for song: MPMediaItem) -> [PlaylistData] {
         return musicLibrary.playlists.filter { playlist in
             playlist.songs.contains { $0.persistentID == song.persistentID }
-        }.sorted { $0.totalPlayCount > $1.totalPlayCount }
+        }
+        // Note: Don't sort here - we'll sort by rank in findPlaylistsWithRanks
+    }
+    
+    // MARK: - Song Ranking Within Categories
+    
+    private func getSongRankInAlbum(_ song: MPMediaItem, album: AlbumData) -> Int? {
+        // Sort album songs by play count and find this song's position
+        let sortedSongs = album.songs.sorted { $0.playCount > $1.playCount }
+        if let index = sortedSongs.firstIndex(where: { $0.persistentID == song.persistentID }) {
+            return index + 1
+        }
+        return nil
+    }
+    
+    private func getSongRankInArtist(_ song: MPMediaItem, artist: ArtistData) -> Int? {
+        // Sort artist songs by play count and find this song's position
+        let sortedSongs = artist.songs.sorted { $0.playCount > $1.playCount }
+        if let index = sortedSongs.firstIndex(where: { $0.persistentID == song.persistentID }) {
+            return index + 1
+        }
+        return nil
+    }
+    
+    private func getSongRankInGenre(_ song: MPMediaItem, genre: GenreData) -> Int? {
+        // Sort genre songs by play count and find this song's position
+        let sortedSongs = genre.songs.sorted { $0.playCount > $1.playCount }
+        if let index = sortedSongs.firstIndex(where: { $0.persistentID == song.persistentID }) {
+            return index + 1
+        }
+        return nil
+    }
+    
+    private func getSongRankInPlaylist(_ song: MPMediaItem, playlist: PlaylistData) -> Int? {
+        // Sort playlist songs by play count and find this song's position
+        let sortedSongs = playlist.songs.sorted { $0.playCount > $1.playCount }
+        if let index = sortedSongs.firstIndex(where: { $0.persistentID == song.persistentID }) {
+            return index + 1
+        }
+        return nil
+    }
+    
+    // Helper struct for playlist with song's rank within that playlist
+    private struct PlaylistWithRank {
+        let playlist: PlaylistData
+        let rank: Int
+    }
+    
+    private func findPlaylistsWithRanks(for song: MPMediaItem) -> [PlaylistWithRank] {
+        let playlists = findPlaylists(for: song)
+        let playlistsWithRanks = playlists.compactMap { playlist in
+            if let rank = getSongRankInPlaylist(song, playlist: playlist) {
+                return PlaylistWithRank(playlist: playlist, rank: rank)
+            }
+            return nil
+        }
+        
+        // Sort by rank (best ranking first - #1, #2, #3, etc.)
+        return playlistsWithRanks.sorted { $0.rank < $1.rank }
     }
 }
