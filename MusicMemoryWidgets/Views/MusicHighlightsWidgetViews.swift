@@ -1,4 +1,4 @@
-// MusicHighlightsWidgetViews.swift - Updated for proper deep linking
+// MusicHighlightsWidgetViews.swift - Updated for proper deep linking and filesystem artwork storage
 // MusicMemoryWidgets
 
 import WidgetKit
@@ -37,8 +37,8 @@ struct SmallMusicHighlightsView: View {
                 VStack(spacing: 2) {  // Reduced spacing to match screenshot
                     // Artwork or placeholder - smaller size
                     ZStack(alignment: .topLeading) {
-                        if let artworkData = topItem.artworkData,
-                           let artwork = UIImage(data: artworkData) {
+                        if let filename = topItem.artworkFilename,
+                           let artwork = MusicHighlightsDataStore.shared.loadArtwork(filename: filename) {
                             Image(uiImage: artwork)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -149,8 +149,8 @@ struct MediumMusicHighlightsView: View {
                             VStack(spacing: 4) {
                                 // Artwork or placeholder
                                 ZStack {
-                                    if let artworkData = item.artworkData,
-                                       let artwork = UIImage(data: artworkData) {
+                                    if let filename = item.artworkFilename,
+                                       let artwork = MusicHighlightsDataStore.shared.loadArtwork(filename: filename) {
                                         Image(uiImage: artwork)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
@@ -278,8 +278,8 @@ struct LargeMusicHighlightsView: View {
                                     .frame(width: 30, alignment: .center)
                                 
                                 // Artwork or placeholder
-                                if let artworkData = item.artworkData,
-                                   let artwork = UIImage(data: artworkData) {
+                                if let filename = item.artworkFilename,
+                                   let artwork = MusicHighlightsDataStore.shared.loadArtwork(filename: filename) {
                                     Image(uiImage: artwork)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)

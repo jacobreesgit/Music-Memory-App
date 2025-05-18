@@ -12,15 +12,21 @@ struct MusicHighlightsItem: Codable, Hashable {
     let title: String
     let subtitle: String
     let plays: Int
-    let artworkData: Data?
+    let artworkFilename: String?  // Changed from artworkData to artworkFilename
     
-    // Create a more lightweight version for widget use
+    // Maintain backward compatibility while changing implementation
     init(id: String, title: String, subtitle: String, plays: Int, artworkData: Data?) {
         self.id = id
         self.title = title
         self.subtitle = subtitle
         self.plays = plays
-        self.artworkData = artworkData
+        
+        // If artwork data is provided, save it to filesystem and store the filename
+        if let data = artworkData {
+            self.artworkFilename = MusicHighlightsDataStore.shared.saveArtwork(data: data, forID: id)
+        } else {
+            self.artworkFilename = nil
+        }
     }
 }
 
@@ -72,5 +78,84 @@ class MusicHighlightsDataStore {
         case .albums: return .topAlbums
         case .playlists: return .topPlaylists
         }
+    }
+    
+    // MARK: - Artwork File Management
+    
+    // Save artwork to filesystem and return the filename
+    func saveArtwork(data: Data, forID id: String) -> String {
+        let filename = "artwork_\(id).jpg"
+        
+        // Get shared container URL for app group
+        if let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.media.music-memory.jacobrees.com"
+        ) {
+            let artworkDir = containerURL.appendingPathComponent("artwork", isDirectory: true)
+            let fileURL = artworkDir.appendingPathComponent(filename)
+            
+            // Create directory if needed
+            do {
+                try FileManager.default.createDirectory(at: artworkDir, withIntermediateDirectories: true, attributes: nil)
+                
+                // Resize image before saving to reduce storage requirements
+                if let image = UIImage(data: data) {
+                    let resizedImage = resizeImage(image, targetSize: CGSize(width: 150, height: 150))
+                    if let jpegData = resizedImage.jpegData(compressionQuality: 0.7) {
+                        try jpegData.write(to: fileURL)
+                        return filename
+                    }
+                }
+                
+                // Fallback if resizing fails
+                try data.write(to: fileURL)
+                return filename
+            } catch {
+                print("Error saving artwork: \(error.localizedDescription)")
+            }
+        }
+        
+        return ""
+    }
+    
+    // Load artwork from filesystem
+    func loadArtwork(filename: String?) -> UIImage? {
+        guard let filename = filename, !filename.isEmpty else {
+            return nil
+        }
+        
+        if let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.media.music-memory.jacobrees.com"
+        ) {
+            let fileURL = containerURL.appendingPathComponent("artwork").appendingPathComponent(filename)
+            if let data = try? Data(contentsOf: fileURL) {
+                return UIImage(data: data)
+            }
+        }
+        
+        return nil
+    }
+    
+    // Helper function to resize images
+    private func resizeImage(_ image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
+        
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = targetSize.height / size.height
+        
+        // Figure out what our orientation is
+        var newSize: CGSize
+        if(widthRatio > heightRatio) {
+            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        } else {
+            newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+        }
+        
+        // Create a new renderer to draw the resized image
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resizedImage = renderer.image { context in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        
+        return resizedImage
     }
 }

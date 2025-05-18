@@ -9,6 +9,8 @@ import WidgetKit
 extension MusicLibraryModel {
     // Update widget data from the app
     func updateWidgetData() {
+        // Limit to top 5 items for each category to reduce data size
+        
         // Process and save top songs
         let topSongs = self.filteredSongs.prefix(5).map { song in
             MusicHighlightsItem(
