@@ -111,7 +111,7 @@ struct ArtistDetailView: View {
                             HStack(spacing: 10) {
                                 // Show artist's rank within this genre
                                 if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
-                                    Text("#\(artistRankData.rank)/\(artistRankData.total)")
+                                    Text("\(artistRankData.rank)/\(artistRankData.total)")
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(AppStyles.accentColor)
                                         .frame(width: 50, alignment: .leading)

@@ -25,7 +25,7 @@ struct SongDetailView: View {
                                 HStack(spacing: 10) {
                                     // Show song's rank within this album with total count
                                     if let rank = getSongRankInAlbum(song, album: album) {
-                                        Text("#\(rank)/\(album.songs.count)")
+                                        Text("\(rank)/\(album.songs.count)")
                                             .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(AppStyles.accentColor)
                                             .frame(width: 50, alignment: .leading)
@@ -57,7 +57,7 @@ struct SongDetailView: View {
                                 HStack(spacing: 10) {
                                     // Show song's rank within this artist's catalog with total count
                                     if let rank = getSongRankInArtist(song, artist: artist) {
-                                        Text("#\(rank)/\(artist.songs.count)")
+                                        Text("\(rank)/\(artist.songs.count)")
                                             .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(AppStyles.accentColor)
                                             .frame(width: 50, alignment: .leading)
@@ -89,7 +89,7 @@ struct SongDetailView: View {
                             HStack(spacing: 10) {
                                 // Show song's rank within this genre with total count
                                 if let rank = getSongRankInGenre(song, genre: genre) {
-                                    Text("#\(rank)/\(genre.songs.count)")
+                                    Text("\(rank)/\(genre.songs.count)")
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(AppStyles.accentColor)
                                         .frame(width: 50, alignment: .leading)

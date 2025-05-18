@@ -22,9 +22,19 @@ struct RankedPlaylistsSection: View {
         self.getRankData = getRankData
     }
     
+    // New computed property to sort playlists by rank
+    private var playlistsSortedByRank: [PlaylistData] {
+        return playlists.sorted { playlist1, playlist2 in
+            let rank1 = getRankData(playlist1)?.rank ?? Int.max
+            let rank2 = getRankData(playlist2)?.rank ?? Int.max
+            return rank1 < rank2
+        }
+    }
+    
     var body: some View {
         Section(header: Text(title).padding(.leading, -15)) {
-            let displayedPlaylists = showAllPlaylists ? playlists : Array(playlists.prefix(5))
+            // Use the sorted playlists instead of the original playlists
+            let displayedPlaylists = showAllPlaylists ? playlistsSortedByRank : Array(playlistsSortedByRank.prefix(5))
             
             ForEach(displayedPlaylists) { playlist in
                 NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
