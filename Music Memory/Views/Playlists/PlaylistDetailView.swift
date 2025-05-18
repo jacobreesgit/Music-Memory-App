@@ -96,67 +96,22 @@ struct PlaylistDetailView: View {
                     // Songs section with internal rankings - already provided by SongsSection
                     SongsSection(songs: playlist.songs)
                     
-                    // Albums section with internal rankings
+                    // Albums section - using custom PlaylistAlbumsSection to maintain "Show More" functionality
                     let albums = findPlaylistAlbums()
                     if !albums.isEmpty {
-                        Section(header: Text("Albums").padding(.leading, -15)) {
-                            ForEach(Array(albums.enumerated()), id: \.element.id) { index, album in
-                                NavigationLink(destination: AlbumDetailView(album: album)) {
-                                    HStack(spacing: 10) {
-                                        // Show album's rank within this playlist
-                                        Text("\(index + 1)/\(albums.count)")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(AppStyles.accentColor)
-                                            .frame(width: 50, alignment: .leading)
-                                        
-                                        LibraryRow.album(album)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
-                            }
-                        }
+                        PlaylistAlbumsSection(albums: albums, title: "Albums")
                     }
                     
-                    // Artists section with internal rankings
+                    // Artists section - using custom PlaylistArtistsSection to maintain "Show More" functionality
                     let artists = findPlaylistArtists()
                     if !artists.isEmpty {
-                        Section(header: Text("Artists").padding(.leading, -15)) {
-                            ForEach(Array(artists.enumerated()), id: \.element.id) { index, artist in
-                                NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                                    HStack(spacing: 10) {
-                                        // Show artist's rank within this playlist
-                                        Text("\(index + 1)/\(artists.count)")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(AppStyles.accentColor)
-                                            .frame(width: 50, alignment: .leading)
-                                        
-                                        LibraryRow.artist(artist)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
-                            }
-                        }
+                        PlaylistArtistsSection(artists: artists, title: "Artists")
                     }
                     
-                    // Genres section with internal rankings
+                    // Genres section - using custom PlaylistGenresSection to maintain "Show More" functionality
                     let genres = findPlaylistGenres()
                     if !genres.isEmpty {
-                        Section(header: Text("Genres").padding(.leading, -15)) {
-                            ForEach(Array(genres.enumerated()), id: \.element.id) { index, genre in
-                                NavigationLink(destination: GenreDetailView(genre: genre)) {
-                                    HStack(spacing: 10) {
-                                        // Show genre's rank within this playlist
-                                        Text("\(index + 1)/\(genres.count)")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(AppStyles.accentColor)
-                                            .frame(width: 50, alignment: .leading)
-                                        
-                                        LibraryRow.genre(genre)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
-                            }
-                        }
+                        PlaylistGenresSection(genres: genres, title: "Genres")
                     }
                 }
             }
@@ -243,5 +198,124 @@ struct PlaylistDetailView: View {
             }
         
         return sortedGenres
+    }
+}
+
+// MARK: - Custom Section Components with Ranking and Show More/Less Functionality
+
+/// Custom Albums section with rank display for playlists
+struct PlaylistAlbumsSection: View {
+    let albums: [AlbumData]
+    let title: String
+    
+    @State private var showAllAlbums = false
+    
+    init(albums: [AlbumData], title: String = "Albums") {
+        self.albums = albums
+        self.title = title
+    }
+    
+    var body: some View {
+        Section(header: Text(title).padding(.leading, -15)) {
+            let displayedAlbums = showAllAlbums ? albums : Array(albums.prefix(5))
+            
+            ForEach(Array(displayedAlbums.enumerated()), id: \.element.id) { index, album in
+                NavigationLink(destination: AlbumDetailView(album: album)) {
+                    HStack(spacing: 10) {
+                        // Show album rank with total count
+                        Text("#\(index + 1)/\(albums.count)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 50, alignment: .leading)
+                        
+                        LibraryRow.album(album)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+            // Show More/Less button
+            if albums.count > 5 {
+                ExpandCollapseButton(isExpanded: $showAllAlbums)
+            }
+        }
+    }
+}
+
+/// Custom Artists section with rank display for playlists
+struct PlaylistArtistsSection: View {
+    let artists: [ArtistData]
+    let title: String
+    
+    @State private var showAllArtists = false
+    
+    init(artists: [ArtistData], title: String = "Artists") {
+        self.artists = artists
+        self.title = title
+    }
+    
+    var body: some View {
+        Section(header: Text(title).padding(.leading, -15)) {
+            let displayedArtists = showAllArtists ? artists : Array(artists.prefix(5))
+            
+            ForEach(Array(displayedArtists.enumerated()), id: \.element.id) { index, artist in
+                NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                    HStack(spacing: 10) {
+                        // Show artist rank with total count
+                        Text("#\(index + 1)/\(artists.count)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 50, alignment: .leading)
+                        
+                        LibraryRow.artist(artist)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+            // Show More/Less button
+            if artists.count > 5 {
+                ExpandCollapseButton(isExpanded: $showAllArtists)
+            }
+        }
+    }
+}
+
+/// Custom Genres section with rank display for playlists
+struct PlaylistGenresSection: View {
+    let genres: [GenreData]
+    let title: String
+    
+    @State private var showAllGenres = false
+    
+    init(genres: [GenreData], title: String = "Genres") {
+        self.genres = genres
+        self.title = title
+    }
+    
+    var body: some View {
+        Section(header: Text(title).padding(.leading, -15)) {
+            let displayedGenres = showAllGenres ? genres : Array(genres.prefix(5))
+            
+            ForEach(Array(displayedGenres.enumerated()), id: \.element.id) { index, genre in
+                NavigationLink(destination: GenreDetailView(genre: genre)) {
+                    HStack(spacing: 10) {
+                        // Show genre rank with total count
+                        Text("#\(index + 1)/\(genres.count)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(AppStyles.accentColor)
+                            .frame(width: 50, alignment: .leading)
+                        
+                        LibraryRow.genre(genre)
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
+            
+            // Show More/Less button
+            if genres.count > 5 {
+                ExpandCollapseButton(isExpanded: $showAllGenres)
+            }
+        }
     }
 }
