@@ -1,5 +1,5 @@
-//  ArtistDetailView.swift
-//  Music Memory
+// Updated ArtistDetailView with RankedPlaylistsSection
+// Music Memory
 
 import SwiftUI
 import MediaPlayer
@@ -79,7 +79,7 @@ struct ArtistDetailView: View {
                                     HStack(spacing: 10) {
                                         // Show artist's rank within this genre with total count
                                         if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
-                                            Text("\(artistRankData.rank)/\(artistRankData.total)")
+                                            Text("#\(artistRankData.rank)/\(artistRankData.total)")
                                                 .font(.system(size: 14, weight: .bold))
                                                 .foregroundColor(AppStyles.accentColor)
                                                 .frame(width: 50, alignment: .leading)
@@ -93,27 +93,15 @@ struct ArtistDetailView: View {
                         }
                     }
                     
-                    // Playlists section - now with contextual external rankings
+                    // Playlists section - UPDATED to use RankedPlaylistsSection
                     let containingPlaylists = findPlaylists()
                     if !containingPlaylists.isEmpty {
-                        Section(header: Text("In Playlists").padding(.leading, -15)) {
-                            ForEach(containingPlaylists) { playlist in
-                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                    HStack(spacing: 10) {
-                                        // Show artist's rank within this playlist with total count
-                                        if let artistRankData = getArtistRankInPlaylist(artist: artist, playlist: playlist) {
-                                            Text("\(artistRankData.rank)/\(artistRankData.total)")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundColor(AppStyles.accentColor)
-                                                .frame(width: 50, alignment: .leading)
-                                        }
-                                        
-                                        LibraryRow.playlist(playlist)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
+                        RankedPlaylistsSection(
+                            playlists: containingPlaylists,
+                            getRankData: { playlist in
+                                getArtistRankInPlaylist(artist: artist, playlist: playlist)
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -141,7 +129,7 @@ struct ArtistDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
-    // MARK: - New Helper Methods for Contextual Rankings
+    // MARK: - Contextual Ranking Methods
     
     // Structure to hold ranking data
     private struct RankData {

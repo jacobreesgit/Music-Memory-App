@@ -1,5 +1,5 @@
-//  AlbumDetailView.swift
-//  Music Memory
+// Updated AlbumDetailView with RankedPlaylistsSection
+// Music Memory
 
 import SwiftUI
 import MediaPlayer
@@ -49,7 +49,7 @@ struct AlbumDetailView: View {
                                 HStack(spacing: 10) {
                                     // Show album's rank within this artist's discography
                                     if let albumRankData = getAlbumRankInArtist(album: album, artist: artist) {
-                                        Text("\(albumRankData.rank)/\(albumRankData.total)")
+                                        Text("#\(albumRankData.rank)/\(albumRankData.total)")
                                             .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(AppStyles.accentColor)
                                             .frame(width: 50, alignment: .leading)
@@ -71,7 +71,7 @@ struct AlbumDetailView: View {
                                     HStack(spacing: 10) {
                                         // Show album's rank within this genre
                                         if let albumRankData = getAlbumRankInGenre(album: album, genre: genre) {
-                                            Text("\(albumRankData.rank)/\(albumRankData.total)")
+                                            Text("#\(albumRankData.rank)/\(albumRankData.total)")
                                                 .font(.system(size: 14, weight: .bold))
                                                 .foregroundColor(AppStyles.accentColor)
                                                 .frame(width: 50, alignment: .leading)
@@ -85,34 +85,22 @@ struct AlbumDetailView: View {
                         }
                     }
                     
-                    // Playlists section - now with contextual rankings
+                    // Playlists section with contextual rankings - UPDATED to use RankedPlaylistsSection
                     let containingPlaylists = findPlaylists(for: album)
                     if !containingPlaylists.isEmpty {
-                        Section(header: Text("In Playlists").padding(.leading, -15)) {
-                            ForEach(containingPlaylists) { playlist in
-                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                    HStack(spacing: 10) {
-                                        // Show album's rank within this playlist
-                                        if let albumRankData = getAlbumRankInPlaylist(album: album, playlist: playlist) {
-                                            Text("\(albumRankData.rank)/\(albumRankData.total)")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundColor(AppStyles.accentColor)
-                                                .frame(width: 50, alignment: .leading)
-                                        }
-                                        
-                                        LibraryRow.playlist(playlist)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
+                        RankedPlaylistsSection(
+                            playlists: containingPlaylists,
+                            getRankData: { playlist in
+                                getAlbumRankInPlaylist(album: album, playlist: playlist)
                             }
-                        }
+                        )
                     }
                 }
             }
         )
     }
     
-    // MARK: - Existing Helper Methods
+    // MARK: - Helper Methods
     
     private func findArtist(for album: AlbumData) -> ArtistData? {
         return musicLibrary.artists.first { $0.name == album.artist }
@@ -133,7 +121,7 @@ struct AlbumDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
-    // MARK: - New Helper Methods for Contextual Rankings
+    // MARK: - Contextual Ranking Methods
     
     // Structure to hold ranking data
     private struct RankData {

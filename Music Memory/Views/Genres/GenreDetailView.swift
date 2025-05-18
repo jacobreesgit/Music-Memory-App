@@ -1,5 +1,5 @@
-//  GenreDetailView.swift
-//  Music Memory
+// Updated GenreDetailView with RankedPlaylistsSection
+// Music Memory
 
 import SwiftUI
 import MediaPlayer
@@ -91,27 +91,15 @@ struct GenreDetailView: View {
                         ArtistsSection(artists: findGenreArtists())
                     }
                     
-                    // Playlists section - now with contextual external rankings
+                    // Playlists section - UPDATED to use RankedPlaylistsSection
                     let containingPlaylists = findPlaylists()
                     if !containingPlaylists.isEmpty {
-                        Section(header: Text("In Playlists").padding(.leading, -15)) {
-                            ForEach(containingPlaylists) { playlist in
-                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                    HStack(spacing: 10) {
-                                        // Show genre's rank within this playlist
-                                        if let genreRankData = getGenreRankInPlaylist(genre: genre, playlist: playlist) {
-                                            Text("\(genreRankData.rank)/\(genreRankData.total)")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundColor(AppStyles.accentColor)
-                                                .frame(width: 50, alignment: .leading)
-                                        }
-                                        
-                                        LibraryRow.playlist(playlist)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
+                        RankedPlaylistsSection(
+                            playlists: containingPlaylists,
+                            getRankData: { playlist in
+                                getGenreRankInPlaylist(genre: genre, playlist: playlist)
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -154,7 +142,7 @@ struct GenreDetailView: View {
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
     }
     
-    // MARK: - New Helper Methods for Contextual Rankings
+    // MARK: - Contextual Ranking Methods
     
     // Structure to hold ranking data
     private struct RankData {
