@@ -78,30 +78,47 @@ struct GenreDetailView: View {
             },
             additionalContent: { genre in
                 Group {
-                    // Songs section - MOVED TO TOP
+                    // Songs section - MOVED TO TOP - internal rankings already provided
                     SongsSection(songs: genre.songs)
                     
-                    // Albums section
+                    // Albums section - internal rankings already provided
                     if !findGenreAlbums().isEmpty {
                         AlbumsSection(albums: findGenreAlbums())
                     }
                     
-                    // Artists section
+                    // Artists section - internal rankings already provided
                     if !findGenreArtists().isEmpty {
                         ArtistsSection(artists: findGenreArtists())
                     }
                     
-                    // Playlists section
+                    // Playlists section - now with contextual external rankings
                     let containingPlaylists = findPlaylists()
                     if !containingPlaylists.isEmpty {
-                        PlaylistsSection(playlists: containingPlaylists)
+                        Section(header: Text("In Playlists").padding(.leading, -15)) {
+                            ForEach(containingPlaylists) { playlist in
+                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                                    HStack(spacing: 10) {
+                                        // Show genre's rank within this playlist
+                                        if let genreRankData = getGenreRankInPlaylist(genre: genre, playlist: playlist) {
+                                            Text("\(genreRankData.rank)/\(genreRankData.total)")
+                                                .font(.system(size: 14, weight: .bold))
+                                                .foregroundColor(AppStyles.accentColor)
+                                                .frame(width: 50, alignment: .leading)
+                                        }
+                                        
+                                        LibraryRow.playlist(playlist)
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+                        }
                     }
                 }
             }
         )
     }
     
-    // Helper methods
+    // Existing helper methods
     private func findGenreArtists() -> [ArtistData] {
         // Get unique artist names in this genre
         let artistNames = Set(genre.songs.compactMap { $0.artist })
@@ -135,5 +152,40 @@ struct GenreDetailView: View {
             // Check if playlist contains at least one song from this genre
             playlist.songs.contains { genreSongIDs.contains($0.persistentID) }
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    }
+    
+    // MARK: - New Helper Methods for Contextual Rankings
+    
+    // Structure to hold ranking data
+    private struct RankData {
+        let rank: Int
+        let total: Int
+    }
+    
+    // Get genre's rank within a playlist
+    private func getGenreRankInPlaylist(genre: GenreData, playlist: PlaylistData) -> RankData? {
+        // Get all genres in this playlist
+        let playlistGenreNames = Set(playlist.songs.compactMap { $0.genre }).filter { !$0.isEmpty }
+        let playlistGenres = playlistGenreNames.compactMap { name -> GenreData? in
+            musicLibrary.genres.first { $0.name == name }
+        }
+        
+        // Calculate play counts per genre from this playlist's songs
+        var genrePlayCounts: [String: Int] = [:]
+        for playlistGenre in playlistGenres {
+            let playlistSongsInGenre = playlist.songs.filter { $0.genre == playlistGenre.name }
+            let totalPlays = playlistSongsInGenre.reduce(0) { $0 + $1.playCount }
+            genrePlayCounts[playlistGenre.id] = totalPlays
+        }
+        
+        // Sort genres by play count
+        let sortedGenreIDs = genrePlayCounts.sorted { $0.value > $1.value }.map { $0.key }
+        
+        // Find this genre's position
+        if let index = sortedGenreIDs.firstIndex(of: genre.id) {
+            return RankData(rank: index + 1, total: playlistGenres.count)
+        }
+        
+        return nil
     }
 }

@@ -61,32 +61,66 @@ struct ArtistDetailView: View {
             },
             additionalContent: { artist in
                 Group {
-                    // Songs section - MOVED TO TOP
+                    // Songs section - MOVED TO TOP, already has internal rankings
                     SongsSection(songs: artist.songs)
                     
-                    // Albums section
+                    // Albums section - maintain internal rankings by play count
                     let artistAlbums = findArtistAlbums()
                     if !artistAlbums.isEmpty {
                         AlbumsSection(albums: artistAlbums)
                     }
                     
-                    // Genres section
+                    // Genres section - now with contextual external rankings
                     let genres = findArtistGenres()
                     if !genres.isEmpty {
-                        GenresSection(genres: genres)
+                        Section(header: Text("Genres").padding(.leading, -15)) {
+                            ForEach(genres) { genre in
+                                NavigationLink(destination: GenreDetailView(genre: genre)) {
+                                    HStack(spacing: 10) {
+                                        // Show artist's rank within this genre with total count
+                                        if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
+                                            Text("\(artistRankData.rank)/\(artistRankData.total)")
+                                                .font(.system(size: 14, weight: .bold))
+                                                .foregroundColor(AppStyles.accentColor)
+                                                .frame(width: 50, alignment: .leading)
+                                        }
+                                        
+                                        LibraryRow.genre(genre)
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+                        }
                     }
                     
-                    // Playlists section
+                    // Playlists section - now with contextual external rankings
                     let containingPlaylists = findPlaylists()
                     if !containingPlaylists.isEmpty {
-                        PlaylistsSection(playlists: containingPlaylists)
+                        Section(header: Text("In Playlists").padding(.leading, -15)) {
+                            ForEach(containingPlaylists) { playlist in
+                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                                    HStack(spacing: 10) {
+                                        // Show artist's rank within this playlist with total count
+                                        if let artistRankData = getArtistRankInPlaylist(artist: artist, playlist: playlist) {
+                                            Text("\(artistRankData.rank)/\(artistRankData.total)")
+                                                .font(.system(size: 14, weight: .bold))
+                                                .foregroundColor(AppStyles.accentColor)
+                                                .frame(width: 50, alignment: .leading)
+                                        }
+                                        
+                                        LibraryRow.playlist(playlist)
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+                        }
                     }
                 }
             }
         )
     }
     
-    // Helper methods
+    // Helper methods (existing)
     private func findArtistAlbums() -> [AlbumData] {
         return musicLibrary.albums.filter { $0.artist == artist.name }
             .sorted { $0.totalPlayCount > $1.totalPlayCount }
@@ -105,5 +139,58 @@ struct ArtistDetailView: View {
         return musicLibrary.playlists.filter { playlist in
             playlist.songs.contains { artistSongIDs.contains($0.persistentID) }
         }.sorted { $0.totalPlayCount > $1.totalPlayCount }
+    }
+    
+    // MARK: - New Helper Methods for Contextual Rankings
+    
+    // Structure to hold ranking data
+    private struct RankData {
+        let rank: Int
+        let total: Int
+    }
+    
+    // Get artist's rank within a genre
+    private func getArtistRankInGenre(artist: ArtistData, genre: GenreData) -> RankData? {
+        // Get all artists in this genre
+        let genreArtistNames = Set(genre.songs.compactMap { $0.artist })
+        let genreArtists = genreArtistNames.compactMap { name -> ArtistData? in
+            musicLibrary.artists.first { $0.name == name }
+        }
+        
+        // Sort artists by play count
+        let sortedArtists = genreArtists.sorted { $0.totalPlayCount > $1.totalPlayCount }
+        
+        // Find this artist's position
+        if let index = sortedArtists.firstIndex(where: { $0.name == artist.name }) {
+            return RankData(rank: index + 1, total: sortedArtists.count)
+        }
+        
+        return nil
+    }
+    
+    // Get artist's rank within a playlist
+    private func getArtistRankInPlaylist(artist: ArtistData, playlist: PlaylistData) -> RankData? {
+        // Get all artists in this playlist
+        let playlistArtistNames = Set(playlist.songs.compactMap { $0.artist })
+        
+        // Create a dictionary to store total play counts per artist in this playlist
+        var artistPlayCounts: [String: Int] = [:]
+        
+        // Calculate total play count per artist in this playlist
+        for artistName in playlistArtistNames {
+            let artistSongsInPlaylist = playlist.songs.filter { $0.artist == artistName }
+            let totalPlays = artistSongsInPlaylist.reduce(0) { $0 + $1.playCount }
+            artistPlayCounts[artistName] = totalPlays
+        }
+        
+        // Sort artists by play count
+        let sortedArtists = artistPlayCounts.sorted { $0.value > $1.value }
+        
+        // Find this artist's position
+        if let index = sortedArtists.firstIndex(where: { $0.key == artist.name }) {
+            return RankData(rank: index + 1, total: playlistArtistNames.count)
+        }
+        
+        return nil
     }
 }
