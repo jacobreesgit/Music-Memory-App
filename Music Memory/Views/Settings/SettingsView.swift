@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("isDarkMode") private var isDarkMode = false
     @AppStorage("showDebugOptions") private var showDebugOptions = false
+    @AppStorage("hideZeroPlayCounts") private var hideZeroPlayCounts = true
     @State private var showingMusicKitDebug = false
     
     var body: some View {
@@ -50,8 +51,11 @@ struct SettingsView: View {
                         .padding(.top, 15)
                         .padding(.bottom, 5)
                 ) {
-                    Toggle("Hide Items with 0 Plays", isOn: .constant(true))
+                    Toggle("Hide Items with 0 Plays", isOn: $hideZeroPlayCounts)
                         .padding(.vertical, 2)
+                        .onChange(of: hideZeroPlayCounts) { oldValue, newValue in
+                            musicLibrary.applyZeroPlayCountFilter()
+                        }
                     
                     Button(action: {
                         showingConfirmation = true

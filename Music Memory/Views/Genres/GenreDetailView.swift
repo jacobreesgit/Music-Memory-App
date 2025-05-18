@@ -94,44 +94,19 @@ struct GenreDetailView: View {
             SongsSection(songs: genre.songs)
             
             // Albums section
-            genreAlbumsSection
+            let albums = findGenreAlbums()
+            if !albums.isEmpty {
+                AlbumsSection(albums: albums)
+            }
             
             // Artists section
-            genreArtistsSection
+            let artists = findGenreArtists()
+            if !artists.isEmpty {
+                ArtistsSection(artists: artists)
+            }
             
             // Playlists section - now with RankedPlaylistsSection
-            genrePlaylistsSection
-        }
-    }
-    
-    // MARK: - Album Section
-    
-    private var genreAlbumsSection: some View {
-        let albums = findGenreAlbums()
-        if !albums.isEmpty {
-            return AnyView(AlbumsSection(albums: albums))
-        } else {
-            return AnyView(EmptyView())
-        }
-    }
-    
-    // MARK: - Artist Section
-    
-    private var genreArtistsSection: some View {
-        let artists = findGenreArtists()
-        if !artists.isEmpty {
-            return AnyView(ArtistsSection(artists: artists))
-        } else {
-            return AnyView(EmptyView())
-        }
-    }
-    
-    // MARK: - Playlist Section with RankedPlaylistsSection
-    
-    private var genrePlaylistsSection: some View {
-        let containingPlaylists = findPlaylists()
-        
-        return Group {
+            let containingPlaylists = findPlaylists()
             if !containingPlaylists.isEmpty {
                 RankedPlaylistsSection(
                     playlists: containingPlaylists,
