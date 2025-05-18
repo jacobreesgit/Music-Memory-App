@@ -10,6 +10,13 @@ struct ArtistDetailView: View {
     let artist: ArtistData
     let rank: Int?
     
+    // New state properties for background loading
+    @State private var isLoadingDetails = true
+    @State private var loadedAlbums: [AlbumData] = []
+    @State private var loadedGenres: [GenreData] = []
+    @State private var loadedPlaylists: [PlaylistData] = []
+    @State private var genreRankings: [String: (rank: Int, total: Int)?] = [:]
+    
     init(artist: ArtistData, rank: Int? = nil) {
         self.artist = artist
         self.rank = rank
@@ -22,13 +29,16 @@ struct ArtistDetailView: View {
             headerContent: { _ in headerSection },
             additionalContent: { _ in contentSections }
         )
+        .onAppear {
+            loadDetailsInBackground()
+        }
     }
     
     // MARK: - Header Section
     
     private var headerSection: some View {
         // Sort Buttons Section - breaking up expressions for better type checking
-        let albums = findArtistAlbums()
+        let albums = loadedAlbums
         let hasMultipleSongs = artist.songs.count > 1
         let hasMultipleAlbums = albums.count > 1
         
@@ -77,70 +87,119 @@ struct ArtistDetailView: View {
             SongsSection(songs: artist.songs)
             
             // Albums section
-            artistAlbumsSection
+            if isLoadingDetails {
+                loadingPlaceholder(title: "Albums")
+            } else if !loadedAlbums.isEmpty {
+                artistAlbumsSection(albums: loadedAlbums)
+            }
             
             // Genres section
-            artistGenresSection
+            if isLoadingDetails {
+                loadingPlaceholder(title: "Genres")
+            } else if !loadedGenres.isEmpty {
+                artistGenresSection(genres: loadedGenres)
+            }
             
             // Playlists section - Using RankedPlaylistsSection
-            artistPlaylistsSection
+            if !isLoadingDetails && !loadedPlaylists.isEmpty {
+                RankedPlaylistsSection(
+                    playlists: loadedPlaylists,
+                    title: loadedPlaylists.count == 1 ? "Playlist" : "Playlists",
+                    getRankData: { playlist in
+                        getArtistRankInPlaylist(artist: artist, playlist: playlist)
+                    }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Loading Placeholder
+    
+    private func loadingPlaceholder(title: String) -> some View {
+        Section(header: Text(title).padding(.leading, -15)) {
+            HStack {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(0.8)
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .listRowSeparator(.hidden)
         }
     }
     
     // MARK: - Album Section
     
-    private var artistAlbumsSection: some View {
-        let artistAlbums = findArtistAlbums()
-        if !artistAlbums.isEmpty {
-            return AnyView(AlbumsSection(albums: artistAlbums))
-        } else {
-            return AnyView(EmptyView())
-        }
+    private func artistAlbumsSection(albums: [AlbumData]) -> some View {
+        AlbumsSection(albums: albums)
     }
     
     // MARK: - Genres Section
     
-    private var artistGenresSection: some View {
-        let genres = findArtistGenres()
-        
-        return Group {
-            if !genres.isEmpty {
-                Section(header: Text("Genres").padding(.leading, -15)) {
-                    ForEach(genres) { genre in
-                        NavigationLink(destination: GenreDetailView(genre: genre)) {
-                            HStack(spacing: 10) {
-                                // Show artist's rank within this genre
-                                if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
-                                    Text("\(artistRankData.rank)/\(artistRankData.total)")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(AppStyles.accentColor)
-                                        .frame(width: 50, alignment: .leading)
-                                }
-                                
-                                LibraryRow.genre(genre)
-                            }
+    private func artistGenresSection(genres: [GenreData]) -> some View {
+        Section(header: Text("Genres").padding(.leading, -15)) {
+            ForEach(genres) { genre in
+                NavigationLink(destination: GenreDetailView(genre: genre)) {
+                    HStack(spacing: 10) {
+                        // Show artist's rank within this genre using preloaded data
+                        if let genreRank = genreRankings[genre.id],
+                           let artistRankData = genreRank {
+                            Text("\(artistRankData.rank)/\(artistRankData.total)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(AppStyles.accentColor)
+                                .frame(width: 50, alignment: .leading)
+                        } else {
+                            // Placeholder while loading
+                            Text("--/--")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(Color.gray.opacity(0.5))
+                                .frame(width: 50, alignment: .leading)
                         }
-                        .listRowSeparator(.hidden)
+                        
+                        LibraryRow.genre(genre)
                     }
                 }
+                .listRowSeparator(.hidden)
             }
         }
     }
     
-    // MARK: - Playlists Section with RankedPlaylistsSection
+    // MARK: - Background Loading
     
-    private var artistPlaylistsSection: some View {
-        let containingPlaylists = findPlaylists()
-        
-        return Group {
-            if !containingPlaylists.isEmpty {
-                RankedPlaylistsSection(
-                    playlists: containingPlaylists,
-                    title: containingPlaylists.count == 1 ? "Playlist" : "Playlists",
-                    getRankData: { playlist in
-                        getArtistRankInPlaylist(artist: artist, playlist: playlist)
+    private func loadDetailsInBackground() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Find artist albums
+            let artistAlbums = self.findArtistAlbums()
+            
+            // Find artist genres
+            let artistGenres = self.findArtistGenres()
+            
+            // Find playlists containing artist's songs
+            let containingPlaylists = self.findPlaylists()
+            
+            // Pre-load rankings for first few genres
+            var genreRanks: [String: (rank: Int, total: Int)?] = [:]
+            for genre in artistGenres.prefix(3) {
+                genreRanks[genre.id] = self.getArtistRankInGenre(artist: self.artist, genre: genre)
+            }
+            
+            // Update UI
+            DispatchQueue.main.async {
+                self.loadedAlbums = artistAlbums
+                self.loadedGenres = artistGenres
+                self.loadedPlaylists = containingPlaylists
+                self.genreRankings = genreRanks
+                self.isLoadingDetails = false
+            }
+            
+            // Continue loading remaining genre rankings in background
+            if artistGenres.count > 3 {
+                for genre in artistGenres.dropFirst(3) {
+                    let rank = self.getArtistRankInGenre(artist: self.artist, genre: genre)
+                    DispatchQueue.main.async {
+                        self.genreRankings[genre.id] = rank
                     }
-                )
+                }
             }
         }
     }
@@ -169,14 +228,8 @@ struct ArtistDetailView: View {
     
     // MARK: - Contextual Ranking Methods
     
-    // Structure to hold ranking data
-    private struct RankData {
-        let rank: Int
-        let total: Int
-    }
-    
     // Get artist's rank within a genre
-    private func getArtistRankInGenre(artist: ArtistData, genre: GenreData) -> RankData? {
+    private func getArtistRankInGenre(artist: ArtistData, genre: GenreData) -> (rank: Int, total: Int)? {
         // Get all artists in this genre
         let genreArtistNames = Set(genre.songs.compactMap { $0.artist })
         let genreArtists = genreArtistNames.compactMap { name -> ArtistData? in
@@ -188,7 +241,7 @@ struct ArtistDetailView: View {
         
         // Find this artist's position
         if let index = sortedArtists.firstIndex(where: { $0.name == artist.name }) {
-            return RankData(rank: index + 1, total: sortedArtists.count)
+            return (rank: index + 1, total: sortedArtists.count)
         }
         
         return nil
