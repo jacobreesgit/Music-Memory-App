@@ -78,6 +78,9 @@ struct GenreDetailView: View {
             },
             additionalContent: { genre in
                 Group {
+                    // Songs section - MOVED TO TOP
+                    SongsSection(songs: genre.songs)
+                    
                     // Albums section
                     if !findGenreAlbums().isEmpty {
                         AlbumsSection(albums: findGenreAlbums())
@@ -93,9 +96,6 @@ struct GenreDetailView: View {
                     if !containingPlaylists.isEmpty {
                         PlaylistsSection(playlists: containingPlaylists)
                     }
-                    
-                    // Songs section
-                    SongsSection(songs: genre.songs)
                 }
             }
         )

@@ -72,10 +72,11 @@ struct SongDetailView: View {
                     }
                 }
                 
-                // Playlists section
+                // Playlists section with dynamic title
                 let containingPlaylists = findPlaylists(for: song)
                 if !containingPlaylists.isEmpty {
-                    PlaylistsSection(playlists: containingPlaylists)
+                    let playlistTitle = containingPlaylists.count == 1 ? "Playlist" : "Playlists"
+                    PlaylistsSection(playlists: containingPlaylists, title: playlistTitle)
                 }
             }
         }

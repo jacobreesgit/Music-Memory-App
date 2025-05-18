@@ -61,6 +61,9 @@ struct ArtistDetailView: View {
             },
             additionalContent: { artist in
                 Group {
+                    // Songs section - MOVED TO TOP
+                    SongsSection(songs: artist.songs)
+                    
                     // Albums section
                     let artistAlbums = findArtistAlbums()
                     if !artistAlbums.isEmpty {
@@ -78,9 +81,6 @@ struct ArtistDetailView: View {
                     if !containingPlaylists.isEmpty {
                         PlaylistsSection(playlists: containingPlaylists)
                     }
-                    
-                    // Songs section
-                    SongsSection(songs: artist.songs)
                 }
             }
         )
