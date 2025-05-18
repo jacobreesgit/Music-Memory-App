@@ -19,96 +19,134 @@ struct ArtistDetailView: View {
         MediaDetailView(
             item: artist,
             rank: rank,
-            headerContent: { artist in
-                // MARK: - Sort Buttons Section - NOW ABOVE STATISTICS
-                let albums = findArtistAlbums()
-                let hasMultipleSongs = artist.songs.count > 1
-                let hasMultipleAlbums = albums.count > 1
-                
-                if hasMultipleSongs || hasMultipleAlbums {
-                    VStack(spacing: 12) {
-                        // Sort Albums Button - only show if there are multiple albums
-                        if hasMultipleAlbums {
-                            SortActionButton(
-                                title: "Sort Albums",
-                                items: albums,
-                                source: .artist,
-                                sourceID: artist.id,
-                                sourceName: artist.name,
-                                contentType: .albums,
-                                artwork: artist.artwork
-                            )
-                        }
-                        
-                        // Sort Songs Button - only show if there are multiple songs
-                        if hasMultipleSongs {
-                            SortActionButton(
-                                title: "Sort Songs",
-                                items: artist.songs,
-                                source: .artist,
-                                sourceID: artist.id,
-                                sourceName: artist.name,
-                                contentType: .songs,
-                                artwork: artist.artwork
-                            )
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color(UIColor.systemGroupedBackground))
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-                }
-            },
-            additionalContent: { artist in
-                Group {
-                    // Songs section - MOVED TO TOP, already has internal rankings
-                    SongsSection(songs: artist.songs)
-                    
-                    // Albums section - maintain internal rankings by play count
-                    let artistAlbums = findArtistAlbums()
-                    if !artistAlbums.isEmpty {
-                        AlbumsSection(albums: artistAlbums)
-                    }
-                    
-                    // Genres section - now with contextual external rankings
-                    let genres = findArtistGenres()
-                    if !genres.isEmpty {
-                        Section(header: Text("Genres").padding(.leading, -15)) {
-                            ForEach(genres) { genre in
-                                NavigationLink(destination: GenreDetailView(genre: genre)) {
-                                    HStack(spacing: 10) {
-                                        // Show artist's rank within this genre with total count
-                                        if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
-                                            Text("#\(artistRankData.rank)/\(artistRankData.total)")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundColor(AppStyles.accentColor)
-                                                .frame(width: 50, alignment: .leading)
-                                        }
-                                        
-                                        LibraryRow.genre(genre)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
-                            }
-                        }
-                    }
-                    
-                    // Playlists section - UPDATED to use RankedPlaylistsSection
-                    let containingPlaylists = findPlaylists()
-                    if !containingPlaylists.isEmpty {
-                        RankedPlaylistsSection(
-                            playlists: containingPlaylists,
-                            getRankData: { playlist in
-                                getArtistRankInPlaylist(artist: artist, playlist: playlist)
-                            }
-                        )
-                    }
-                }
-            }
+            headerContent: { _ in headerSection },
+            additionalContent: { _ in contentSections }
         )
     }
     
-    // Helper methods (existing)
+    // MARK: - Header Section
+    
+    private var headerSection: some View {
+        // Sort Buttons Section - breaking up expressions for better type checking
+        let albums = findArtistAlbums()
+        let hasMultipleSongs = artist.songs.count > 1
+        let hasMultipleAlbums = albums.count > 1
+        
+        return Group {
+            if hasMultipleSongs || hasMultipleAlbums {
+                VStack(spacing: 12) {
+                    // Sort Albums Button - only show if there are multiple albums
+                    if hasMultipleAlbums {
+                        SortActionButton(
+                            title: "Sort Albums",
+                            items: albums,
+                            source: .artist,
+                            sourceID: artist.id,
+                            sourceName: artist.name,
+                            contentType: .albums,
+                            artwork: artist.artwork
+                        )
+                    }
+                    
+                    // Sort Songs Button - only show if there are multiple songs
+                    if hasMultipleSongs {
+                        SortActionButton(
+                            title: "Sort Songs",
+                            items: artist.songs,
+                            source: .artist,
+                            sourceID: artist.id,
+                            sourceName: artist.name,
+                            contentType: .songs,
+                            artwork: artist.artwork
+                        )
+                    }
+                }
+                .padding(.vertical, 8)
+                .listRowBackground(Color(UIColor.systemGroupedBackground))
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+            }
+        }
+    }
+    
+    // MARK: - Content Sections
+    
+    private var contentSections: some View {
+        Group {
+            // Songs section
+            SongsSection(songs: artist.songs)
+            
+            // Albums section
+            artistAlbumsSection
+            
+            // Genres section
+            artistGenresSection
+            
+            // Playlists section - Using RankedPlaylistsSection
+            artistPlaylistsSection
+        }
+    }
+    
+    // MARK: - Album Section
+    
+    private var artistAlbumsSection: some View {
+        let artistAlbums = findArtistAlbums()
+        if !artistAlbums.isEmpty {
+            return AnyView(AlbumsSection(albums: artistAlbums))
+        } else {
+            return AnyView(EmptyView())
+        }
+    }
+    
+    // MARK: - Genres Section
+    
+    private var artistGenresSection: some View {
+        let genres = findArtistGenres()
+        
+        return Group {
+            if !genres.isEmpty {
+                Section(header: Text("Genres").padding(.leading, -15)) {
+                    ForEach(genres) { genre in
+                        NavigationLink(destination: GenreDetailView(genre: genre)) {
+                            HStack(spacing: 10) {
+                                // Show artist's rank within this genre
+                                if let artistRankData = getArtistRankInGenre(artist: artist, genre: genre) {
+                                    Text("#\(artistRankData.rank)/\(artistRankData.total)")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(AppStyles.accentColor)
+                                        .frame(width: 50, alignment: .leading)
+                                }
+                                
+                                LibraryRow.genre(genre)
+                            }
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Playlists Section with RankedPlaylistsSection
+    
+    private var artistPlaylistsSection: some View {
+        let containingPlaylists = findPlaylists()
+        
+        return Group {
+            if !containingPlaylists.isEmpty {
+                RankedPlaylistsSection(
+                    playlists: containingPlaylists,
+                    title: containingPlaylists.count == 1 ? "Playlist" : "Playlists",
+                    getRankData: { playlist in
+                        getArtistRankInPlaylist(artist: artist, playlist: playlist)
+                    }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
     private func findArtistAlbums() -> [AlbumData] {
         return musicLibrary.albums.filter { $0.artist == artist.name }
             .sorted { $0.totalPlayCount > $1.totalPlayCount }
@@ -157,7 +195,7 @@ struct ArtistDetailView: View {
     }
     
     // Get artist's rank within a playlist
-    private func getArtistRankInPlaylist(artist: ArtistData, playlist: PlaylistData) -> RankData? {
+    private func getArtistRankInPlaylist(artist: ArtistData, playlist: PlaylistData) -> (rank: Int, total: Int)? {
         // Get all artists in this playlist
         let playlistArtistNames = Set(playlist.songs.compactMap { $0.artist })
         
@@ -176,7 +214,7 @@ struct ArtistDetailView: View {
         
         // Find this artist's position
         if let index = sortedArtists.firstIndex(where: { $0.key == artist.name }) {
-            return RankData(rank: index + 1, total: playlistArtistNames.count)
+            return (rank: index + 1, total: playlistArtistNames.count)
         }
         
         return nil

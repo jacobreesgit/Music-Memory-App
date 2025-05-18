@@ -170,7 +170,7 @@ struct PlaylistsSection: View {
     
     @State private var showAllPlaylists = false
     
-    init(playlists: [PlaylistData], title: String = "In Playlists") {
+    init(playlists: [PlaylistData], title: String = "Playlists") {
         self.playlists = playlists
         self.title = title
     }

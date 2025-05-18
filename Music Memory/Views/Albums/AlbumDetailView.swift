@@ -54,7 +54,7 @@ struct AlbumDetailView: View {
             genresSection
             
             // Playlists section - using RankedPlaylistsSection as requested
-            playlistsSection
+            playlistSection
         }
         .listSectionSpacing(0)
         .navigationTitle(album.title)
@@ -123,8 +123,8 @@ struct AlbumDetailView: View {
         }
     }
     
-    // Using RankedPlaylistsSection as requested
-    private var playlistsSection: some View {
+    // Updated to use RankedPlaylistsSection
+    private var playlistSection: some View {
         let playlists = findPlaylists(for: album)
         
         return Group {
@@ -132,6 +132,7 @@ struct AlbumDetailView: View {
                 // Use RankedPlaylistsSection component
                 RankedPlaylistsSection(
                     playlists: playlists,
+                    title: playlists.count == 1 ? "Playlist" : "Playlists",
                     getRankData: { playlist in
                         if let rankData = getAlbumRankInPlaylist(playlist: playlist) {
                             return (rank: rankData.rank, total: rankData.total)
