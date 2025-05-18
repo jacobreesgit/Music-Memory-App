@@ -64,7 +64,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Models/Untitled.swift,
 			);
 			target = 0707E9C12DBE57A600BE138D /* Music Memory */;
 		};
