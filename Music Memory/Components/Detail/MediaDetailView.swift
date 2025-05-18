@@ -7,14 +7,22 @@ import SwiftUI
 import MediaPlayer
 
 /// A reusable container for detail views using a consistent layout pattern
-struct MediaDetailView<Item: MediaDetailDisplayable, Content: View>: View {
+struct MediaDetailView<Item: MediaDetailDisplayable, HeaderContent: View, Content: View>: View {
     let item: Item
     let rank: Int?
+    @ViewBuilder let headerContent: (Item) -> HeaderContent
     @ViewBuilder let additionalContent: (Item) -> Content
     
-    init(item: Item, rank: Int? = nil, @ViewBuilder additionalContent: @escaping (Item) -> Content) {
+    // Primary initializer with header content
+    init(
+        item: Item,
+        rank: Int? = nil,
+        @ViewBuilder headerContent: @escaping (Item) -> HeaderContent,
+        @ViewBuilder additionalContent: @escaping (Item) -> Content
+    ) {
         self.item = item
         self.rank = rank
+        self.headerContent = headerContent
         self.additionalContent = additionalContent
     }
     
@@ -35,6 +43,9 @@ struct MediaDetailView<Item: MediaDetailDisplayable, Content: View>: View {
             }) {
                 // Empty section content for spacing
             }
+            
+            // New: Header content section (for sort buttons)
+            headerContent(item)
             
             // Statistics section with metadata
             Section(header: Text("Statistics")
@@ -57,5 +68,19 @@ struct MediaDetailView<Item: MediaDetailDisplayable, Content: View>: View {
         .navigationBarTitleDisplayMode(.inline)
         // Apply the bottom safe area modifier to ensure content is visible
         .withBottomSafeArea()
+    }
+}
+
+// Extension to provide convenience initializer for backward compatibility
+extension MediaDetailView where HeaderContent == EmptyView {
+    init(
+        item: Item,
+        rank: Int? = nil,
+        @ViewBuilder additionalContent: @escaping (Item) -> Content
+    ) {
+        self.item = item
+        self.rank = rank
+        self.headerContent = { _ in EmptyView() }
+        self.additionalContent = additionalContent
     }
 }

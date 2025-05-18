@@ -16,9 +16,11 @@ struct ArtistDetailView: View {
     }
     
     var body: some View {
-        MediaDetailView(item: artist, rank: rank) { artist in
-            Group {
-                // MARK: - Sort Buttons Section - MOVED ABOVE STATISTICS
+        MediaDetailView(
+            item: artist,
+            rank: rank,
+            headerContent: { artist in
+                // MARK: - Sort Buttons Section - NOW ABOVE STATISTICS
                 let albums = findArtistAlbums()
                 let hasMultipleSongs = artist.songs.count > 1
                 let hasMultipleAlbums = albums.count > 1
@@ -56,29 +58,32 @@ struct ArtistDetailView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                 }
-                
-                // Albums section
-                let artistAlbums = findArtistAlbums()
-                if !artistAlbums.isEmpty {
-                    AlbumsSection(albums: artistAlbums)
+            },
+            additionalContent: { artist in
+                Group {
+                    // Albums section
+                    let artistAlbums = findArtistAlbums()
+                    if !artistAlbums.isEmpty {
+                        AlbumsSection(albums: artistAlbums)
+                    }
+                    
+                    // Genres section
+                    let genres = findArtistGenres()
+                    if !genres.isEmpty {
+                        GenresSection(genres: genres)
+                    }
+                    
+                    // Playlists section
+                    let containingPlaylists = findPlaylists()
+                    if !containingPlaylists.isEmpty {
+                        PlaylistsSection(playlists: containingPlaylists)
+                    }
+                    
+                    // Songs section
+                    SongsSection(songs: artist.songs)
                 }
-                
-                // Genres section
-                let genres = findArtistGenres()
-                if !genres.isEmpty {
-                    GenresSection(genres: genres)
-                }
-                
-                // Playlists section
-                let containingPlaylists = findPlaylists()
-                if !containingPlaylists.isEmpty {
-                    PlaylistsSection(playlists: containingPlaylists)
-                }
-                
-                // Songs section
-                SongsSection(songs: artist.songs)
             }
-        }
+        )
     }
     
     // Helper methods

@@ -16,9 +16,11 @@ struct PlaylistDetailView: View {
     }
     
     var body: some View {
-        MediaDetailView(item: playlist, rank: rank) { playlist in
-            Group {
-                // MARK: - Sort Buttons Section - MOVED ABOVE STATISTICS
+        MediaDetailView(
+            item: playlist,
+            rank: rank,
+            headerContent: { playlist in
+                // MARK: - Sort Buttons Section - NOW ABOVE STATISTICS
                 let artists = findPlaylistArtists()
                 let albums = findPlaylistAlbums()
                 let genres = findPlaylistGenres()
@@ -88,24 +90,27 @@ struct PlaylistDetailView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                 }
-                
-                // Albums section
-                if !albums.isEmpty {
-                    AlbumsSection(albums: albums)
+            },
+            additionalContent: { playlist in
+                Group {
+                    // Albums section
+                    if !findPlaylistAlbums().isEmpty {
+                        AlbumsSection(albums: findPlaylistAlbums())
+                    }
+                    
+                    // Artists section
+                    ArtistsSection(artists: findPlaylistArtists())
+                    
+                    // Genres section
+                    if !findPlaylistGenres().isEmpty {
+                        GenresSection(genres: findPlaylistGenres())
+                    }
+                    
+                    // Songs section
+                    SongsSection(songs: playlist.songs)
                 }
-                
-                // Artists section
-                ArtistsSection(artists: artists)
-                
-                // Genres section
-                if !genres.isEmpty {
-                    GenresSection(genres: genres)
-                }
-                
-                // Songs section
-                SongsSection(songs: playlist.songs)
             }
-        }
+        )
     }
     
     // Helper methods
